@@ -1,0 +1,89 @@
+# ==========================================
+# OpenClaw Docker Compose Configuration
+# ==========================================
+# Services: dashboard-backend, dashboard-frontend, sandbox
+
+version: '3.9'
+
+services:
+  # --- Dashboard Backend (FastAPI + WebSocket) ---
+  dashboard-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend
+    container_name: openclaw-backend
+    ports:
+      - "${DASHBOARD_PORT:-8000}:8000"
+    volumes:
+      - .:/app
+      - ./memory/workflows:/app/memory/workflows
+      - ./logs:/app/logs
+      - ./screenshots:/app/screenshots
+    env_file:
+      - .env
+    command: uvicorn dashboard.backend.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+    networks:
+      - openclaw-net
+
+  # --- Dashboard Frontend (React + Vite) ---
+  dashboard-frontend:
+    build:
+      context: ./dashboard/frontend
+      dockerfile: Dockerfile.frontend
+    container_name: openclaw-frontend
+    ports:
+      - "${DASHBOARD_FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ./dashboard/frontend/src:/app/src
+    environment:
+      - VITE_WS_URL=ws://localhost:${DASHBOARD_PORT:-8000}/ws
+      - VITE_API_URL=http://localhost:${DASHBOARD_PORT:-8000}/api
+    command: npm run dev -- --host 0.0.0.0
+    restart: unless-stopped
+    networks:
+      - openclaw-net
+
+  # --- WhatsApp Service (Node.js) ---
+  whatsapp-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: whatsapp
+    container_name: openclaw-whatsapp
+    ports:
+      - "${WHATSAPP_SERVICE_PORT:-3001}:3001"
+    volumes:
+      - ./whatsapp-auth:/app/whatsapp-auth
+    command: node skills/messaging/whatsapp_adapter.js
+    restart: unless-stopped
+    networks:
+      - openclaw-net
+
+  # --- Sandbox (Isolated Shell Execution) ---
+  sandbox:
+    image: ubuntu:24.04
+    container_name: openclaw-sandbox
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./sandbox-workspace:/workspace
+    working_dir: /workspace
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_RAW
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    cpus: 1.0
+    networks:
+      - openclaw-net
+
+networks:
+  openclaw-net:
+    driver: bridge
+
+volumes:
+  whatsapp-auth:

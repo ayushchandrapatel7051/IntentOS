@@ -1,0 +1,52 @@
+# ==========================================
+# IntentOS - Python Dependencies
+# ==========================================
+# Python 3.11+ required
+
+# --- AI / LLM ---
+google-genai>=1.0.0          # Gemini Flash 2.5 — planning
+
+# --- Web Framework ---
+fastapi>=0.115.0             # Dashboard backend
+uvicorn[standard]>=0.32.0    # ASGI server
+websockets>=13.0             # WebSocket support
+python-multipart>=0.0.12     # Form data parsing
+
+# --- Screen / Input ---
+mss>=9.0.2                   # Screenshot capture
+Pillow>=11.0.0               # Image processing
+pyautogui>=0.9.54            # Mouse/keyboard simulation + hotkeys
+
+# --- Browser Automation ---
+playwright>=1.48.0           # Playwright CDP bridge
+
+# --- File Management ---
+watchdog>=5.0.0              # Directory watcher
+
+# --- Voice Input ---
+requests>=2.32.0             # Sarvam AI HTTP client
+sounddevice>=0.5.1           # Audio recording
+scipy>=1.14.0                # Audio file I/O
+
+# --- Data & Config ---
+pyyaml>=6.0.2                # YAML store
+python-dotenv>=1.0.1         # .env loading
+pydantic>=2.10.0             # Data validation
+
+# --- Utilities ---
+rich>=13.9.0                 # Console formatting
+colorama>=0.4.6              # Windows color support
+aiohttp>=3.11.0              # Async HTTP client
+aiofiles>=24.1.0             # Async file I/O
+
+# ==========================================
+# REMOVED (cost reduction):
+#   python-telegram-bot    — replaced by desktop app + shortcuts
+#   telethon               — replaced by desktop app + shortcuts
+#   google-api-python-client — calendar via browser instead
+#   google-auth-oauthlib
+#   google-auth-httplib2
+#   APScheduler
+#   pyaudio                — meeting co-pilot (can add back later)
+#   openai-whisper         — meeting co-pilot (can add back later)
+# ==========================================

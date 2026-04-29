@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenClaw</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 320px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #0a0e17;
+      color: #e8ecf4;
+      padding: 16px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #1e2d4a;
+    }
+    .header h1 {
+      font-size: 16px;
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .logo-icon { font-size: 20px; }
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #151d2e;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border: 1px solid #1e2d4a;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .dot.connected { background: #10b981; box-shadow: 0 0 8px #10b981; }
+    .dot.disconnected { background: #ef4444; }
+    .status-text { font-size: 13px; color: #8896b3; }
+    .recent {
+      background: #151d2e;
+      border-radius: 8px;
+      border: 1px solid #1e2d4a;
+      padding: 12px;
+    }
+    .recent h3 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #556280;
+      margin-bottom: 8px;
+    }
+    .recent-item {
+      font-size: 12px;
+      padding: 6px 0;
+      border-bottom: 1px solid #1e2d4a;
+      color: #8896b3;
+    }
+    .recent-item:last-child { border-bottom: none; }
+    .footer {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 10px;
+      color: #556280;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="logo-icon">🐾</span>
+    <h1>OpenClaw</h1>
+  </div>
+
+  <div class="status" id="status">
+    <span class="dot disconnected" id="statusDot"></span>
+    <span class="status-text" id="statusText">Connecting to agent...</span>
+  </div>
+
+  <div class="recent">
+    <h3>Recent Commands</h3>
+    <div id="recentList">
+      <div class="recent-item">No commands yet</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    OpenClaw v1.0.0-α — Intent-Based OS
+  </div>
+
+  <script>
+    // Check connection status from storage
+    chrome.storage.local.get(['connectionStatus', 'recentCommands'], (data) => {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+
+      if (data.connectionStatus === 'connected') {
+        dot.className = 'dot connected';
+        text.textContent = 'Connected to agent';
+      } else {
+        dot.className = 'dot disconnected';
+        text.textContent = 'Agent not connected';
+      }
+
+      if (data.recentCommands && data.recentCommands.length > 0) {
+        const list = document.getElementById('recentList');
+        list.innerHTML = data.recentCommands
+          .slice(0, 5)
+          .map(cmd => `<div class="recent-item">${cmd}</div>`)
+          .join('');
+      }
+    });
+  </script>
+</body>
+</html>
