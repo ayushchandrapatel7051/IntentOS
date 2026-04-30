@@ -9,6 +9,7 @@ import json
 import os
 import asyncio
 import re
+from pathlib import Path
 from typing import Optional
 from dataclasses import dataclass, field, asdict
 from enum import Enum
@@ -163,10 +164,17 @@ class Planner:
             return
 
         if use_vertex:
-            # --- Vertex AI path: gcloud application-default credentials ---
-            # Requires: gcloud auth application-default login
+            # --- Vertex AI path: service account JSON or ADC ---
             gcp_project  = os.getenv("GCP_PROJECT", "")
             gcp_location = os.getenv("GCP_LOCATION", "us-central1")
+
+            # Auto-point to credentials.json if present and ADC not already set
+            if not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+                creds_path = Path(__file__).parent.parent / "credentials.json"
+                if creds_path.exists():
+                    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(creds_path)
+                    print(f"[Planner] Using service account: {creds_path.name}")
+
             try:
                 self.client = genai.Client(
                     vertexai=True,
@@ -355,12 +363,21 @@ class Planner:
         if not self.client:
             return self._fallback(intent)
 
-        response = await asyncio.to_thread(
-            self.client.models.generate_content,
-            model   = self.model_name,
-            contents= self._user_prompt(intent),
-            config  = self._gen_config(),
-        )
+        try:
+            response = await asyncio.wait_for(
+                asyncio.to_thread(
+                    self.client.models.generate_content,
+                    model   = self.model_name,
+                    contents= self._user_prompt(intent),
+                    config  = self._gen_config(),
+                ),
+                timeout=30.0,
+            )
+        except asyncio.TimeoutError:
+            raise RuntimeError(
+                "Gemini API timed out after 30s. "
+                "Check your credentials.json permissions and GCP_PROJECT in .env."
+            )
         raw = self._safe_text(response)
         print(f"[Planner] Raw: {raw[:300]}")
         return self._parse(raw, intent)
@@ -381,23 +398,35 @@ class Planner:
             error           = error,
             remaining_steps = json.dumps([s.to_dict() for s in remaining_steps]),
         )
-        response = await asyncio.to_thread(
-            self.client.models.generate_content,
-            model   = self.model_name,
-            contents= prompt,
-            config  = self._replan_config(),
-        )
+        try:
+            response = await asyncio.wait_for(
+                asyncio.to_thread(
+                    self.client.models.generate_content,
+                    model   = self.model_name,
+                    contents= prompt,
+                    config  = self._replan_config(),
+                ),
+                timeout=30.0,
+            )
+        except asyncio.TimeoutError:
+            raise RuntimeError("Gemini API timed out during replan.")
         raw = self._safe_text(response)
         return self._parse(raw, f"Recovery: {failed_step.description}")
 
     async def _refine(self, macro_plan: ActionPlan) -> ActionPlan:
         instructions = " | ".join(s.description for s in macro_plan.steps)
-        response = await asyncio.to_thread(
-            self.client.models.generate_content,
-            model   = self.model_name,
-            contents= f"INTENT: {macro_plan.intent}\nMACRO STEPS: {instructions}",
-            config  = self._gen_config(),
-        )
+        try:
+            response = await asyncio.wait_for(
+                asyncio.to_thread(
+                    self.client.models.generate_content,
+                    model   = self.model_name,
+                    contents= f"INTENT: {macro_plan.intent}\nMACRO STEPS: {instructions}",
+                    config  = self._gen_config(),
+                ),
+                timeout=30.0,
+            )
+        except asyncio.TimeoutError:
+            raise RuntimeError("Gemini API timed out during macro refinement.")
         raw = self._safe_text(response)
         return self._parse(raw, macro_plan.intent)
 

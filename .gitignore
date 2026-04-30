@@ -18,3 +18,4 @@ credentials/
 *.log
 dashboard/frontend/node_modules/
 dashboard/frontend/dist/
+credentials.json
