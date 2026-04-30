@@ -10,6 +10,7 @@ Also provides shortcut-key helpers (press_keys) used by the Messaging skill.
 import asyncio
 import json
 import os
+import re
 import subprocess
 from pathlib import Path
 from typing import Optional
@@ -17,6 +18,16 @@ from typing import Optional
 
 # Path to the app registry built by the scanner
 APPS_JSON = Path(__file__).parent.parent.parent / "apps.json"
+
+
+def _expand_ps_vars(s: str) -> str:
+    """
+    Expand PowerShell-style $env:VAR variables in a string.
+    e.g. "$env:USERPROFILE\\Desktop\\hello.txt" -> "C:\\Users\\JohnDoe\\Desktop\\hello.txt"
+    """
+    def _replace(m: re.Match) -> str:
+        return os.environ.get(m.group(1), m.group(0))
+    return re.sub(r'\$env:(\w+)', _replace, s)
 
 
 def _load_apps() -> dict:
@@ -145,42 +156,73 @@ class AppLauncher:
 
     async def open_app(self, name: str, wait_seconds: float = 2.0, **kwargs) -> str:
         """
-        Open an application by name.
+        Open an application by name, optionally with a file argument.
 
-        Args:
-            name:         App name to search for in apps.json.
-            wait_seconds: Seconds to wait after launching (so the app has time to load).
+        Handles:
+          - "notepad"                           → look up in apps.json or launch directly
+          - "notepad C:\\path\\file.txt"         → split and pass file as arg
+          - "notepad $env:USERPROFILE\\file.txt" → expand PowerShell env vars first
 
-        Returns:
-            Status string.
+        Priority:
+          1. apps.json lookup (full name, then just the executable part)
+          2. Direct system command launch (for built-ins like notepad, calc, mspaint)
         """
         apps = _load_apps()
-        entry = _find_app(name, apps)
 
-        if not entry:
-            raise ValueError(
-                f"App '{name}' not found in apps.json. "
-                f"Run 'scan_apps' to refresh the registry."
-            )
+        # --- Split "notepad path\to\file.txt" into exe + optional arg ---
+        raw = name.strip()
+        parts = raw.split(None, 1)               # split on first whitespace
+        exe_name  = parts[0]                     # e.g. "notepad"
+        file_arg  = _expand_ps_vars(parts[1]) if len(parts) > 1 else ""  # expanded path
+
+        # --- Try apps.json: full name first, then just the exe part ---
+        entry = _find_app(raw, apps) or _find_app(exe_name, apps)
 
         launched = False
 
-        # 1. Try AppID (UWP / Start Menu)
-        if "app_id" in entry:
-            launched = await asyncio.to_thread(_launch_via_app_id, entry["app_id"])
+        if entry:
+            # Known app — launch via AppID or shortcut, then pass file arg if present
+            if "app_id" in entry:
+                launched = await asyncio.to_thread(_launch_via_app_id, entry["app_id"])
 
-        # 2. Fall back to .lnk shortcut
-        if not launched and "shortcut" in entry:
-            launched = await asyncio.to_thread(_launch_via_shortcut, entry["shortcut"])
+            if not launched and "shortcut" in entry:
+                if file_arg:
+                    try:
+                        subprocess.Popen([entry["shortcut"], file_arg], shell=False)
+                        launched = True
+                    except Exception:
+                        launched = await asyncio.to_thread(_launch_via_shortcut, entry["shortcut"])
+                else:
+                    launched = await asyncio.to_thread(_launch_via_shortcut, entry["shortcut"])
+        else:
+            # Unknown app — try launching directly as a system command.
+            # This handles: notepad, calc, mspaint, code, winword, excel, etc.
+            try:
+                cmd = [exe_name]
+                if file_arg:
+                    cmd.append(file_arg)
+                subprocess.Popen(cmd, shell=False)
+                launched = True
+            except FileNotFoundError:
+                # Last resort: shell=True lets Windows find it via PATH
+                try:
+                    shell_cmd = f'{exe_name} "{file_arg}"' if file_arg else exe_name
+                    subprocess.Popen(shell_cmd, shell=True)
+                    launched = True
+                except Exception as e:
+                    raise ValueError(
+                        f"App '{name}' not found in apps.json and direct launch failed: {e}. "
+                        f"Run 'scan_apps' to refresh the registry, or check the app name."
+                    )
 
         if not launched:
-            raise RuntimeError(f"Failed to open '{name}' — no valid launch method found in entry: {entry}")
+            raise RuntimeError(f"Failed to open '{name}' — no valid launch method.")
 
         # Wait for the app window to appear
         if wait_seconds > 0:
             await asyncio.sleep(wait_seconds)
 
-        return f"Opened '{name}' successfully"
+        return f"Opened '{exe_name}{' with ' + file_arg if file_arg else ''}' successfully"
 
     # ------------------------------------------------------------------
     # press_keys

@@ -87,7 +87,7 @@ SYSTEM_PROMPT = """\
 You are IntentOS Planner. Convert user intents into JSON action plans.
 
 SKILLS:
-  browser   : navigate(url) | search(query) | fill_form(fields) | click(selector) | extract_text(selector) | screenshot() | manage_tabs(action)
+  browser   : navigate(url, browser="edge") | search(query, engine="google") | fill_form(selector,value) | click(selector) | extract_text(selector) | screenshot() | manage_tabs(operation) | type_text(text) | wait_for(selector) | evaluate(code)
   terminal  : execute(command) | execute_background(command)
   files     : move(src,dst) | copy(src,dst) | rename(src,new_name) | delete(path) | organize_by_type(dir) | list_dir(path) | watch(path)
   apps      : open_app(name, wait_seconds=2) | press_keys(keys=[...]) | type_text(text) | list_apps(filter) | scan_apps()
@@ -96,15 +96,34 @@ SKILLS:
 
 RULES:
   - Prefer browser > terminal/apps > vision (vision = last resort)
-  - Calendar → browser navigate to calendar.google.com
-  - Messaging → messaging skill via desktop app shortcuts, never a bot API
+  - Calendar: browser.navigate to calendar.google.com
+  - Messaging: messaging skill via desktop app shortcuts, never a bot API
   - Use exact paths, URLs, and names from the intent
-  - OS is Windows 11. For terminal commands use PowerShell syntax:
+  - OS is Windows 11. Terminal = PowerShell syntax:
       * Use Move-Item, Copy-Item, Remove-Item, New-Item (NOT mv/cp/rm/mkdir)
-      * Paths use backslash: C:\\Users\\$env:USERNAME\\Downloads
+      * Paths use backslash: C:\\\\Users\\\\$env:USERNAME\\\\Downloads
       * Expand ~ as $env:USERPROFILE in PowerShell commands
       * Chain commands with ; not &&
-      * Create dirs with: New-Item -ItemType Directory -Force -Path <path>
+      * Create dirs: New-Item -ItemType Directory -Force -Path <path>
+
+BROWSER RULES - MANDATORY:
+  - NEVER use apps.open_app for any browser (edge, chrome, firefox). The browser skill opens the browser automatically.
+  - Combine open+navigate into ONE step: browser.navigate(url=..., browser="chrome" or "edge")
+  - "open chrome" or "open chrome and search X" -> browser.navigate(url="https://www.google.com/search?q=X", browser="chrome")
+  - "open edge" or "open edge and search X"   -> browser.navigate(url="https://www.bing.com/search?q=X", browser="edge")
+  - "open edge" with no query -> browser.navigate(url="https://www.bing.com", browser="edge")
+  - "open chrome" with no query -> browser.navigate(url="https://www.google.com", browser="chrome")
+  - Always pass browser="chrome" when user says chrome, browser="edge" when user says edge.
+  - No browser specified: use browser="edge" as default.
+
+NOTEPAD / TEXT EDITOR RULES - MANDATORY:
+  - To create a NEW file and type content in it, use 3 steps:
+      1. terminal.execute: New-Item -Path "$env:USERPROFILE\\Desktop\\<filename>.txt" -ItemType File -Force
+      2. terminal.execute: Start-Process notepad.exe "$env:USERPROFILE\\Desktop\\<filename>.txt" ; Start-Sleep -Seconds 2
+      3. apps.type_text: text="<content to type>"
+  - NEVER put a file path inside apps.open_app name (it looks up apps.json, not file paths).
+  - NEVER skip file creation. NEVER type without first opening the correct window.
+  - If no path specified, save to Desktop by default.
 {dynamic}"""
 
 # Per-call user message — schema enforced here (Gemini follows user turns more reliably)
@@ -130,16 +149,41 @@ Respond with ONLY this JSON (no markdown, no extra text):
 # ---------------------------------------------------------------------------
 
 class Planner:
-    """Pi Engine Planner — Gemini Flash 2.5 backend (google-genai SDK)."""
+    """Pi Engine Planner — Gemini Flash 2.5 (Vertex AI or API key, via USE_VERTEX_AI in .env)."""
 
     def __init__(self, soul_reader: Optional[SoulReader] = None):
-        self.api_key     = os.getenv("GEMINI_API_KEY", "")
         self.model_name  = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         self.soul_reader = soul_reader
         self.client      = None        # non-None = ready
 
-        if _GENAI_OK and self.api_key and "your-gemini" not in self.api_key:
-            self.client = genai.Client(api_key=self.api_key)
+        use_vertex = os.getenv("USE_VERTEX_AI", "false").strip().lower() == "true"
+
+        if not _GENAI_OK:
+            print("[Planner] google-genai not installed — offline mode")
+            return
+
+        if use_vertex:
+            # --- Vertex AI path: gcloud application-default credentials ---
+            # Requires: gcloud auth application-default login
+            gcp_project  = os.getenv("GCP_PROJECT", "")
+            gcp_location = os.getenv("GCP_LOCATION", "us-central1")
+            try:
+                self.client = genai.Client(
+                    vertexai=True,
+                    project=gcp_project,
+                    location=gcp_location,
+                )
+                print(f"[Planner] Auth: Vertex AI ({gcp_project} / {gcp_location})")
+            except Exception as e:
+                print(f"[Planner] Vertex AI init failed: {e}")
+        else:
+            # --- Gemini API key path ---
+            api_key = os.getenv("GEMINI_API_KEY", "")
+            if api_key and "your-gemini" not in api_key:
+                self.client = genai.Client(api_key=api_key)
+                print("[Planner] Auth: Gemini API key")
+            else:
+                print("[Planner] GEMINI_API_KEY not set — offline mode")
 
     # ------------------------------------------------------------------
     # Prompt helpers

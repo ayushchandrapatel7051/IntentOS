@@ -81,7 +81,7 @@ async def main():
     console.print("[cyan]▸[/] Initializing Pi Engine Planner...", end=" ")
     from agent.planner import Planner
     planner = Planner(soul_reader=soul_reader)
-    api_status = "Gemini API connected" if planner.client else "offline mode — set GEMINI_API_KEY in .env"
+    api_status = "Gemini (Vertex AI) connected" if planner.client else "offline mode — run `gcloud auth application-default login`"
     console.print(f"[green]✓[/] {api_status}")
 
     # --- Initialize Skills ---
@@ -216,7 +216,7 @@ async def main():
                 needs_confirm = []   # steps that need user confirmation
 
                 for step in context.plan.steps:
-                    icon = "[green]✓[/]" if step.status.value == "done" else "[red]✗[/]"
+                    icon = "[green]\u2713[/]" if step.status.value == "done" else "[red]\u2717[/]"
                     console.print(f"  {icon} [bold]{step.id}[/] [{step.skill}.{step.action}]")
 
                     # Show the actual command / params that ran
@@ -224,11 +224,11 @@ async def main():
                         cmd = (step.params.get("command")
                                or step.params.get("name")
                                or str(step.params))
-                        console.print(f"      [dim]▶ {cmd}[/]")
+                        console.print(f"      [dim]\u25b6 {cmd}[/]")
 
                     # Detect confirmation gate
                     if step.result and "CONFIRM_REQUIRED" in step.result:
-                        console.print(f"      [yellow]⚠ {step.result}[/]")
+                        console.print(f"      [yellow]\u26a0 {step.result}[/]")
                         needs_confirm.append(step)
                     elif step.result and step.result.strip():
                         for line in step.result.strip().splitlines()[:5]:
@@ -239,39 +239,50 @@ async def main():
 
                 # Interactive confirmation for delete / destructive steps
                 for step in needs_confirm:
-                    raw_path   = step.params.get("path", "this action")
-                    # Show the resolved path (what file_manager already expanded)
-                    real_path  = raw_path.replace("$env:USERPROFILE", str(__import__("pathlib").Path.home()))
+                    raw_path  = step.params.get("path", "this action")
+                    real_path = raw_path.replace("$env:USERPROFILE", str(__import__("pathlib").Path.home()))
                     answer = await asyncio.to_thread(
                         input,
-                        f"\n  ⚠  Confirm delete: {real_path}? [y/N] "
+                        f"\n  \u26a0  Confirm delete: {real_path}? [y/N] "
                     )
                     if answer.strip().lower() == "y":
                         forced_params = {**step.params, "force": True}
                         try:
                             handler = executor.skills.get(step.skill)
                             result  = await handler.execute(step.action, forced_params)
-                            console.print(f"      [green]✓ {result}[/]")
+                            console.print(f"      [green]\u2713 {result}[/]")
                         except Exception as e:
-                            console.print(f"      [red]✗ {e}[/]")
+                            console.print(f"      [red]\u2717 {e}[/]")
                     else:
                         console.print("      [dim]Skipped.[/]")
 
-
                 if context.plan.status == "completed":
-                    console.print("[bold green]✓ Done![/]")
+                    console.print("[bold green]\u2713 Done![/]")
                 else:
-                    console.print(f"[bold red]✗ Status: {context.plan.status}[/]")
+                    console.print(f"[bold red]\u2717 Status: {context.plan.status}[/]")
 
                 store.save_workflow(command, plan.to_dict(), context.plan.status)
 
-
-            except KeyboardInterrupt:
+            except (KeyboardInterrupt, EOFError):
                 break
-            except EOFError:
-                break
+            except ValueError as e:
+                # Windows: 'I/O operation on closed pipe' on Ctrl+C / exit
+                if "closed" in str(e).lower() or "pipe" in str(e).lower():
+                    break
+                console.print(f"[red]Error: {e}[/]")
             except Exception as e:
                 console.print(f"[red]Error: {e}[/]")
+
+        # Clean up browser on exit
+        browser_skill = skill_registry.get("browser")
+        if browser_skill:
+            try:
+                await browser_skill.close()
+            except Exception:
+                pass
+
+        # Signal uvicorn to stop
+        server.should_exit = True
 
     # Run dashboard and CLI concurrently
     config = uvicorn.Config(
@@ -289,4 +300,11 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        pass
+    except ValueError as e:
+        # Suppress Windows 'I/O operation on closed pipe' noise on exit
+        if "closed" not in str(e).lower() and "pipe" not in str(e).lower():
+            raise
