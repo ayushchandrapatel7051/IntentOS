@@ -19,3 +19,4 @@ credentials/
 dashboard/frontend/node_modules/
 dashboard/frontend/dist/
 credentials.json
+app.json

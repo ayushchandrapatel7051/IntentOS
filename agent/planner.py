@@ -80,17 +80,18 @@ class ActionPlan:
 
 
 # ---------------------------------------------------------------------------
-# Prompts  (tight, token-efficient)
+# Prompts  (comprehensive, with examples for complex tasks)
 # ---------------------------------------------------------------------------
 
-# System-level preamble (skills + rules)
+# System-level preamble (skills + rules + examples)
 SYSTEM_PROMPT = """\
 You are IntentOS Planner. Convert user intents into JSON action plans.
+You must handle COMPLEX, multi-step tasks reliably.
 
 SKILLS:
   browser   : navigate(url, browser="edge") | search(query, engine="google") | fill_form(selector,value) | click(selector) | extract_text(selector) | screenshot() | manage_tabs(operation) | type_text(text) | wait_for(selector) | evaluate(code)
   terminal  : execute(command) | execute_background(command)
-  files     : move(src,dst) | copy(src,dst) | rename(src,new_name) | delete(path) | organize_by_type(dir) | list_dir(path) | watch(path)
+  files     : move(source,destination) | copy(source,destination) | rename(source,new_name) | delete(path) | organize_by_type(directory) | list_dir(path) | watch(directory) | write_file(path,content) | read_file(path) | create_dir(path)
   apps      : open_app(name, wait_seconds=2) | press_keys(keys=[...]) | type_text(text) | list_apps(filter) | scan_apps()
   messaging : send_message(app, contact, text) | open_chat(app, contact)   [app="whatsapp" or "telegram"]
   vision    : capture_screen() | click_at(x,y) | type_text(text) | press_keys(keys=[...]) | scroll(clicks) | move_mouse(x,y)
@@ -102,7 +103,7 @@ RULES:
   - Use exact paths, URLs, and names from the intent
   - OS is Windows 11. Terminal = PowerShell syntax:
       * Use Move-Item, Copy-Item, Remove-Item, New-Item (NOT mv/cp/rm/mkdir)
-      * Paths use backslash: C:\\\\Users\\\\$env:USERNAME\\\\Downloads
+      * Paths use backslash: C:\\Users\\$env:USERNAME\\Downloads
       * Expand ~ as $env:USERPROFILE in PowerShell commands
       * Chain commands with ; not &&
       * Create dirs: New-Item -ItemType Directory -Force -Path <path>
@@ -117,14 +118,48 @@ BROWSER RULES - MANDATORY:
   - Always pass browser="chrome" when user says chrome, browser="edge" when user says edge.
   - No browser specified: use browser="edge" as default.
 
-NOTEPAD / TEXT EDITOR RULES - MANDATORY:
-  - To create a NEW file and type content in it, use 3 steps:
-      1. terminal.execute: New-Item -Path "$env:USERPROFILE\\Desktop\\<filename>.txt" -ItemType File -Force
-      2. terminal.execute: Start-Process notepad.exe "$env:USERPROFILE\\Desktop\\<filename>.txt" ; Start-Sleep -Seconds 2
-      3. apps.type_text: text="<content to type>"
-  - NEVER put a file path inside apps.open_app name (it looks up apps.json, not file paths).
-  - NEVER skip file creation. NEVER type without first opening the correct window.
+VS CODE RULES - MANDATORY:
+  - To open a file in VS Code: apps.open_app(name="visual studio code <filepath>")
+    e.g. apps.open_app(name="visual studio code D:\\main.py")
+  - NEVER use terminal.execute with "code" or "code.exe" — it is NOT in PATH on most systems.
+  - The apps.open_app skill handles splitting "visual studio code D:\\path" into the app + file argument.
+  - To open VS Code without a file: apps.open_app(name="visual studio code")
+
+FILE CREATION + CODE WRITING RULES - MANDATORY:
+  - To create a file with code content, use files.write_file(path, content):
+      files.write_file(path="D:\\main.py", content="print('hello')")
+    This is ALWAYS preferred over typing into a text editor.
+  - For multi-line code, use \\n inside the content string.
+  - If the user says "write code" or "type code" in a file, ALWAYS use files.write_file first,
+    then open the file in the editor (VS Code or notepad).
+  - The correct order is: 1) write file, 2) open in editor. Never type code character-by-character.
+
+NOTEPAD / TEXT EDITOR RULES:
+  - To open a file in Notepad: apps.open_app(name="notepad <filepath>")
+  - To create a file with content and open in Notepad:
+      1. files.write_file(path="<filepath>", content="<content>")
+      2. apps.open_app(name="notepad <filepath>")
+  - NEVER put a file path inside apps.open_app name without a known app prefix.
   - If no path specified, save to Desktop by default.
+
+APP OPENING RULES:
+  - For any app (VS Code, Notepad, Calculator, etc.), use apps.open_app(name="<app name>").
+  - The name is matched against apps.json (case-insensitive, partial match).
+  - To open an app with a file argument, concatenate: apps.open_app(name="<app> <filepath>")
+
+COMPLEX TASK GUIDELINES:
+  - Break complex tasks into sequential, atomic steps.
+  - Each step should do ONE thing. Don't combine unrelated operations.
+  - For "create a file, open it, and write code":
+      1. files.write_file(path, content)     — create the file with code
+      2. apps.open_app(name="vscode <path>") — open in editor
+  - For "organize downloads, create a report, and email it":
+      1. files.organize_by_type(directory=...)
+      2. files.write_file(path=..., content=...) — create report
+      3. messaging/browser step to send it
+  - For multi-file operations, generate one step per file.
+  - For conditional logic (if X then Y), plan the most likely path.
+  - Maximum 15 steps per plan. If more are needed, group related ops.
 {dynamic}"""
 
 # Per-call user message — schema enforced here (Gemini follows user turns more reliably)
@@ -209,6 +244,29 @@ class Planner:
                 for name, steps in macros.items():
                     lines.append(f"  {name}: " + " | ".join(steps))
                 parts.append("\n".join(lines))
+
+        # Inject top installed app names so the LLM knows what's available
+        try:
+            apps_json = Path(__file__).parent.parent / "apps.json"
+            if apps_json.exists():
+                import json as _json
+                with open(apps_json, "r", encoding="utf-8") as f:
+                    app_names = list(_json.load(f).keys())
+                # Include a subset of the most relevant apps (keep prompt lean)
+                relevant = [n for n in app_names if any(kw in n for kw in [
+                    "code", "notepad", "terminal", "powershell", "excel", "word",
+                    "chrome", "edge", "firefox", "explorer", "calculator", "paint",
+                    "outlook", "teams", "steam", "discord", "spotify", "vlc",
+                    "whatsapp", "telegram", "signal", "slack",
+                ])]
+                if relevant:
+                    parts.append(
+                        "INSTALLED APPS (use these exact names with apps.open_app):\n"
+                        + ", ".join(f'"{n}"' for n in sorted(relevant))
+                    )
+        except Exception:
+            pass
+
         return ("\n" + "\n".join(parts) + "\n") if parts else "\n"
 
     def _system_prompt(self) -> str:
@@ -225,7 +283,7 @@ class Planner:
         return genai_types.GenerateContentConfig(
             system_instruction=self._system_prompt(),
             temperature=0.1,
-            max_output_tokens=2048,
+            max_output_tokens=4096,
         )
 
     def _replan_config(self) -> "genai_types.GenerateContentConfig":
@@ -233,7 +291,7 @@ class Planner:
         return genai_types.GenerateContentConfig(
             system_instruction=self._system_prompt(),
             temperature=0.1,
-            max_output_tokens=2048,
+            max_output_tokens=4096,
         )
 
     # ------------------------------------------------------------------

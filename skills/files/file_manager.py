@@ -59,9 +59,13 @@ class FileManager:
     async def execute(self, action: str, params: dict) -> str:
         """Dispatch a file action."""
         # Resolve env vars / ~ in all path-like string params
+        # (skip 'content' — it's raw text, not a path)
         resolved = {}
         for k, v in params.items():
-            resolved[k] = self._resolve(v) if isinstance(v, str) else v
+            if k == "content":
+                resolved[k] = v
+            else:
+                resolved[k] = self._resolve(v) if isinstance(v, str) else v
 
         actions = {
             "move":            self.move,
@@ -73,6 +77,9 @@ class FileManager:
             "find_duplicates": self.find_duplicates,
             "list_dir":        self.list_directory,
             "watch":           self.start_watch,
+            "write_file":      self.write_file,
+            "read_file":       self.read_file,
+            "create_dir":      self.create_dir,
         }
         handler = actions.get(action)
         if not handler:
@@ -125,6 +132,34 @@ class FileManager:
         else:
             target.unlink()
         return f"Deleted {path}"
+
+    async def write_file(self, path: str, content: str, append: bool = False, **kwargs) -> str:
+        """Write content to a file. Creates parent directories if needed."""
+        file_path = Path(path)
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        mode = "a" if append else "w"
+        with open(file_path, mode, encoding="utf-8", newline="\n") as f:
+            f.write(content)
+        action = "Appended to" if append else "Written"
+        return f"{action} {path} ({len(content)} chars)"
+
+    async def read_file(self, path: str, **kwargs) -> str:
+        """Read the contents of a file."""
+        file_path = Path(path)
+        if not file_path.exists():
+            raise FileNotFoundError(f"File not found: {path}")
+        if not file_path.is_file():
+            raise ValueError(f"Not a file: {path}")
+        content = file_path.read_text(encoding="utf-8", errors="replace")
+        if len(content) > 10000:
+            content = content[:10000] + f"\n... (truncated, {len(content)} total chars)"
+        return content
+
+    async def create_dir(self, path: str, **kwargs) -> str:
+        """Create a directory (and parents if needed)."""
+        dir_path = Path(path)
+        dir_path.mkdir(parents=True, exist_ok=True)
+        return f"Directory created: {path}"
 
     async def organize_by_type(self, directory: str, **kwargs) -> str:
         """Organize files in a directory by file type into subdirectories."""

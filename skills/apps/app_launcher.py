@@ -110,15 +110,34 @@ def _press_keys_sync(keys: list[str], interval: float = 0.05) -> str:
 
 
 def _type_text_sync(text: str, interval: float = 0.03) -> str:
-    """Type a string of text character by character."""
+    """Type a string of text. For multi-line text, uses clipboard paste."""
     try:
         import pyautogui
-        pyautogui.write(text, interval=interval)
-        return f"Typed: {text}"
+
+        # If text contains newlines, use clipboard paste (pyautogui.write can't do \n)
+        if "\n" in text:
+            try:
+                import pyperclip
+                pyperclip.copy(text)
+                pyautogui.hotkey("ctrl", "v", interval=0.05)
+                return f"Typed: {text}"
+            except ImportError:
+                # Fallback: type line by line with Enter
+                lines = text.split("\n")
+                for i, line in enumerate(lines):
+                    if line:
+                        pyautogui.write(line, interval=interval)
+                    if i < len(lines) - 1:
+                        pyautogui.press("enter")
+                return f"Typed: {text}"
+        else:
+            pyautogui.write(text, interval=interval)
+            return f"Typed: {text}"
     except ImportError:
         return "PyAutoGUI not installed — cannot type text"
     except Exception as e:
         return f"Type failed: {e}"
+
 
 
 class AppLauncher:
@@ -169,14 +188,33 @@ class AppLauncher:
         """
         apps = _load_apps()
 
-        # --- Split "notepad path\to\file.txt" into exe + optional arg ---
+        # --- Match longest app name prefix to support multi-word apps + args ---
         raw = name.strip()
-        parts = raw.split(None, 1)               # split on first whitespace
-        exe_name  = parts[0]                     # e.g. "notepad"
-        file_arg  = _expand_ps_vars(parts[1]) if len(parts) > 1 else ""  # expanded path
-
-        # --- Try apps.json: full name first, then just the exe part ---
-        entry = _find_app(raw, apps) or _find_app(exe_name, apps)
+        raw_lower = raw.lower()
+        
+        matched_app_name = None
+        entry = None
+        
+        # Sort known apps by length descending to match "visual studio code" before "visual studio"
+        sorted_keys = sorted(apps.keys(), key=len, reverse=True)
+        for key in sorted_keys:
+            if raw_lower.startswith(key):
+                # Ensure word boundary
+                if len(raw_lower) == len(key) or raw_lower[len(key)] == ' ':
+                    matched_app_name = key
+                    entry = apps[key]
+                    break
+        
+        if entry:
+            exe_name = matched_app_name
+            arg_str = raw[len(matched_app_name):].strip()
+            file_arg = _expand_ps_vars(arg_str) if arg_str else ""
+        else:
+            # Fallback for unknown apps or fuzzy matches without spaces
+            parts = raw.split(None, 1)
+            exe_name = parts[0]
+            file_arg = _expand_ps_vars(parts[1]) if len(parts) > 1 else ""
+            entry = _find_app(raw, apps) or _find_app(exe_name, apps)
 
         launched = False
 
