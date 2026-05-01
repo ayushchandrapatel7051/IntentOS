@@ -47,7 +47,12 @@ Supported action groups:
 import asyncio
 import json
 import logging
+import os
 import re
+import subprocess
+import sys
+import time
+from pathlib import Path
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -59,6 +64,118 @@ try:
 except ImportError:
     websockets = None
     _WS_OK = False
+
+
+# ---------------------------------------------------------------------------
+# Chrome launch helper
+# ---------------------------------------------------------------------------
+
+_CHROME_PATHS = [
+    r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+    r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    str(Path.home() / "AppData" / "Local" / "Google" / "Chrome" / "Application" / "chrome.exe"),
+]
+
+
+def _find_chrome() -> Optional[str]:
+    for p in _CHROME_PATHS:
+        if Path(p).exists():
+            return p
+    return None
+
+
+async def _force_chrome_window(url: str = "about:blank") -> None:
+    """
+    Unconditionally open a new Chrome window with the given URL.
+    Used as a recovery action when the extension reports 'No current window'.
+    chrome.exe can run as a background process (for notifications) with ZERO
+    visible windows — the tasklist check is unreliable, so we skip it entirely
+    and just force a new window via subprocess.
+    """
+    chrome = _find_chrome()
+    if not chrome:
+        logger.warning("[ExtensionBridge] Chrome not found -- cannot auto-open window")
+        return
+    logger.info(f"[ExtensionBridge] Forcing new Chrome window: {url}")
+    subprocess.Popen([chrome, "--new-window", url], shell=False)
+    # Give Chrome time to create the window and let the extension settle
+    await asyncio.sleep(4)
+
+
+async def _try_subprocess_navigation(command: str, params: dict) -> Optional[str]:
+    """
+    For commands that simply open a URL, bypass chrome.tabs.create entirely
+    and use subprocess instead. This is 100% reliable regardless of Chrome's
+    window state.
+
+    Returns the URL that was opened (str), or None if this command should
+    still be handled by the extension (DOM manipulation etc).
+    """
+    chrome = _find_chrome()
+    if not chrome:
+        return None  # No Chrome found -- fall back to extension
+
+    def _launch(url: str) -> str:
+        subprocess.Popen([chrome, url], shell=False)
+        return url
+
+    if command == "navigate":
+        url = params.get("url", "")
+        if url and url != "about:blank":
+            await asyncio.to_thread(_launch, url)
+            return url
+        return None
+
+    if command == "searchYouTube":
+        from urllib.parse import quote
+        query = params.get("query", "")
+        url = f"https://www.youtube.com/results?search_query={quote(query)}"
+        await asyncio.to_thread(_launch, url)
+        return url
+
+    if command in ("composeMail", "sendMail"):
+        to      = params.get("to", "")
+        subject = params.get("subject", "") or params.get("su", "")
+        body    = params.get("body", "")
+        from urllib.parse import quote
+        url = (
+            f"https://mail.google.com/mail/?view=cm&fs=1"
+            f"&to={quote(to)}&su={quote(subject)}&body={quote(body)}"
+        )
+        await asyncio.to_thread(_launch, url)
+        return url
+
+    if command == "searchMail":
+        from urllib.parse import quote
+        url = f"https://mail.google.com/mail/u/0/#search/{quote(params.get('query', ''))}"
+        await asyncio.to_thread(_launch, url)
+        return url
+
+    if command == "openCalendar":
+        url = "https://calendar.google.com"
+        await asyncio.to_thread(_launch, url)
+        return url
+
+    if command == "searchDrive":
+        from urllib.parse import quote
+        url = f"https://drive.google.com/drive/search?q={quote(params.get('query', ''))}"
+        await asyncio.to_thread(_launch, url)
+        return url
+
+    if command == "openDriveFile":
+        file_id = params.get("fileId", "")
+        url = f"https://drive.google.com/file/d/{file_id}/view"
+        await asyncio.to_thread(_launch, url)
+        return url
+
+    if command == "joinMeet":
+        url = params.get("url", "")
+        if url:
+            await asyncio.to_thread(_launch, url)
+            return url
+
+    # All other commands (DOM manipulation, YouTube control, etc.) go to extension
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -219,7 +336,6 @@ class ExtensionBridge:
             close_timeout=10,
         )
         logger.info(f"[ExtensionBridge] WebSocket server on ws://127.0.0.1:{self.port}")
-        print(f"[ExtensionBridge] Listening on ws://127.0.0.1:{self.port}")
 
     async def stop_server(self):
         if self.server:
@@ -239,7 +355,7 @@ class ExtensionBridge:
         self.extension_ws = websocket
         self._is_connected = True
         if not was_connected:
-            print("[ExtensionBridge] ✓ Chrome extension connected")
+            logger.debug("[ExtensionBridge] ✓ Chrome extension connected")
         try:
             async for raw in websocket:
                 try:
@@ -258,7 +374,7 @@ class ExtensionBridge:
         except websockets.ConnectionClosed:
             pass  # Normal close — don't spam
         except Exception as e:
-            print(f"[ExtensionBridge] Connection error: {type(e).__name__}: {e}")
+            logger.error(f"[ExtensionBridge] Connection error: {type(e).__name__}: {e}")
         finally:
             self.extension_ws = None
             self._is_connected = False
@@ -329,18 +445,60 @@ class ExtensionBridge:
         # Normalise action name to camelCase extension command
         command = _normalise(action)
 
-        logger.info(f"[ExtensionBridge] {action} → {command}({json.dumps(params)})")
+        logger.info(f"[ExtensionBridge] {action} -> {command}({json.dumps(params)})")
 
         # Remap param keys that the planner might use differently
         params = _remap_params(command, params)
 
-        result = await self._send(command, params)
+        # Subprocess-first navigation: open URLs via subprocess (always works),
+        # then query extension for the resulting tabId. This completely avoids
+        # chrome.tabs.create "No current window" errors.
+        subprocess_result = await _try_subprocess_navigation(command, params)
+        if subprocess_result is not None:
+            # Wait for extension to connect if Chrome was just launched cold
+            for _ in range(16):
+                if self.is_connected:
+                    break
+                await asyncio.sleep(0.5)
+            await asyncio.sleep(1) # Give Chrome a moment to finalize tab url
+            try:
+                tabs_data = await self._send("getTabs", {})
+                tabs = tabs_data.get("tabs", [])
+                target_url = subprocess_result
+                matched = None
+                for tab in reversed(tabs):
+                    tab_url = tab.get("url", "")
+                    if target_url and (
+                        target_url.rstrip("/") in tab_url
+                        or tab_url.startswith(target_url.split("?")[0])
+                    ):
+                        matched = tab
+                        break
+                if matched is None and tabs:
+                    matched = tabs[-1]
+                tab_id = matched["id"] if matched else None
+                return _format_result(command, {"tabId": tab_id, "url": target_url})
+            except Exception:
+                return _format_result(command, {"tabId": None, "url": subprocess_result})
 
-        # Strip internal fields
-        result.pop("id", None)
-        result.pop("success", None)
+        # Extension-based commands (DOM manipulation, non-navigation)
+        last_err: Exception = None
+        for attempt in range(2):
+            try:
+                result = await self._send(command, params)
+                result.pop("id", None)
+                result.pop("success", None)
+                return _format_result(command, result)
+            except RuntimeError as e:
+                last_err = e
+                if "No current window" in str(e) and attempt == 0:
+                    target_url = params.get("url", "about:blank") or "about:blank"
+                    print(f"  [ExtensionBridge] No window -- opening Chrome and retrying '{command}'...")
+                    await _force_chrome_window(target_url)
+                else:
+                    raise
 
-        return _format_result(command, result)
+        raise last_err
 
 
 # ---------------------------------------------------------------------------
@@ -351,6 +509,10 @@ def _remap_params(command: str, params: dict) -> dict:
     """
     Normalise param names the planner might generate in various forms.
     e.g.  video_index → videoIndex,  tab_id → tabId, etc.
+
+    Also sanitises tab_id=0 / tab_id≤0 — the extension's chrome.tabs.get(0)
+    throws "No matching signature", so we remove invalid tab IDs and let
+    the extension fall back to the active tab via resolveTabId().
     """
     mapping = {
         "video_index":   "videoIndex",
@@ -361,7 +523,17 @@ def _remap_params(command: str, params: dict) -> dict:
     }
     out = {}
     for k, v in params.items():
-        out[mapping.get(k, k)] = v
+        mapped_key = mapping.get(k, k)
+        out[mapped_key] = v
+
+    # Remove invalid tabId values (0, negative, None, "0", etc.)
+    if "tabId" in out:
+        try:
+            tid = int(out["tabId"])
+            if tid <= 0:
+                del out["tabId"]
+        except (TypeError, ValueError):
+            del out["tabId"]  # String like "last" — remove; resolveTabId handles it
     return out
 
 
@@ -380,6 +552,8 @@ def _format_result(command: str, result: dict) -> str:
             return f"[YouTube] Playing #{result.get('videoIndex',1)}: \"{result['title']}\""
         if result.get("warning"):
             return f"[YouTube] Warning: {result['warning']}"
+        if result.get("url"):
+            return f"[YouTube] Opened search results: {result['url']}"
         return f"[YouTube] Searched for: {result.get('searched','')}"
 
     if command in ("playYouTube", "pauseYouTube", "nextVideo"):
@@ -463,36 +637,74 @@ _WEB_AGENT_PROMPT = """You are a browser automation agent. You are given:
 2. The current PAGE URL and TITLE
 3. A list of INTERACTIVE ELEMENTS on the page (inputs, buttons, links, selects)
 
-Your job: decide what DOM actions to perform to accomplish the task.
+Your job: decide the MINIMUM set of DOM actions needed to accomplish the task, then STOP.
 
 Output a JSON array of actions. Each action is one of:
-- {{"action":"fill", "selector":"CSS_SELECTOR", "value":"TEXT_TO_TYPE"}}
-- {{"action":"click", "selector":"CSS_SELECTOR"}}
-- {{"action":"select", "selector":"CSS_SELECTOR", "value":"OPTION_VALUE"}}
-- {{"action":"check", "selector":"CSS_SELECTOR", "value":true}}
-- {{"action":"scroll", "selector":"CSS_SELECTOR"}}  ← e.g. selector "body" to scroll down
-- {{"action":"done", "message":"WHAT_WAS_ACCOMPLISHED"}}  ← if task is complete
-- {{"action":"navigate", "url":"URL"}}  ← if need to go to a different page
+- {"action":"fill", "selector":"CSS_SELECTOR", "value":"TEXT_TO_TYPE"}
+- {"action":"fill_react", "selector":"CSS_SELECTOR", "value":"TEXT_TO_TYPE"}  ← React/SPA inputs (ChatGPT, Notion)
+- {"action":"click", "selector":"CSS_SELECTOR"}
+- {"action":"enter", "selector":"CSS_SELECTOR"}  ← press Enter on an input (use for search bars)
+- {"action":"select", "selector":"CSS_SELECTOR", "value":"OPTION_VALUE"}
+- {"action":"check", "selector":"CSS_SELECTOR", "value":true}
+- {"action":"scroll", "selector":"CSS_SELECTOR"}  ← only when element is NOT in list yet
+- {"action":"navigate", "url":"URL"}  ← navigate to a different page
+- {"action":"done", "message":"WHAT_WAS_ACCOMPLISHED"}  ← TASK IS COMPLETE, STOP NOW
 
-Rules:
-- Use ONLY selectors from the elements list — don't invent selectors.
-- If you need to find an element (like a comment box) that isn't in the list, use {"action":"scroll", "selector":"body"} to load more content.
-- Fill ALL required fields if the task involves form submission.
-- For registration forms: use placeholder/dummy data unless the user gave specifics.
-  Use: First name=Test, Last name=User, Email=testuser@example.com, Phone=1234567890, Password=TestPass123!
-- After filling all fields, include a "click" action for the submit/register button.
-- Output ONLY the JSON array, no markdown, no explanation.
-- If the task is already done (e.g. success message visible), return [{{"action":"done","message":"..."}}]
+CRITICAL RULES — read carefully:
+1. Use ONLY selectors from the elements list. Never invent selectors.
+2. Output ONLY the JSON array. No markdown, no explanation, no comments.
+3. ALWAYS include {"action":"done",...} in the SAME array as the final action — never rely on a next iteration to stop.
+
+DONE DETECTION — return [{"action":"done",...}] immediately when:
+- The PAGE URL contains "/watch?v=" or "music.youtube.com/watch" → video is playing, STOP NOW.
+- You are on a YouTube video page for ANY reason — do NOT click Back, do NOT navigate away, STOP.
+- A success/confirmation message is visible on the page.
+- The task has already been completed (e.g., email sent, form submitted, message typed and sent).
+
+ONE-SHOT ACTIONS — do these ONCE then stop immediately:
+These actions must ALWAYS include "done" in the same JSON array right after the click:
+  - Like / Heart a post → [scroll_if_needed, click(like_button), done("Liked the post")]
+  - Follow / Unfollow → [click(follow_button), done("Followed the user")]
+  - Retweet / Share → [click(retweet_button), done("Retweeted the post")]
+  - Bookmark / Save → [click(bookmark_button), done("Bookmarked the post")]
+  - Subscribe / Unsubscribe → [click(subscribe_button), done("Subscribed")]
+  - Upvote / Downvote → [click(vote_button), done("Voted")]
+*** After ONE successful click on a like/follow/retweet/subscribe button → STOP. Do NOT repeat. ***
+
+SEARCH BAR RULES:
+- For YouTube, Google, YouTube Music: use "fill" then "enter" on the SAME input selector.
+- Do NOT use "fill" then "click(#button)" — search bars need Enter, not a button click.
+- Example: [{"action":"fill","selector":"input[name='search_query']","value":"kaho na kaho"}, {"action":"enter","selector":"input[name='search_query']"}]
+
+CHATGPT / CHAT APP RULES (chat.openai.com, chatgpt.com):
+- STEP 1: "fill_react" on the textarea/input selector from the elements list.
+- STEP 2: "enter" on the EXACT SAME selector — this sends the message.
+- STEP 3: Include "done" in the SAME JSON array — do not wait for AI response.
+- *** NEVER click any button to send *** — NEVER use "click" on a submit/send button.
+- *** NEVER invent selectors *** like "#composer-submit-button" — only use selectors from the list.
+- Correct pattern: [fill_react(selector, text), enter(selector), done(message)]
+
+REACT/SPA RULES:
+- For ChatGPT, Google Docs, Notion, Slack: use "fill_react" for text inputs.
+- After "fill_react", ALWAYS use "enter" on the same selector — NEVER click a submit button.
+
+GENERAL RULES:
+- If the search box is visible: fill it directly, do NOT scroll first.
+- Only scroll if the target element is genuinely absent from the elements list.
+- For forms: fill all required fields, then click submit or use "enter".
+- After clicking a video/link that opens a new page: return [{"action":"done","message":"..."}].
+- Do NOT keep clicking once the task is accomplished. Stop immediately.
 """
 
 
 async def run_web_agent(bridge: ExtensionBridge, task: str, url: str = None,
+                        tab_id: int = None,
                         gemini_client=None, model_name: str = "gemini-2.5-flash",
                         max_iterations: int = 5) -> str:
     """
     Run the agentic web interaction loop.
 
-    1. Navigate to URL (if provided)
+    1. Navigate to URL (if provided and no tab_id given)
     2. Extract page elements via extension
     3. Send elements + task to Gemini → get actions
     4. Execute actions via extension
@@ -501,7 +713,8 @@ async def run_web_agent(bridge: ExtensionBridge, task: str, url: str = None,
     Args:
         bridge: connected ExtensionBridge instance
         task: what the user wants to accomplish
-        url: optional URL to navigate to first
+        url: optional URL to navigate to first (ignored if tab_id is given)
+        tab_id: optional specific tab to operate on (from a prior navigate step)
         gemini_client: google.genai.Client instance (from Planner)
         model_name: Gemini model to use
         max_iterations: max pages to interact with (safety limit)
@@ -523,15 +736,26 @@ async def run_web_agent(bridge: ExtensionBridge, task: str, url: str = None,
 
     results_log = []
     last_actions_str = ""
+    consecutive_scroll_only = 0  # stall detection: too many scroll-only rounds
+    done_actions = []  # initialise here so stall-detection can reference it
+    last_page_url = ""
 
-    # Step 1: Navigate if URL given and it looks valid
-    tab_id = None
-    if url and not url.endswith("=") and "..." not in url and url != "https://":
+    # Step 1: Navigate if URL given and no specific tab_id was provided
+    if tab_id:
+        # We already have a tab from the prior navigate step — switch to it
+        results_log.append(f"Using existing tab {tab_id}")
+        try:
+            await bridge._send("switchTab", {"tabId": tab_id})
+        except Exception:
+            pass  # Non-fatal; the tab might already be active
+        # Give the tab 5 s to finish loading before we extract elements
+        await asyncio.sleep(5)
+    elif url and not url.endswith("=") and "..." not in url and url != "https://":
         nav_result = await bridge._send("navigate", {"url": url, "newTab": False})
         tab_id = nav_result.get("tabId")
         results_log.append(f"Navigated to {url}")
-        # Wait for page to load
-        await asyncio.sleep(3)
+        # Wait for complex SPAs (YouTube Music, ChatGPT) to fully render
+        await asyncio.sleep(5)
 
     for iteration in range(max_iterations):
         # Step 2: Extract page elements
@@ -591,7 +815,7 @@ async def run_web_agent(bridge: ExtensionBridge, task: str, url: str = None,
                 config=genai_types.GenerateContentConfig(
                     system_instruction=_WEB_AGENT_PROMPT,
                     temperature=0.1,
-                    max_output_tokens=2048,
+                    max_output_tokens=8192,
                 ),
             )
             # Extract text safely
@@ -627,7 +851,7 @@ async def run_web_agent(bridge: ExtensionBridge, task: str, url: str = None,
         if not isinstance(actions, list):
             actions = [actions]
 
-        # Loop protection
+        # Loop protection: identical actions
         current_actions_str = json.dumps(actions, sort_keys=True)
         if current_actions_str == last_actions_str:
             results_log.append("Detected action loop (same actions as last step). Stopping.")
@@ -635,27 +859,39 @@ async def run_web_agent(bridge: ExtensionBridge, task: str, url: str = None,
             break
         last_actions_str = current_actions_str
 
-        # Check for "done" action
-        done_actions = [a for a in actions if a.get("action") == "done"]
-        if done_actions:
-            msg = done_actions[0].get("message", "Task completed")
-            results_log.append(f"✓ {msg}")
-            print(f"  [WebAgent] Done: {msg}")
-            break
+        # Split action types up front
+        done_actions   = [a for a in actions if a.get("action") == "done"]
+        nav_actions    = [a for a in actions if a.get("action") == "navigate"]
+        dom_actions    = [a for a in actions if a.get("action") in (
+            "fill", "fill_react", "click", "enter", "select", "check", "scroll"
+        )]
 
-        # Check for "navigate" action
-        nav_actions = [a for a in actions if a.get("action") == "navigate"]
+        # Stall detection: if every non-done action this round is just "scroll"
+        non_scroll = [a for a in actions if a.get("action") not in ("scroll", "done")]
+        if not non_scroll and not done_actions:
+            consecutive_scroll_only += 1
+            if consecutive_scroll_only >= 2:
+                results_log.append("Stalled: agent only scrolling with no progress. Stopping.")
+                print("  [WebAgent] Scroll-only stall detected. Stopping.")
+                break
+        else:
+            consecutive_scroll_only = 0
+
+        # Handle navigate action (goes to a new URL, then restart the loop)
         if nav_actions:
             new_url = nav_actions[0].get("url", "")
             if new_url:
                 nav_result = await bridge._send("navigate", {"url": new_url, "newTab": False})
                 tab_id = nav_result.get("tabId")
                 results_log.append(f"Navigated to {new_url}")
-                await asyncio.sleep(3)
+                await asyncio.sleep(5)  # wait for page to load
                 continue
 
-        # Step 5: Execute DOM actions
-        dom_actions = [a for a in actions if a.get("action") in ("fill", "click", "select", "check", "scroll")]
+        # ── Step 5: Execute DOM actions FIRST, then honor done ──────────
+        # IMPORTANT: done_actions are processed AFTER DOM actions so that
+        # [fill_react(input, text), enter(input), done("sent")] works correctly
+        # — the fill and enter happen before we stop the loop.
+        exec_result = {"performed": 0, "total": 0, "results": []}
         if dom_actions:
             print(f"  [WebAgent] Executing {len(dom_actions)} actions...")
             exec_result = await bridge._send("performActions", {
@@ -681,9 +917,51 @@ async def run_web_agent(bridge: ExtensionBridge, task: str, url: str = None,
                 else:
                     results_log.append(f"  ✗ {r['action']}({r['selector']}): {r.get('error')}")
 
-            # Wait for page to potentially update after actions (e.g., form submission)
-            await asyncio.sleep(2)
-        else:
+            # Wait for page to update after actions
+            await asyncio.sleep(3)
+
+        # ── Now honor done (LLM signals task is complete after its actions) ──
+        if done_actions:
+            msg = done_actions[0].get("message", "Task completed")
+            results_log.append(f"✓ {msg}")
+            print(f"  [WebAgent] Done: {msg}")
+            break
+
+        # ── Auto-done detection ───────────────────────────────────────────
+        # 1. YouTube watch page → video is playing, always stop.
+        # 2. One-shot social action (like/follow/retweet) + successful click → stop.
+        _ONE_SHOT_KEYWORDS = (
+            "like", "heart", "follow", "retweet", "share",
+            "bookmark", "save", "subscribe", "upvote", "vote",
+        )
+        task_lower = task.lower()
+        is_one_shot_task = any(kw in task_lower for kw in _ONE_SHOT_KEYWORDS)
+        had_successful_click = any(
+            r.get("ok") and r.get("action") == "click"
+            for r in exec_result.get("results", [])
+        )
+
+        try:
+            post_data = await bridge._send("extractPage", {"tabId": tab_id}, timeout=10)
+            current_url = post_data.get("url", "")
+            current_title = post_data.get("title", "")
+            _DONE_URL_PATTERNS = ("/watch?v=", "music.youtube.com/watch", "/v/")
+            if any(p in current_url for p in _DONE_URL_PATTERNS):
+                results_log.append(f"  ✓ Video playing: {current_title}")
+                print(f"  [WebAgent] Auto-done: landed on watch page — {current_title}")
+                break
+            if is_one_shot_task and had_successful_click:
+                results_log.append(f"  ✓ One-shot action completed (auto-done)")
+                print(f"  [WebAgent] Auto-done: one-shot social action completed")
+                break
+        except Exception:
+            # Non-fatal — but still apply one-shot auto-done without URL check
+            if is_one_shot_task and had_successful_click:
+                results_log.append(f"  ✓ One-shot action completed (auto-done)")
+                print(f"  [WebAgent] Auto-done: one-shot social action completed")
+                break
+
+        if not dom_actions and not nav_actions and not done_actions:
             results_log.append("No executable actions returned by LLM")
             break
     else:

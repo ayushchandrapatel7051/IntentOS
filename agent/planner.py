@@ -89,8 +89,8 @@ You are IntentOS Planner. Convert user intents into JSON action plans.
 You must handle COMPLEX, multi-step tasks reliably.
 
 SKILLS:
-  browser   : navigate(url, browser="edge") | search(query, engine="google") | youtube_search(query, video_index=1, browser="chrome") | fill_form(selector,value) | click(selector) | extract_text(selector) | screenshot() | manage_tabs(operation) | type_text(text) | wait_for(selector) | evaluate(code)
-  extension : [YouTube]  searchYouTube(query, video_index=1, autoplay=true) | playYouTube() | pauseYouTube() | setVolume(level=50) | seekTo(seconds) | getVideoInfo() | nextVideo()
+  browser   : navigate(url, browser="edge") | search(query, engine="google") | fill_form(selector,value) | click(selector) | extract_text(selector) | screenshot() | manage_tabs(operation) | type_text(text) | wait_for(selector) | evaluate(code)
+  extension : [YouTube]  playYouTube() | pauseYouTube() | setVolume(level=50) | seekTo(seconds) | getVideoInfo() | nextVideo()
              [Gmail]    sendMail(to, subject, body) | composeMail(to, subject, body, send=false) | searchMail(query) | getUnread() | replyMail(tab_id, body)
              [Calendar] createEvent(title, date="YYYY-MM-DD", time="HH:MM", duration=60, guests="a@b.com", meet=false) | openCalendar() | getEvents(date)
              [Meet]     joinMeet(url) | scheduleMeet(title, date, time, duration=60, guests) | muteMic() | muteCamera() | leaveMeet()
@@ -157,10 +157,11 @@ EXTENSION SKILL RULES - MANDATORY (use extension, not browser, for these):
 
 BROWSER RULES - MANDATORY:
 
-  - For "play Nth YouTube video" or "open YouTube and search X and play Nth":
-      ALWAYS use ONE step: browser.youtube_search(query="X", video_index=N, browser="chrome")
-      NEVER split this into navigate + click — they run in different browser instances and will time out.
-      video_index is 1-based: first=1, second=2, third=3, fourth=4, etc.
+  - For "play a song", "play YouTube video", or "play YouTube Music":
+      ALWAYS use TWO steps:
+        step 1: browser.navigate(url="https://music.youtube.com" or "https://www.youtube.com", browser="chrome")
+        step 2: extension.web_agent(url="", task="Search for 'X' and play the first result")
+      NEVER use searchYouTube or youtube_search (they have been removed).
   - NEVER use apps.open_app for any browser (edge, chrome, firefox). The browser skill opens the browser automatically.
   - Combine open+navigate into ONE step: browser.navigate(url=..., browser="chrome" or "edge")
   - "open chrome" or "open chrome and search X" -> browser.navigate(url="https://www.google.com/search?q=X", browser="chrome")
@@ -168,7 +169,7 @@ BROWSER RULES - MANDATORY:
   - "open edge" with no query -> browser.navigate(url="https://www.bing.com", browser="edge")
   - "open chrome" with no query -> browser.navigate(url="https://www.google.com", browser="chrome")
   - Always pass browser="chrome" when user says chrome, browser="edge" when user says edge.
-  - No browser specified: use browser="edge" as default.
+  - No browser specified: use browser="chrome" as default.
 
 VS CODE RULES - MANDATORY:
   - To open a file in VS Code: apps.open_app(name="visual studio code <filepath>")
@@ -489,7 +490,7 @@ class Planner:
                 "Check your credentials.json permissions and GCP_PROJECT in .env."
             )
         raw = self._safe_text(response)
-        print(f"[Planner] Raw: {raw[:300]}")
+        print(f"[Planner] Raw: {raw[:1000]}")
         return self._parse(raw, intent)
 
     async def replan(

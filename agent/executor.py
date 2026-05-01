@@ -62,9 +62,11 @@ _EXTENSION_ROUTABLE_ACTIONS = {
 # URL patterns — if a navigate/search goes to these domains and the extension
 # is connected, prefer the extension's navigate (opens tab in real Chrome).
 _GOOGLE_DOMAINS = {
-    "youtube.com", "mail.google.com", "gmail.com",
+    "youtube.com", "music.youtube.com", "mail.google.com", "gmail.com",
     "calendar.google.com", "meet.google.com",
     "drive.google.com", "docs.google.com",
+    # Non-Google but web-agent-compatible SPAs
+    "chat.openai.com", "chatgpt.com",
 }
 
 
@@ -77,19 +79,23 @@ def _should_route_to_extension(skill: str, action: str, params: dict) -> bool:
     """
     Returns True if this step should be redirected to the extension skill.
     Conditions:
-      1. Planner chose 'browser' (or any skill)
-      2. Action is in the extension routing table
-      OR navigate/search URL is a Google-managed domain.
+      1. Action is in the extension routing table (YouTube, Gmail, etc.)
+      2. OR action is "navigate" / "search" — ALL navigations go through the
+         extension's subprocess bridge so Chrome tab IDs are always tracked,
+         regardless of which domain the URL belongs to.
     """
     key = _action_key(action)
 
     if key in {_action_key(a) for a in _EXTENSION_ROUTABLE_ACTIONS}:
         return True
 
-    # Check URL for Google domains on navigate/search
+    # Route ALL navigate/search through the extension (not just Google domains).
+    # The extension uses subprocess to open Chrome, which is reliable and
+    # always returns a valid tabId for subsequent steps.
     if action in ("navigate", "search"):
         url = params.get("url", "") or ""
-        return any(domain in url for domain in _GOOGLE_DOMAINS)
+        if url and url != "about:blank":
+            return True
 
     return False
 
@@ -124,6 +130,11 @@ class ExecutionContext:
         self.logs: list = []
         self.started_at = datetime.now().isoformat()
         self.completed_at: Optional[str] = None
+        # Shared key-value store for passing data between steps (e.g. tabId from navigate → web_agent)
+        self.shared: dict = {}
+        # Track recovery attempts to prevent cascading replans
+        self.recovery_count: int = 0
+        self.max_recoveries: int = 1  # Allow at most 1 recovery replan per execution
 
     @property
     def current_step(self) -> Optional[Step]:
@@ -258,6 +269,41 @@ class Executor:
 
         return self.context
 
+    # ── Template variable resolution ──────────────────────────────────
+
+    def _resolve_params(self, params: dict) -> dict:
+        """
+        Resolve {{steps.X.result}} / {{steps.X.content}} / {{steps.X.extracted_content}}
+        template variables in any string param value.
+
+        The planner sometimes generates params like:
+            {"content": "{{steps.step_3.result}}"}
+        This replaces those with the actual string result from step step_3.
+        """
+        import re as _re
+        if not self.context:
+            return params
+
+        # Build a lookup of completed step results
+        step_results: dict[str, str] = {}
+        for s in self.context.plan.steps:
+            if s.result:
+                step_results[s.id] = s.result
+
+        def _sub(value: str) -> str:
+            # Match {{steps.STEP_ID.FIELD}} — field is ignored, we always use .result
+            def replacer(m):
+                step_id = m.group(1)
+                return step_results.get(step_id, m.group(0))  # keep original if not found
+            return _re.sub(r'\{\{steps\.([\w]+)(?:\.[\w]+)?\}\}', replacer, value)
+
+        resolved = {}
+        for k, v in params.items():
+            resolved[k] = _sub(v) if isinstance(v, str) else v
+        return resolved
+
+    # ─────────────────────────────────────────────────────────────────
+
     async def _execute_step(self, step: Step) -> bool:
         """Execute a single step by dispatching to the appropriate skill."""
         step.status = StepStatus.RUNNING
@@ -297,35 +343,116 @@ class Executor:
         )
 
         try:
+            # ── Resolve template variables in params ──────────────────
+            # Replace {{steps.X.result}} with actual prior step outputs
+            step.params = self._resolve_params(step.params)
+
             skill_handler = self.skills.get(effective_skill)
             if not skill_handler:
-                # If extension routing failed (e.g. disconnected mid-step), fall back
                 if effective_skill == "extension":
-                    self.context.add_log("WARN", "Extension disconnected, falling back to browser", step.id)
-                    skill_handler = self.skills.get("browser")
-                    effective_skill = "browser"
-                if not skill_handler:
-                    raise ValueError(
-                        f"Unknown skill '{effective_skill}'. "
-                        f"Available: {self.skills.available_skills()}"
+                    # Extension not registered — don't silently fall back to browser
+                    # because browser doesn't know extension-specific actions
+                    # (searchYouTube, composeMail, etc.)
+                    raise ConnectionError(
+                        "Extension skill not registered. "
+                        "Check startup — is the Chrome extension installed at chrome://extensions/?"
                     )
+                raise ValueError(
+                    f"Unknown skill '{effective_skill}'. "
+                    f"Available: {self.skills.available_skills()}"
+                )
+
+            action_key = _action_key(step.action)
+
+            # ── Extension reconnect wait (applies to ALL extension actions) ──
+            # Chrome MV3 service workers suspend after every command response
+            # and reconnect within ~1-3s. Wait up to 8s before giving up.
+            if effective_skill == "extension" and action_key not in ("webagent", "webinteract"):
+                if not getattr(skill_handler, "is_connected", True):
+                    self.context.add_log(
+                        "INFO",
+                        "[Executor] Extension suspended — waiting up to 8s for reconnect...",
+                        step.id,
+                    )
+                    for _w in range(16):   # 16 × 0.5s = 8s
+                        await asyncio.sleep(0.5)
+                        if getattr(skill_handler, "is_connected", False):
+                            self.context.add_log(
+                                "INFO",
+                                f"[Executor] Extension reconnected after {(_w + 1) * 0.5:.1f}s",
+                                step.id,
+                            )
+                            break
+                    else:
+                        raise ConnectionError(
+                            "Chrome extension did not reconnect within 8 seconds. "
+                            "Make sure Chrome is open and the OpenClaw extension is installed."
+                        )
+
+            # ── Inject shared context into step params ────────────────
+            # If a prior navigate step stored a tabId, inject it into
+            # web_agent params so it operates on the correct tab
+            # instead of querying the (possibly wrong) active tab.
+            if action_key in ("webagent", "webinteract"):
+                shared_tab_id = self.context.shared.get("last_tab_id")
+                raw_tab_id = step.params.get("tab_id")
+                # Coerce string values ("last", non-int) → real integer tab id
+                resolved_tab_id = None
+                if raw_tab_id is not None:
+                    try:
+                        coerced = int(raw_tab_id)
+                        resolved_tab_id = coerced if coerced > 0 else None
+                    except (TypeError, ValueError):
+                        resolved_tab_id = None  # "last" or other string → use shared
+                # Fall back to the shared tab from the prior navigate step
+                resolved_tab_id = resolved_tab_id or shared_tab_id
+                if resolved_tab_id != raw_tab_id:
+                    self.context.add_log(
+                        "INFO",
+                        f"[Executor] Resolved tab_id {raw_tab_id!r} → {resolved_tab_id} for web_agent",
+                        step.id,
+                    )
+                step.params["tab_id"] = resolved_tab_id
 
             # ── Agentic Web Agent: special handling ──────────────────
             # If the action is web_agent/web_interact, run the full
             # agentic loop (extract DOM → LLM → execute → repeat)
-            action_key = _action_key(step.action)
             if action_key in ("webagent", "webinteract"):
                 from skills.browser.extension_bridge import run_web_agent
                 ext = self.skills.get("extension")
-                if ext is None or not getattr(ext, "is_connected", False):
-                    raise ConnectionError("Chrome extension not connected for web_agent")
+                if ext is None:
+                    raise ConnectionError("Extension skill not registered — check startup logs")
+
+                # MV3 reconnect wait (may already be handled above, but be safe)
+                if not getattr(ext, "is_connected", False):
+                    self.context.add_log(
+                        "INFO",
+                        "[Executor] Extension not yet connected — waiting up to 8s for reconnect...",
+                        step.id,
+                    )
+                    for _wait in range(16):
+                        await asyncio.sleep(0.5)
+                        if getattr(ext, "is_connected", False):
+                            self.context.add_log(
+                                "INFO",
+                                f"[Executor] Extension reconnected after {(_wait + 1) * 0.5:.1f}s",
+                                step.id,
+                            )
+                            break
+                    else:
+                        raise ConnectionError(
+                            "Chrome extension did not reconnect within 8 seconds. "
+                            "Make sure the OpenClaw extension is installed and Chrome is open."
+                        )
+
                 result = await run_web_agent(
                     bridge=ext,
                     task=step.params.get("task", step.description),
                     url=step.params.get("url"),
+                    tab_id=step.params.get("tab_id"),
                     gemini_client=self.planner.client,
                     model_name=self.planner.model_name,
-                    max_iterations=step.params.get("max_iterations", 3),
+                    max_iterations=step.params.get("max_iterations", 5),
                 )
             else:
                 result = await skill_handler.execute(step.action, step.params)
@@ -333,6 +460,65 @@ class Executor:
             step.status = StepStatus.DONE
             step.result = str(result) if result else "Success"
             step.completed_at = datetime.now().isoformat()
+
+            # ── Store tabId in shared context for subsequent steps ────
+            # Browser navigate and extension navigate both return a tabId
+            # in the result string. Extract and store it.
+            if step.result:
+                import re as _re
+                tab_match = _re.search(r'"tabId"\s*:\s*(\d+)', step.result)
+                if tab_match:
+                    new_tab_id = int(tab_match.group(1))
+                    self.context.shared["last_tab_id"] = new_tab_id
+                    self.context.add_log(
+                        "INFO",
+                        f"[Executor] Stored tabId={new_tab_id} for next steps",
+                        step.id,
+                    )
+                # Also update last_tab_id if web_agent navigated to a new page.
+                # web_agent results don't embed tabId JSON, but the shared tab
+                # context must stay current so the next extract/click step works.
+                elif action_key in ("webagent", "webinteract") or (
+                    action_key == "navigate" and not tab_match
+                ):
+                    # Re-query extension for the tab matching the navigated URL
+                    # (handles Playwright navigate which returns no tabId JSON).
+                    target_url = step.params.get("url", "") or ""
+                    try:
+                        ext = self.skills.get("extension")
+                        if ext and getattr(ext, "is_connected", False):
+                            tabs_data = await ext._send("getTabs", {}, timeout=5)
+                            tabs = tabs_data.get("tabs", [])
+                            if tabs and target_url:
+                                # Try to find the tab whose URL matches the navigated URL
+                                matched = None
+                                for tab in reversed(tabs):
+                                    tab_url = tab.get("url", "")
+                                    if (
+                                        target_url.rstrip("/") in tab_url
+                                        or tab_url.startswith(target_url.split("?")[0])
+                                    ):
+                                        matched = tab
+                                        break
+                                # Fall back to the most recently opened tab
+                                if matched is None:
+                                    matched = max(tabs, key=lambda t: t.get("id", 0))
+                                self.context.shared["last_tab_id"] = matched["id"]
+                                self.context.add_log(
+                                    "INFO",
+                                    f"[Executor] Resolved tabId={matched['id']} for url={target_url!r}",
+                                    step.id,
+                                )
+                            elif tabs:
+                                best = max(tabs, key=lambda t: t.get("id", 0))
+                                self.context.shared["last_tab_id"] = best["id"]
+                                self.context.add_log(
+                                    "INFO",
+                                    f"[Executor] Updated tabId={best['id']} after {action_key}",
+                                    step.id,
+                                )
+                    except Exception:
+                        pass  # Non-fatal
 
             await self._emit("step_completed", {
                 "stepId": step.id,
@@ -364,9 +550,35 @@ class Executor:
     async def _handle_failure(self, failed_step: Step) -> bool:
         """
         Handle a failed step using the recovery system.
-        
-        Returns True if recovery succeeds, False if all retries are exhausted.
+
+        Returns True if recovery succeeds (or is gracefully skipped),
+        False if all retries are exhausted.
         """
+        # Do NOT attempt recovery for web_agent failures -- the recovery planner
+        # tends to generate duplicate multi-browser plans (open Chrome + Edge) which
+        # cause more confusion than just reporting the failure cleanly.
+        if _action_key(failed_step.action) in ("webagent", "webinteract"):
+            self.context.add_log(
+                "WARN",
+                f"[Recovery] Skipping replan for web_agent step '{failed_step.id}' "
+                f"-- error: {failed_step.error}",
+                failed_step.id,
+            )
+            # Mark as skipped (not permanently failed) so execution continues
+            failed_step.status = StepStatus.SKIPPED
+            return True
+
+        # Cap total recovery attempts to prevent cascading replans
+        if self.context.recovery_count >= self.context.max_recoveries:
+            self.context.add_log(
+                "WARN",
+                f"[Recovery] Max recoveries ({self.context.max_recoveries}) reached. "
+                f"Not replanning step '{failed_step.id}'. Error: {failed_step.error}",
+                failed_step.id,
+            )
+            return False
+
+        self.context.recovery_count += 1
         recovered = await self.recovery.attempt_recovery(
             failed_step=failed_step,
             remaining_steps=self.context.remaining_steps,
