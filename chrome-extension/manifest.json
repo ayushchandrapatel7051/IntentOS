@@ -1,13 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "OpenClaw",
-  "description": "Intent-Based OS — Browser control bridge for OpenClaw",
-  "version": "1.0.0",
+  "name": "OpenClaw Agent",
+  "description": "IntentOS browser bridge — DOM automation for YouTube, Gmail, Google Calendar, Meet and more",
+  "version": "2.0.0",
   "permissions": [
     "tabs",
     "activeTab",
     "scripting",
-    "storage"
+    "storage",
+    "alarms",
+    "windows"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -24,11 +26,6 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "OpenClaw"
-  },
-  "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
+    "default_title": "OpenClaw Agent"
   }
 }

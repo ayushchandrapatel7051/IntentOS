@@ -119,7 +119,76 @@ class PlaywrightDriver:
         }
         url = engines.get(engine.lower(), engines["google"])
         result = await asyncio.to_thread(_open_url_in_browser, url, browser)
-        return f"Searched '{query}' — {result}"
+        return f"Searched '{query}' \u2014 {result}"
+
+    async def youtube_search(
+        self,
+        query: str,
+        video_index: int = 1,
+        browser: str = "chrome",
+        **kwargs,
+    ) -> str:
+        """
+        Search YouTube and play the Nth result — fully Playwright-driven.
+
+        This solves the subprocess/Playwright split-instance problem:
+        both the navigation AND the click happen inside the same
+        Playwright browser context, so there is no timeout mismatch.
+
+        Args:
+            query:       Search term.
+            video_index: 1-based index of the result to click (1 = first, 3 = third, …).
+            browser:     "chrome" or "edge" (default chrome for YouTube).
+        """
+        search_url = (
+            f"https://www.youtube.com/results"
+            f"?search_query={query.replace(' ', '+')}"
+        )
+
+        # Ensure a Playwright-controlled browser is running
+        await self._ensure_playwright(browser)
+        await self._pw_page.goto(search_url, wait_until="domcontentloaded", timeout=30_000)
+
+        # Wait for at least video_index results to appear
+        # YouTube uses ytd-video-renderer for search results
+        selectors = [
+            "ytd-video-renderer a#video-title",
+            "ytd-video-renderer h3 a",
+            "#contents ytd-video-renderer a[href*='/watch']",
+        ]
+
+        video_links = []
+        for sel in selectors:
+            try:
+                await self._pw_page.wait_for_selector(sel, timeout=12_000)
+                video_links = await self._pw_page.query_selector_all(sel)
+                # Filter to real watch links (skip playlists/ads)
+                real = []
+                for el in video_links:
+                    href = await el.get_attribute("href") or ""
+                    if "/watch" in href:
+                        real.append(el)
+                if len(real) >= video_index:
+                    video_links = real
+                    break
+            except Exception:
+                continue
+
+        if len(video_links) < video_index:
+            return (
+                f"Only {len(video_links)} videos found for '{query}' — "
+                f"cannot click #{video_index}. Try a lower index."
+            )
+
+        target = video_links[video_index - 1]
+        title = (
+            await target.get_attribute("title")
+            or await target.inner_text()
+            or f"video #{video_index}"
+        )
+        await target.scroll_into_view_if_needed()
+        await target.click()
+        return f"Playing YouTube result #{video_index}: \"{title.strip()}\""
 
     # ------------------------------------------------------------------
     # Complex actions — Playwright (automation)
@@ -201,16 +270,17 @@ class PlaywrightDriver:
     async def execute(self, action: str, params: dict) -> str:
         """Dispatch a browser action by name."""
         actions = {
-            "navigate":     self.navigate,
-            "search":       self.search,
-            "fill_form":    self.fill_form,
-            "click":        self.click,
-            "extract_text": self.extract_text,
-            "screenshot":   self.take_screenshot,
-            "manage_tabs":  self.manage_tabs,
-            "type_text":    self.type_text,
-            "wait_for":     self.wait_for_selector,
-            "evaluate":     self.evaluate_js,
+            "navigate":        self.navigate,
+            "search":          self.search,
+            "youtube_search":  self.youtube_search,   # full Playwright flow: search + click Nth
+            "fill_form":       self.fill_form,
+            "click":           self.click,
+            "extract_text":    self.extract_text,
+            "screenshot":      self.take_screenshot,
+            "manage_tabs":     self.manage_tabs,
+            "type_text":       self.type_text,
+            "wait_for":        self.wait_for_selector,
+            "evaluate":        self.evaluate_js,
         }
 
         handler = actions.get(action)

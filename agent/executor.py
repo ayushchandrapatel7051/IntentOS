@@ -3,6 +3,11 @@ OpenClaw Pi Engine — Executor
 ==============================
 Dispatches action plan steps to the appropriate skill modules.
 Streams status updates and logs to the dashboard via WebSocket.
+
+Extension routing:
+  When the Chrome extension is connected and the planner chose 'browser'
+  for a Google/YouTube action, the executor automatically redirects to
+  the 'extension' skill — no planner change needed.
 """
 
 import asyncio
@@ -12,6 +17,81 @@ from typing import Optional, Callable, Awaitable
 
 from agent.planner import ActionPlan, Step, StepStatus, Planner
 from agent.recovery import RecoveryManager
+
+
+# ---------------------------------------------------------------------------
+# Extension routing table
+# ---------------------------------------------------------------------------
+# Actions that the Chrome extension handles better than Playwright.
+# If the extension is connected and the planner chose 'browser', the executor
+# will silently redirect these to 'extension' instead.
+
+_EXTENSION_ROUTABLE_ACTIONS = {
+    # YouTube
+    "youtube_search", "search_youtube", "searchyoutube",
+    "play_youtube",   "playyoutube",
+    "pause_youtube",  "pauseyoutube",
+    "set_volume",     "setvolume",
+    "seek_to",        "seekto",
+    "get_video_info", "getvideoinfo",
+    "next_video",     "nextvideo",
+    # Gmail
+    "compose_mail",   "composemail",
+    "send_mail",      "sendmail",
+    "search_mail",    "searchmail",
+    "reply_mail",     "replymail",
+    "get_unread",     "getunread",
+    # Calendar
+    "create_event",   "createevent",
+    "get_events",     "getevents",
+    "open_calendar",  "opencalendar",
+    # Meet
+    "join_meet",      "joinmeet",
+    "schedule_meet",  "schedulemeet",
+    "mute_mic",       "mutemic",
+    "mute_camera",    "mutecamera",
+    "leave_meet",     "leavemeet",
+    # Drive
+    "search_drive",   "searchdrive",
+    "open_drive",     "opendrive",
+    # Agentic web interaction (works on ANY website)
+    "web_agent",      "webagent",
+    "web_interact",   "webinteract",
+}
+
+# URL patterns — if a navigate/search goes to these domains and the extension
+# is connected, prefer the extension's navigate (opens tab in real Chrome).
+_GOOGLE_DOMAINS = {
+    "youtube.com", "mail.google.com", "gmail.com",
+    "calendar.google.com", "meet.google.com",
+    "drive.google.com", "docs.google.com",
+}
+
+
+def _action_key(action: str) -> str:
+    """Normalise action to lowercase no-underscore for lookup."""
+    return action.lower().replace("_", "").replace("-", "")
+
+
+def _should_route_to_extension(skill: str, action: str, params: dict) -> bool:
+    """
+    Returns True if this step should be redirected to the extension skill.
+    Conditions:
+      1. Planner chose 'browser' (or any skill)
+      2. Action is in the extension routing table
+      OR navigate/search URL is a Google-managed domain.
+    """
+    key = _action_key(action)
+
+    if key in {_action_key(a) for a in _EXTENSION_ROUTABLE_ACTIONS}:
+        return True
+
+    # Check URL for Google domains on navigate/search
+    if action in ("navigate", "search"):
+        url = params.get("url", "") or ""
+        return any(domain in url for domain in _GOOGLE_DOMAINS)
+
+    return False
 
 
 class SkillRegistry:
@@ -183,31 +263,72 @@ class Executor:
         step.status = StepStatus.RUNNING
         step.started_at = datetime.now().isoformat()
 
+        # ── Smart extension routing ─────────────────────────────────────
+        # If the Chrome extension is connected, prefer it over Playwright
+        # for any YouTube / Gmail / Calendar / Meet / Drive action,
+        # regardless of which skill the planner specified.
+        effective_skill = step.skill
+        ext_handler = self.skills.get("extension")
+        if (
+            ext_handler is not None
+            and getattr(ext_handler, "is_connected", False)
+            and _should_route_to_extension(step.skill, step.action, step.params)
+        ):
+            effective_skill = "extension"
+            self.context.add_log(
+                "INFO",
+                f"[Router] Redirected {step.skill}.{step.action} → extension (Chrome extension is connected)",
+                step.id,
+            )
+        # ───────────────────────────────────────────────────────────────
+
         await self._emit("step_started", {
-            "stepId": step.id,
-            "skill": step.skill,
-            "action": step.action,
+            "stepId":      step.id,
+            "skill":       effective_skill,
+            "action":      step.action,
             "description": step.description,
-            "reasoning": step.reasoning,
+            "reasoning":   step.reasoning,
         })
 
         self.context.add_log(
             "INFO",
-            f"Executing: {step.description}",
+            f"Executing [{effective_skill}]: {step.description}",
             step.id,
         )
 
         try:
-            # Get the skill handler
-            skill_handler = self.skills.get(step.skill)
+            skill_handler = self.skills.get(effective_skill)
             if not skill_handler:
-                raise ValueError(
-                    f"Unknown skill '{step.skill}'. "
-                    f"Available: {self.skills.available_skills()}"
-                )
+                # If extension routing failed (e.g. disconnected mid-step), fall back
+                if effective_skill == "extension":
+                    self.context.add_log("WARN", "Extension disconnected, falling back to browser", step.id)
+                    skill_handler = self.skills.get("browser")
+                    effective_skill = "browser"
+                if not skill_handler:
+                    raise ValueError(
+                        f"Unknown skill '{effective_skill}'. "
+                        f"Available: {self.skills.available_skills()}"
+                    )
 
-            # Dispatch the action
-            result = await skill_handler.execute(step.action, step.params)
+            # ── Agentic Web Agent: special handling ──────────────────
+            # If the action is web_agent/web_interact, run the full
+            # agentic loop (extract DOM → LLM → execute → repeat)
+            action_key = _action_key(step.action)
+            if action_key in ("webagent", "webinteract"):
+                from skills.browser.extension_bridge import run_web_agent
+                ext = self.skills.get("extension")
+                if ext is None or not getattr(ext, "is_connected", False):
+                    raise ConnectionError("Chrome extension not connected for web_agent")
+                result = await run_web_agent(
+                    bridge=ext,
+                    task=step.params.get("task", step.description),
+                    url=step.params.get("url"),
+                    gemini_client=self.planner.client,
+                    model_name=self.planner.model_name,
+                    max_iterations=step.params.get("max_iterations", 3),
+                )
+            else:
+                result = await skill_handler.execute(step.action, step.params)
 
             step.status = StepStatus.DONE
             step.result = str(result) if result else "Success"
@@ -230,7 +351,7 @@ class Executor:
             await self._emit("step_failed", {
                 "stepId": step.id,
                 "status": "failed",
-                "error": step.error,
+                "error":  step.error,
             })
 
             self.context.add_log(

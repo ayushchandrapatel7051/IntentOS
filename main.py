@@ -140,9 +140,20 @@ async def main():
         from skills.vision.screen_controller import ScreenController
         vision = ScreenController()
         skill_registry.register("vision", vision)
-        console.print("  [green]✓[/] Vision (MSS + PyAutoGUI — no API cost)")
+        console.print("  [green]\u2713[/] Vision (MSS + PyAutoGUI — no API cost)")
     except Exception as e:
-        console.print(f"  [yellow]⚠[/] Vision: {e}")
+        console.print(f"  [yellow]\u26a0[/] Vision: {e}")
+
+    # Extension Skill — Chrome Extension WebSocket bridge (YouTube, Gmail, Meet, Calendar)
+    extension_bridge = None
+    try:
+        from skills.browser.extension_bridge import ExtensionBridge
+        extension_bridge = ExtensionBridge(port=int(os.getenv("EXTENSION_WS_PORT", "8765")))
+        await extension_bridge.start_server()
+        skill_registry.register("extension", extension_bridge)
+        console.print("  [green]\u2713[/] Extension Bridge (ws://127.0.0.1:8765) — waiting for Chrome extension")
+    except Exception as e:
+        console.print(f"  [yellow]\u26a0[/] Extension Bridge: {e}")
 
     # --- Initialize Dashboard ---
     console.print("[cyan]▸[/] Starting Command Center Dashboard...", end=" ")
