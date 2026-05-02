@@ -1,36 +1,31 @@
 /**
- * OpenClaw Chrome Extension — Background Service Worker v3
+ * OpenClaw Chrome Extension — Background Service Worker v3.1
  * ==========================================================
  * Architecture: pre-built "recipes" per domain.
  * The Python agent sends ONE high-level command (e.g. "playYouTube").
  * All DOM work happens here — zero extra LLM calls per action.
  *
- * Fixes in v3:
- *   - Unified getActiveTab() that works in MV3 service workers (no currentWindow assumption)
- *   - waitForTabLoad() before any DOM injection — eliminates "Cannot access tab" races
- *   - retryClickButton text: prefix logic fixed
- *   - performPageActions has per-action wait-for-element with configurable timeout
- *   - searchYouTube always returns a consistent shape
- *   - ensureTab returns only after tab URL is committed (onUpdated status=complete)
- *   - All tabId params default through getActiveTab() centrally
- *
- * Commands supported:
- *   Core         : getTabs, switchTab, closeTab, navigate, injectScript, getDom,
- *                  clickElement, fillInput, screenshot, waitForSelector
- *   YouTube      : playYouTube, pauseYouTube, searchYouTube, setVolume, seekTo,
- *                  getVideoInfo, nextVideo
- *   Gmail        : composeMail, sendMail, searchMail, replyMail, getUnread
- *   Google Cal   : createEvent, getEvents, deleteEvent, openCalendar
- *   Google Meet  : joinMeet, scheduleMeet, muteMic, muteCamera, leaveMeet
- *   Google Drive : searchDrive, openFile
- *   General DOM  : smartClick, smartFill, waitAndClick, extractStructured
- *   Agentic      : extractPage, performActions
+ * Fixes in v3.1:
+ *   - composeMail: verifies "Message sent" confirmation (retries 3×)
+ *   - createCalendarEvent: clicks "Add Google Meet" button, waits for
+ *     Meet link to appear, extracts it, THEN saves the event
+ *   - All commands return { success, verified } for executor validation
+ *   - Duplicate-tab guard for Gmail compose window
  */
 
 const WS_URL = 'ws://127.0.0.1:8765';
 let ws = null;
 let reconnectDelay = 1000;
 const MAX_RECONNECT_DELAY = 15000;
+const DEFAULT_COMMAND_TIMEOUT_MS = 45000;
+
+function withTimeout(promise, ms, label) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
 
 // ─── WebSocket connection ─────────────────────────────────────────────────
 
@@ -53,15 +48,16 @@ function connectWebSocket() {
       let data;
       try { data = JSON.parse(event.data); } catch { return; }
       try {
-        const result = await handleCommand(data);
+        const timeoutMs = Number(data.timeout || data.params?.timeoutMs || DEFAULT_COMMAND_TIMEOUT_MS);
+        const result = await withTimeout(handleCommand(data), timeoutMs, data.command || 'command');
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ id: data.id, success: true, ...result }));
+          ws.send(JSON.stringify({ id: data.id, success: true, verified: result.verified ?? true, ...result }));
         }
         reconnectDelay = 1000;
       } catch (err) {
         console.error('[OpenClaw] Command error:', err);
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ id: data.id, success: false, error: err.message }));
+          ws.send(JSON.stringify({ id: data.id, success: false, verified: false, error: err.message }));
         }
       }
     };
@@ -86,26 +82,15 @@ function connectWebSocket() {
 
 // ─── Tab resolution (THE FIX for "No active tab" in MV3) ─────────────────
 
-/**
- * Reliably get the active tab in MV3 service workers.
- *
- * chrome.tabs.query({ active: true, currentWindow: true }) is BROKEN in
- * service workers because there is no "current window" concept — the worker
- * runs headlessly. We must query all windows and pick the focused one.
- */
 async function getActiveTab() {
-  // Strategy 1: focused window's active tab (works when browser is in foreground)
   const [focusedTab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
   if (focusedTab) return focusedTab;
 
-  // Strategy 2: any active tab across all windows
   const activeTabs = await chrome.tabs.query({ active: true });
   if (activeTabs.length > 0) return activeTabs[0];
 
-  // Strategy 3: the most recently accessed tab at all
   const allTabs = await chrome.tabs.query({});
   if (allTabs.length > 0) {
-    // Sort by lastAccessed descending (most recent first)
     allTabs.sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0));
     return allTabs[0];
   }
@@ -113,19 +98,12 @@ async function getActiveTab() {
   throw new Error('No tabs found — browser has no open tabs');
 }
 
-/**
- * Resolve a tabId param: use it if provided, otherwise fall back to active tab.
- */
 async function resolveTabId(tabId) {
   if (tabId) return tabId;
   const tab = await getActiveTab();
   return tab.id;
 }
 
-/**
- * Wait for a tab to finish loading before injecting scripts.
- * MV3 scripting.executeScript on a still-loading tab throws "Cannot access".
- */
 function waitForTabLoad(tabId, timeoutMs = 15000) {
   return new Promise((resolve, reject) => {
     chrome.tabs.get(tabId, (tab) => {
@@ -134,7 +112,7 @@ function waitForTabLoad(tabId, timeoutMs = 15000) {
 
       const timer = setTimeout(() => {
         chrome.tabs.onUpdated.removeListener(listener);
-        resolve(); // Timeout — attempt anyway
+        resolve();
       }, timeoutMs);
 
       function listener(updatedTabId, changeInfo) {
@@ -149,10 +127,6 @@ function waitForTabLoad(tabId, timeoutMs = 15000) {
   });
 }
 
-/**
- * Open a new tab and wait until it is fully loaded before returning.
- * Eliminates the race where we inject scripts before DOMContentLoaded.
- */
 async function ensureTab(url, waitForLoad = true) {
   const wins = await chrome.windows.getAll();
   let tab;
@@ -165,7 +139,6 @@ async function ensureTab(url, waitForLoad = true) {
 
   if (waitForLoad) {
     await waitForTabLoad(tab.id, 20000);
-    // Re-fetch tab to get final state after redirects
     tab = await chrome.tabs.get(tab.id);
   }
   return tab;
@@ -224,7 +197,7 @@ async function handleCommand({ command, params = {} }) {
     case 'searchDrive':       return searchDrive(params.query);
     case 'openDriveFile':     return openDriveFile(params.fileId);
 
-    // ── Agentic Web Agent (works on ANY website) ──────────────────────
+    // ── Agentic Web Agent ─────────────────────────────────────────────
     case 'extractPage':       return extractPageElements(params.tabId);
     case 'performActions':    return performPageActions(params.tabId, params.actions);
 
@@ -259,7 +232,7 @@ async function navigateTab(tabId, url, newTab = false) {
   }
   tabId = await resolveTabId(tabId);
   await chrome.tabs.update(tabId, { url });
-  await waitForTabLoad(tabId);
+  await waitForTabLoad(tabId, 3000);
   return { tabId };
 }
 
@@ -325,7 +298,6 @@ async function fillInput(tabId, selector, value) {
 }
 
 async function captureTab() {
-  // captureVisibleTab needs the focused window — find it
   const [win] = await chrome.windows.getAll({ windowTypes: ['normal'] })
     .then(ws => ws.filter(w => w.focused));
   const windowId = win ? win.id : undefined;
@@ -399,7 +371,6 @@ async function smartFill(tabId, label, value) {
       if (el.isContentEditable) {
         el.textContent = val;
       } else {
-        // Use native setter so React/Vue/Angular watchers fire
         const proto = el.tagName === 'TEXTAREA'
           ? HTMLTextAreaElement.prototype
           : HTMLInputElement.prototype;
@@ -438,14 +409,7 @@ async function extractStructured(tabId, schema = 'text') {
 
 // ─── Shared click-retry helper ────────────────────────────────────────────
 
-/**
- * Retry clicking a button matched by CSS selector OR "text:<string>" pseudo-selector.
- * 
- * FIX: The original code tried to use text: selectors inside document.querySelector()
- * which is invalid CSS — this is now handled separately via textContent matching.
- */
 async function retryClickButton(tabId, selectors, maxRetries = 8, intervalMs = 1500) {
-  // Split selectors into CSS selectors and text matchers
   const cssSelectors = selectors.filter(s => !s.startsWith('text:'));
   const textMatchers  = selectors
     .filter(s => s.startsWith('text:'))
@@ -457,34 +421,35 @@ async function retryClickButton(tabId, selectors, maxRetries = 8, intervalMs = 1
     const results = await chrome.scripting.executeScript({
       target: { tabId },
       func: (cssSels, textStrs) => {
-        // 1. Try each CSS selector
         for (const sel of cssSels) {
           try {
             const el = document.querySelector(sel);
             if (el && el.offsetParent !== null) {
               el.scrollIntoView({ behavior: 'instant', block: 'center' });
+              el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+              el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
               el.click();
               return { clicked: sel, text: el.textContent?.trim() };
             }
-          } catch (_) { /* invalid selector — skip */ }
+          } catch (_) {}
         }
 
-        // 2. Try matching by visible button/link text
         const clickables = Array.from(document.querySelectorAll(
           'button, [role="button"], input[type="submit"], a'
         ));
         for (const el of clickables) {
-          if (el.offsetParent === null) continue; // hidden
+          if (el.offsetParent === null) continue;
           const elText = (el.textContent?.trim() || el.value || '').toLowerCase();
           for (const matcher of textStrs) {
             if (elText.includes(matcher)) {
               el.scrollIntoView({ behavior: 'instant', block: 'center' });
+              el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+              el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
               el.click();
               return { clicked: 'text:' + matcher, text: el.textContent?.trim() };
             }
           }
         }
-
         return null;
       },
       args: [cssSelectors, textMatchers],
@@ -500,14 +465,21 @@ async function retryClickButton(tabId, selectors, maxRetries = 8, intervalMs = 1
 
 async function searchYouTube(query, autoplay = true, videoIndex = 1) {
   const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-  const tab = await ensureTab(url, true); // wait for page load
+
+  const [existingTab] = await chrome.tabs.query({ url: "*://*.youtube.com/*" });
+  let tab;
+  if (existingTab) {
+    tab = await chrome.tabs.update(existingTab.id, { url, active: true });
+    await waitForTabLoad(tab.id, 20000);
+  } else {
+    tab = await ensureTab(url, true);
+  }
 
   if (!autoplay) return { tabId: tab.id, searched: query, playing: false };
 
   const idx = videoIndex || 1;
   let clickResult = null;
 
-  // Retry clicking the Nth result (results render after initial load)
   for (let attempt = 0; attempt < 5; attempt++) {
     if (attempt > 0) await new Promise(r => setTimeout(r, 1500));
 
@@ -617,29 +589,146 @@ async function youtubeGetInfo() {
 
 // ─── Gmail recipes ────────────────────────────────────────────────────────
 
+/**
+ * Wait for "Message sent" confirmation toast in Gmail.
+ * Returns true if found within timeoutMs, false otherwise.
+ */
+async function waitForGmailSentConfirmation(tabId, timeoutMs = 10000) {
+  const results = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: (ms) => new Promise((resolve) => {
+      // Check immediately — toast may already be visible
+      const SENT_SELECTORS = [
+        '[data-tooltip="Message sent"]',
+        '[aria-label="Message sent"]',
+        '.bAq',       // Gmail's internal "sent" snackbar class
+        '.vh',        // Another known sent-toast class
+      ];
+      const SENT_TEXT = ['message sent', 'sent', 'message was sent'];
+
+      function isSentVisible() {
+        // 1. Selector-based check
+        for (const sel of SENT_SELECTORS) {
+          if (document.querySelector(sel)) return true;
+        }
+        // 2. Text-based check on visible snackbars / toasts
+        const candidates = Array.from(document.querySelectorAll(
+          '[role="alert"], [role="status"], .aZ, .vh, .bAq, [data-message-id]'
+        ));
+        for (const el of candidates) {
+          const txt = (el.textContent || '').toLowerCase().trim();
+          if (SENT_TEXT.some(t => txt.includes(t))) return true;
+        }
+        // 3. Gmail URL hash confirms — compose window closed → mail sent
+        if (!document.querySelector('[name="subjectbox"], [aria-label*="Subject"]')) {
+          // The compose window is gone; check if we're back on the inbox
+          if (window.location.hash.includes('#inbox') || window.location.hash.includes('#sent')) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      if (isSentVisible()) return resolve(true);
+
+      const ob = new MutationObserver(() => {
+        if (isSentVisible()) { ob.disconnect(); clearTimeout(timer); resolve(true); }
+      });
+      ob.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
+
+      const timer = setTimeout(() => { ob.disconnect(); resolve(false); }, ms);
+    }),
+    args: [timeoutMs],
+  });
+  return results[0]?.result === true;
+}
+
 async function composeMail(to, subject, body, send = false) {
+  // ── Duplicate-tab guard ─────────────────────────────────────────────
+  // Gmail opens a compose window in the existing tab — avoid opening a
+  // second Gmail tab if one is already open.
+  const existingGmailTabs = await chrome.tabs.query({ url: '*://mail.google.com/*' });
+  let tab;
+
   const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1`
     + `&to=${encodeURIComponent(to || '')}`
     + `&su=${encodeURIComponent(subject || '')}`
     + `&body=${encodeURIComponent(body || '')}`;
 
-  const tab = await ensureTab(gmailUrl, true);
-  if (!send) return { tabId: tab.id, status: 'draft_opened' };
-
-  const clicked = await retryClickButton(tab.id, [
-    '[data-tooltip*="Send"]',
-    '[aria-label*="Send"]',
-    'div[aria-label*="Send"]',
-    '.T-I.J-J5-Ji[role="button"]',
-    'text:Send',
-  ], 10, 1500);
-
-  if (clicked) {
-    await new Promise(r => setTimeout(r, 2000));
-    try { await chrome.tabs.remove(tab.id); } catch {}
-    return { tabId: tab.id, status: 'sent', to, subject };
+  if (existingGmailTabs.length > 0) {
+    tab = await chrome.tabs.update(existingGmailTabs[0].id, { url: gmailUrl, active: true });
+    await waitForTabLoad(tab.id, 20000);
+  } else {
+    tab = await ensureTab(gmailUrl, true);
   }
-  return { tabId: tab.id, status: 'send_button_not_found', to, subject };
+
+  if (!send) return { tabId: tab.id, status: 'draft_opened', verified: false };
+
+  // ── Send + verify loop (up to 3 attempts) ──────────────────────────
+  const MAX_SEND_ATTEMPTS = 3;
+  let lastClickResult = null;
+
+  for (let attempt = 0; attempt < MAX_SEND_ATTEMPTS; attempt++) {
+    // 1. Click Send button
+    const clicked = await retryClickButton(tab.id, [
+      '[data-tooltip*="Send"]',
+      '[aria-label*="Send"]',
+      'div[aria-label*="Send"]',
+      '.T-I.J-J5-Ji[role="button"]',
+      'text:Send',
+    ], 8, 1200);
+
+    lastClickResult = clicked;
+
+    if (!clicked) {
+      // Fallback: Ctrl+Enter to send
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+          const target = document.activeElement || document.body;
+          target.dispatchEvent(new KeyboardEvent('keydown', {
+            key: 'Enter', code: 'Enter', keyCode: 13, ctrlKey: true, bubbles: true
+          }));
+        }
+      });
+    }
+
+    // 2. Wait for "Message sent" confirmation (up to 10s)
+    const confirmed = await waitForGmailSentConfirmation(tab.id, 10000);
+
+    if (confirmed) {
+      // Wait 5s for Gmail to finish the SMTP upload BEFORE closing the tab.
+      // Closing too early cancels the in-flight send request.
+      await new Promise(r => setTimeout(r, 5000));
+      try { await chrome.tabs.remove(tab.id); } catch {}
+      return {
+        tabId: tab.id,
+        status: 'sent',
+        verified: true,
+        to,
+        subject,
+        attempt: attempt + 1,
+      };
+    }
+
+    // Not confirmed yet — wait before retry
+    if (attempt < MAX_SEND_ATTEMPTS - 1) {
+      console.warn(`[OpenClaw] Gmail send attempt ${attempt + 1} not confirmed, retrying...`);
+      await new Promise(r => setTimeout(r, 2000));
+    }
+  }
+
+  // All attempts exhausted without confirmation.
+  // DO NOT close the tab — Gmail may still be uploading the message in the background.
+  // Closing it now would cancel the in-flight SMTP request.
+  return {
+    tabId: tab.id,
+    status: 'send_unverified',
+    verified: false,
+    to,
+    subject,
+    error: 'Message sent confirmation not detected after 3 attempts (tab left open to allow background send)',
+  };
 }
 
 async function searchMail(query) {
@@ -686,8 +775,106 @@ async function getUnreadCount() {
 // ─── Google Calendar recipes ──────────────────────────────────────────────
 
 async function openCalendar() {
+  const [existingTab] = await chrome.tabs.query({ url: "*://calendar.google.com/*" });
+  if (existingTab) {
+    const tab = await chrome.tabs.update(existingTab.id, { active: true });
+    return { tabId: tab.id };
+  }
   const tab = await ensureTab('https://calendar.google.com', true);
   return { tabId: tab.id };
+}
+
+/**
+ * Click "Add Google Meet video conferencing" inside the Calendar event form
+ * and wait for the Meet link chip to appear. Returns the extracted link.
+ *
+ * Google Calendar renders the Meet button as:
+ *   <button aria-label="Add Google Meet video conferencing">
+ * or inside a div with data-id="videochat".
+ * After clicking, the Meet link appears as an <a> with meet.google.com URL.
+ */
+async function addMeetAndExtractLink(tabId, timeoutMs = 15000) {
+  const results = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: (ms) => new Promise((resolve) => {
+      // ── Step 1: Click the "Add Google Meet video conferencing" button ──
+      const MEET_BTN_SELECTORS = [
+        '[data-id="videochat"]',
+        '[aria-label*="Google Meet"]',
+        '[aria-label*="video conferencing"]',
+        '[data-tooltip*="Google Meet"]',
+        'button[jsname*="meet"]',
+        // Fallback: any visible button containing "Meet" text
+      ];
+
+      let clicked = false;
+      for (const sel of MEET_BTN_SELECTORS) {
+        try {
+          const el = document.querySelector(sel);
+          if (el && el.offsetParent !== null) {
+            el.scrollIntoView({ behavior: 'instant', block: 'center' });
+            el.click();
+            clicked = true;
+            break;
+          }
+        } catch (_) {}
+      }
+
+      // Text fallback
+      if (!clicked) {
+        const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
+        for (const btn of buttons) {
+          const txt = (btn.textContent || btn.getAttribute('aria-label') || '').toLowerCase();
+          if (txt.includes('meet') || txt.includes('video conferencing')) {
+            if (btn.offsetParent !== null) {
+              btn.scrollIntoView({ behavior: 'instant', block: 'center' });
+              btn.click();
+              clicked = true;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!clicked) {
+        return resolve({ meetClicked: false, meetLink: null });
+      }
+
+      // ── Step 2: Wait for Meet link chip to appear ─────────────────────
+      function extractMeetLink() {
+        const links = Array.from(document.querySelectorAll('a[href*="meet.google.com"]'));
+        if (links.length > 0) return links[0].href;
+        // Also check text nodes / data attributes
+        const chips = Array.from(document.querySelectorAll('[data-id="videochat"] a, [jsname] a'));
+        for (const c of chips) {
+          if (c.href && c.href.includes('meet.google.com')) return c.href;
+        }
+        return null;
+      }
+
+      const existingLink = extractMeetLink();
+      if (existingLink) return resolve({ meetClicked: true, meetLink: existingLink });
+
+      const ob = new MutationObserver(() => {
+        const link = extractMeetLink();
+        if (link) {
+          ob.disconnect();
+          clearTimeout(timer);
+          resolve({ meetClicked: true, meetLink: link });
+        }
+      });
+      ob.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
+
+      const timer = setTimeout(() => {
+        ob.disconnect();
+        // Return success for click even if we couldn't extract the link text
+        resolve({ meetClicked: true, meetLink: null });
+      }, ms);
+    }),
+    args: [timeoutMs],
+  });
+
+  return results[0]?.result || { meetClicked: false, meetLink: null };
 }
 
 async function createCalendarEvent({ title, date, time, duration, guests, description, meet, autoSave = true }) {
@@ -700,12 +887,45 @@ async function createCalendarEvent({ title, date, time, duration, guests, descri
 
   if (guests)      url += `&add=${encodeURIComponent(guests)}`;
   if (description) url += `&details=${encodeURIComponent(description)}`;
-  if (meet)        url += `&crm=AVAILABLE&ctz=Asia%2FKolkata&video=1`;
+  // NOTE: We no longer pass video=1 in the URL — it's unreliable.
+  // Instead we explicitly click the Meet button after the page loads (below).
 
-  const tab = await ensureTab(url, true);
+  let tab;
+  const [existingTab] = await chrome.tabs.query({ url: "*://calendar.google.com/*" });
+  if (existingTab) {
+    tab = await chrome.tabs.update(existingTab.id, { url, active: true });
+    await waitForTabLoad(tab.id, 20000);
+  } else {
+    tab = await ensureTab(url, true);
+  }
 
-  if (!autoSave) return { tabId: tab.id, title, date, time, status: 'event_form_opened' };
+  // Give the Calendar SPA extra time to render the event form
+  await new Promise(r => setTimeout(r, 2000));
 
+  // ── Add Google Meet video conferencing if requested ────────────────
+  let meetLink = null;
+  if (meet) {
+    const meetResult = await addMeetAndExtractLink(tab.id, 15000);
+    meetLink = meetResult.meetLink;
+
+    if (!meetResult.meetClicked) {
+      console.warn('[OpenClaw] Could not find "Add Google Meet" button — proceeding without Meet link');
+    } else {
+      // Give Meet link chip a moment to fully render before saving
+      await new Promise(r => setTimeout(r, 1500));
+    }
+  }
+
+  if (!autoSave) {
+    return {
+      tabId: tab.id, title, date, time,
+      status: 'event_form_opened',
+      meetLink,
+      verified: false,
+    };
+  }
+
+  // ── Save the event ─────────────────────────────────────────────────
   const clicked = await retryClickButton(tab.id, [
     '[data-tooltip*="Save"]',
     '[aria-label*="Save"]',
@@ -714,10 +934,33 @@ async function createCalendarEvent({ title, date, time, duration, guests, descri
   ], 10, 1500);
 
   if (clicked) {
-    await new Promise(r => setTimeout(r, 2000));
-    return { tabId: tab.id, title, date, time, status: 'event_saved' };
+    // Wait for Calendar to redirect back to the calendar view (confirms save)
+    await new Promise(r => setTimeout(r, 3000));
+
+    // Verify: Calendar redirects away from /render after a successful save
+    const savedTab = await chrome.tabs.get(tab.id);
+    const saved = savedTab && !savedTab.url.includes('/render?action=TEMPLATE');
+
+    return {
+      tabId:    tab.id,
+      title,
+      date,
+      time,
+      status:   saved ? 'event_saved' : 'save_unverified',
+      verified: saved,
+      meetLink,
+    };
   }
-  return { tabId: tab.id, title, date, time, status: 'save_button_not_found' };
+
+  return {
+    tabId:    tab.id,
+    title,
+    date,
+    time,
+    status:   'save_button_not_found',
+    verified: false,
+    meetLink,
+  };
 }
 
 /** Convert "2026-05-01" + "14:30" + optional offset minutes → YYYYMMDDTHHmmss */
@@ -802,26 +1045,65 @@ async function openDriveFile(fileId) {
 // ─── Agentic Web Agent — works on ANY website ────────────────────────────
 
 async function extractPageElements(tabId) {
-  tabId = await resolveTabId(tabId); // ← FIX: centralised, no more inline query
-  await waitForTabLoad(tabId);
+  tabId = await resolveTabId(tabId);
+  await waitForTabLoad(tabId, 3000);
 
   const results = await chrome.scripting.executeScript({
     target: { tabId },
     func: () => {
+      const MAX_ELEMENTS = 60;
+      const MAX_TEXT = 400;
+      const truncate = (value, max) => {
+        const text = String(value || '').replace(/\s+/g, ' ').trim();
+        if (text.length <= max) return text;
+        if (max <= 3) return text.slice(0, max);
+        return text.slice(0, max - 3).trim() + '...';
+      };
+      const attr = (name, value) => `[${name}="${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"]`;
+      const isUnique = (selector) => {
+        try { return document.querySelectorAll(selector).length === 1; }
+        catch (_) { return false; }
+      };
+
       function getSelector(el) {
-        if (el.id) return '#' + CSS.escape(el.id);
-        if (el.name) return `${el.tagName.toLowerCase()}[name="${el.name}"]`;
-        if (el.getAttribute('data-testid'))
-          return `[data-testid="${el.getAttribute('data-testid')}"]`;
-        if (el.getAttribute('aria-label'))
-          return `[aria-label="${el.getAttribute('aria-label')}"]`;
-        const tag = el.tagName.toLowerCase();
-        const parent = el.parentElement;
-        if (!parent) return tag;
-        const siblings = Array.from(parent.children).filter(c => c.tagName === el.tagName);
-        const idx = siblings.indexOf(el) + 1;
-        const parentSel = parent.id ? '#' + CSS.escape(parent.id) : '';
-        return `${parentSel} > ${tag}:nth-of-type(${idx})`;
+        if (el.id) {
+          const byId = '#' + CSS.escape(el.id);
+          if (isUnique(byId)) return byId;
+        }
+        if (el.name) {
+          const byName = `${el.tagName.toLowerCase()}${attr('name', el.name)}`;
+          if (isUnique(byName)) return byName;
+        }
+        if (el.getAttribute('data-testid')) {
+          const byTestId = attr('data-testid', el.getAttribute('data-testid'));
+          if (isUnique(byTestId)) return byTestId;
+        }
+        if (el.getAttribute('aria-label')) {
+          const byAria = attr('aria-label', el.getAttribute('aria-label'));
+          if (isUnique(byAria)) return byAria;
+        }
+
+        const parts = [];
+        let node = el;
+        for (let depth = 0; node && node.nodeType === 1 && depth < 6; depth++, node = node.parentElement) {
+          const tag = node.tagName.toLowerCase();
+          if (node.id) {
+            const idSel = '#' + CSS.escape(node.id);
+            if (isUnique(idSel)) {
+              parts.unshift(idSel);
+              break;
+            }
+          }
+          const parent = node.parentElement;
+          if (!parent) {
+            parts.unshift(tag);
+            break;
+          }
+          const siblings = Array.from(parent.children).filter(c => c.tagName === node.tagName);
+          const idx = siblings.indexOf(node) + 1;
+          parts.unshift(`${tag}:nth-of-type(${idx})`);
+        }
+        return parts.join(' > ');
       }
 
       function getLabel(el) {
@@ -841,88 +1123,108 @@ async function extractPageElements(tabId) {
 
       function isVisible(el) {
         const s = window.getComputedStyle(el);
+        const r = el.getBoundingClientRect();
         return s.display !== 'none' && s.visibility !== 'hidden'
-          && s.opacity !== '0' && el.offsetParent !== null;
+          && s.opacity !== '0' && r.width > 0 && r.height > 0;
       }
 
       const elements = [];
+      const seen = new Set();
+
+      function addElement(info) {
+        if (!info.selector || seen.has(info.selector) || elements.length >= MAX_ELEMENTS) return;
+        seen.add(info.selector);
+        elements.push(info);
+      }
 
       document.querySelectorAll('input, textarea, select, [contenteditable="true"]').forEach(el => {
-        if (!isVisible(el)) return;
+        if (!isVisible(el) || elements.length >= MAX_ELEMENTS) return;
         const type = el.type || el.tagName.toLowerCase();
         if (type === 'hidden') return;
         const info = {
           tag: el.tagName.toLowerCase(),
           type: el.isContentEditable ? 'contenteditable' : type,
           selector: getSelector(el),
-          label: getLabel(el),
+          label: truncate(getLabel(el), 80),
           required: el.required || false,
         };
         if (el.tagName === 'SELECT') {
-          info.options = Array.from(el.options).map(o => ({
-            value: o.value, text: o.textContent.trim(), selected: o.selected,
+          info.options = Array.from(el.options).slice(0, 8).map(o => ({
+            value: truncate(o.value, 40),
+            text: truncate(o.textContent, 60),
+            selected: o.selected,
           }));
         }
-        if (el.value) info.value = el.value;
-        else if (el.textContent && el.isContentEditable) info.value = el.textContent;
-        if (el.placeholder) info.placeholder = el.placeholder;
+        if (el.value && type !== 'password') info.value = truncate(el.value, 60);
+        else if (el.textContent && el.isContentEditable) info.value = truncate(el.textContent, 60);
+        if (el.placeholder) info.placeholder = truncate(el.placeholder, 80);
         else if (el.getAttribute('data-placeholder'))
-          info.placeholder = el.getAttribute('data-placeholder');
-        elements.push(info);
+          info.placeholder = truncate(el.getAttribute('data-placeholder'), 80);
+        addElement(info);
+      });
+
+      document.querySelectorAll(
+        'ytd-video-renderer a#video-title, ytd-video-renderer h3 a, a#video-title[href*="/watch"], a[href^="/watch"]'
+      ).forEach(el => {
+        if (!isVisible(el) || elements.length >= MAX_ELEMENTS) return;
+        const href = el.getAttribute('href') || '';
+        const label = truncate(el.textContent || el.getAttribute('aria-label') || el.title || '', 80);
+        if (!label) return;
+        addElement({
+          tag: 'a',
+          selector: getSelector(el),
+          label,
+          href: truncate(el.href || href, 120),
+        });
       });
 
       document.querySelectorAll(
         'button, input[type="submit"], input[type="button"], [role="button"], a.btn, a.button'
       ).forEach(el => {
-        if (!isVisible(el)) return;
-        elements.push({
+        if (!isVisible(el) || elements.length >= MAX_ELEMENTS) return;
+        addElement({
           tag: 'button',
           type: el.type || 'button',
           selector: getSelector(el),
-          label: el.textContent?.trim() || el.value || el.getAttribute('aria-label') || '',
+          label: truncate(el.textContent || el.value || el.getAttribute('aria-label') || '', 80),
         });
       });
 
       document.querySelectorAll('a[href]').forEach(el => {
-        if (!isVisible(el)) return;
-        const href = el.getAttribute('href');
+        if (!isVisible(el) || elements.length >= MAX_ELEMENTS) return;
+        const href = el.getAttribute('href') || '';
         if (href.startsWith('javascript') || href === '#') return;
-        const label = el.textContent?.trim();
+        const label = truncate(el.textContent || el.getAttribute('aria-label') || el.title || '', 80);
         if (!label) return;
         if (!el.matches('.btn, .button, [role="button"]')) {
-          elements.push({
+          addElement({
             tag: 'a',
             selector: getSelector(el),
-            label: label.slice(0, 50),
-            href: href.slice(0, 100),
+            label,
+            href: truncate(el.href || href, 120),
           });
         }
       });
 
-      return elements;
+      return {
+        elements,
+        pageText: truncate(document.body?.innerText || '', MAX_TEXT),
+      };
     },
   });
 
-  // Also return the tab's current URL + title so the web-agent can detect
-  // done-states (e.g. YouTube /watch) without an extra round-trip.
   let tabInfo = {};
   try {
     const tab = await chrome.tabs.get(tabId);
     tabInfo = { url: tab.url || '', title: tab.title || '' };
   } catch (_) {}
 
-  return { elements: results[0]?.result || [], ...tabInfo };
+  const payload = results[0]?.result || { elements: [], pageText: '' };
+  return { ...payload, ...tabInfo };
 }
 
-/**
- * Perform a batch of DOM actions on a page.
- * Each action: { action, selector, value?, timeout? }
- *
- * FIX: Each action now waits for the element to exist before acting,
- * so single-page-app transitions between actions don't cause failures.
- */
 async function performPageActions(tabId, actions) {
-  tabId = await resolveTabId(tabId); // ← FIX: centralised
+  tabId = await resolveTabId(tabId);
   if (!actions || !actions.length) return { performed: 0, total: 0, results: [] };
 
   await waitForTabLoad(tabId);
@@ -930,9 +1232,6 @@ async function performPageActions(tabId, actions) {
   const results = await chrome.scripting.executeScript({
     target: { tabId },
     func: async (actionList) => {
-      /**
-       * Wait for a selector to appear in the DOM (for SPA navigations between actions).
-       */
       function waitForEl(selector, timeoutMs = 5000) {
         return new Promise((resolve) => {
           const existing = document.querySelector(selector);
@@ -950,7 +1249,6 @@ async function performPageActions(tabId, actions) {
 
       for (const act of actionList) {
         try {
-          // Wait for element (handles SPA route changes between sequential actions)
           const el = await waitForEl(act.selector, act.timeout || 5000);
           if (!el) {
             results.push({ action: act.action, selector: act.selector, ok: false, error: 'Element not found (timeout)' });
@@ -991,7 +1289,6 @@ async function performPageActions(tabId, actions) {
             }
             case 'enter': {
               el.focus();
-              // Dispatch on the element itself
               const enterEvent = (type) => new KeyboardEvent(type, {
                 key: 'Enter', code: 'Enter', keyCode: 13, which: 13,
                 bubbles: true, cancelable: true,
@@ -999,18 +1296,15 @@ async function performPageActions(tabId, actions) {
               ['keydown', 'keypress', 'keyup'].forEach(type => {
                 el.dispatchEvent(enterEvent(type));
               });
-              // ChatGPT / React SPAs intercept Enter at document level
               ['keydown', 'keypress', 'keyup'].forEach(type => {
                 document.body.dispatchEvent(enterEvent(type));
               });
-              // Last resort: click the nearest visible send/submit button
               const sendBtn = (
                 document.querySelector('[data-testid="send-button"]') ||
                 document.querySelector('button[aria-label*="Send"]') ||
                 document.querySelector('button[type="submit"]') ||
                 document.querySelector('#composer-submit-button') ||
                 (() => {
-                  // Walk up and find a sibling/nearby button
                   let p = el.parentElement;
                   for (let i = 0; i < 5 && p; i++, p = p.parentElement) {
                     const btn = p.querySelector('button');
@@ -1076,7 +1370,7 @@ async function performPageActions(tabId, actions) {
 connectWebSocket();
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('[OpenClaw] Extension v3 installed');
+  console.log('[OpenClaw] Extension v3.1 installed');
   chrome.storage.local.set({ connectionStatus: 'disconnected', recentCommands: [] });
   connectWebSocket();
 });
@@ -1087,11 +1381,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     ws = null;
     connectWebSocket();
     sendResponse({ ok: true });
+  } else if (msg.action === 'PING') {
+    sendResponse({ pong: true });
   }
   return true;
 });
 
-// Keep service worker alive (MV3 service workers terminate after 30s idle)
 chrome.alarms.create('keepAlive', { periodInMinutes: 0.4 });
 chrome.alarms.onAlarm.addListener(() => {
   if (!ws || ws.readyState !== WebSocket.OPEN) connectWebSocket();

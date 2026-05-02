@@ -8,6 +8,11 @@ Extension routing:
   When the Chrome extension is connected and the planner chose 'browser'
   for a Google/YouTube action, the executor automatically redirects to
   the 'extension' skill — no planner change needed.
+
+Fixes in v3.1:
+  - VerificationError from extension_bridge is caught and treated as a
+    real step failure (not silently ignored), so Gmail / Calendar steps
+    that weren't confirmed will trigger recovery / replan as appropriate.
 """
 
 import asyncio
@@ -18,13 +23,18 @@ from typing import Optional, Callable, Awaitable
 from agent.planner import ActionPlan, Step, StepStatus, Planner
 from agent.recovery import RecoveryManager
 
+# Import VerificationError so we can handle it specifically in _execute_step
+try:
+    from skills.browser.extension_bridge import VerificationError
+except ImportError:
+    # Fallback if import path differs — define a local alias so isinstance checks work
+    class VerificationError(RuntimeError):
+        pass
+
 
 # ---------------------------------------------------------------------------
 # Extension routing table
 # ---------------------------------------------------------------------------
-# Actions that the Chrome extension handles better than Playwright.
-# If the extension is connected and the planner chose 'browser', the executor
-# will silently redirect these to 'extension' instead.
 
 _EXTENSION_ROUTABLE_ACTIONS = {
     # YouTube
@@ -54,44 +64,29 @@ _EXTENSION_ROUTABLE_ACTIONS = {
     # Drive
     "search_drive",   "searchdrive",
     "open_drive",     "opendrive",
-    # Agentic web interaction (works on ANY website)
+    # Agentic web interaction
     "web_agent",      "webagent",
     "web_interact",   "webinteract",
 }
 
-# URL patterns — if a navigate/search goes to these domains and the extension
-# is connected, prefer the extension's navigate (opens tab in real Chrome).
 _GOOGLE_DOMAINS = {
     "youtube.com", "music.youtube.com", "mail.google.com", "gmail.com",
     "calendar.google.com", "meet.google.com",
     "drive.google.com", "docs.google.com",
-    # Non-Google but web-agent-compatible SPAs
     "chat.openai.com", "chatgpt.com",
 }
 
 
 def _action_key(action: str) -> str:
-    """Normalise action to lowercase no-underscore for lookup."""
     return action.lower().replace("_", "").replace("-", "")
 
 
 def _should_route_to_extension(skill: str, action: str, params: dict) -> bool:
-    """
-    Returns True if this step should be redirected to the extension skill.
-    Conditions:
-      1. Action is in the extension routing table (YouTube, Gmail, etc.)
-      2. OR action is "navigate" / "search" — ALL navigations go through the
-         extension's subprocess bridge so Chrome tab IDs are always tracked,
-         regardless of which domain the URL belongs to.
-    """
     key = _action_key(action)
 
     if key in {_action_key(a) for a in _EXTENSION_ROUTABLE_ACTIONS}:
         return True
 
-    # Route ALL navigate/search through the extension (not just Google domains).
-    # The extension uses subprocess to open Chrome, which is reliable and
-    # always returns a valid tabId for subsequent steps.
     if action in ("navigate", "search"):
         url = params.get("url", "") or ""
         if url and url != "about:blank":
@@ -107,15 +102,12 @@ class SkillRegistry:
         self._skills = {}
 
     def register(self, name: str, handler):
-        """Register a skill handler."""
         self._skills[name] = handler
 
     def get(self, name: str):
-        """Get a skill handler by name."""
         return self._skills.get(name)
 
     def available_skills(self) -> list:
-        """List all registered skill names."""
         return list(self._skills.keys())
 
 
@@ -130,11 +122,9 @@ class ExecutionContext:
         self.logs: list = []
         self.started_at = datetime.now().isoformat()
         self.completed_at: Optional[str] = None
-        # Shared key-value store for passing data between steps (e.g. tabId from navigate → web_agent)
         self.shared: dict = {}
-        # Track recovery attempts to prevent cascading replans
         self.recovery_count: int = 0
-        self.max_recoveries: int = 1  # Allow at most 1 recovery replan per execution
+        self.max_recoveries: int = 1
 
     @property
     def current_step(self) -> Optional[Step]:
@@ -166,18 +156,17 @@ class ExecutionContext:
             "is_aborted": self.is_aborted,
             "started_at": self.started_at,
             "completed_at": self.completed_at,
-            "logs": self.logs[-50:],  # Last 50 logs
+            "logs": self.logs[-50:],
         }
 
 
-# Type alias for the broadcast callback
 BroadcastFn = Callable[[dict], Awaitable[None]]
 
 
 class Executor:
     """
     Pi Engine Executor — runs action plans step by step.
-    
+
     Dispatches each step to the appropriate skill, handles pausing/skipping/aborting,
     and broadcasts state changes to the dashboard via a callback.
     """
@@ -195,11 +184,9 @@ class Executor:
         self.context: Optional[ExecutionContext] = None
 
     async def _noop_broadcast(self, event: dict):
-        """No-op broadcast when no dashboard is connected."""
         pass
 
     async def _emit(self, event_type: str, data: dict):
-        """Broadcast an event to the dashboard."""
         event = {
             "type": event_type,
             "timestamp": datetime.now().isoformat(),
@@ -208,15 +195,6 @@ class Executor:
         await self.broadcast(event)
 
     async def execute_plan(self, plan: ActionPlan) -> ExecutionContext:
-        """
-        Execute an entire action plan step by step.
-        
-        Args:
-            plan: The ActionPlan to execute
-            
-        Returns:
-            ExecutionContext with final state and logs
-        """
         self.context = ExecutionContext(plan)
         plan.status = "running"
 
@@ -229,7 +207,6 @@ class Executor:
         self.context.add_log("INFO", f"Starting execution: {plan.summary}")
 
         while not self.context.is_complete and not self.context.is_aborted:
-            # Check for pause
             while self.context.is_paused:
                 await asyncio.sleep(0.5)
 
@@ -240,7 +217,6 @@ class Executor:
             success = await self._execute_step(step)
 
             if not success and not self.context.is_aborted:
-                # Recovery system will handle retries and replanning
                 recovered = await self._handle_failure(step)
                 if not recovered:
                     self.context.add_log(
@@ -272,29 +248,19 @@ class Executor:
     # ── Template variable resolution ──────────────────────────────────
 
     def _resolve_params(self, params: dict) -> dict:
-        """
-        Resolve {{steps.X.result}} / {{steps.X.content}} / {{steps.X.extracted_content}}
-        template variables in any string param value.
-
-        The planner sometimes generates params like:
-            {"content": "{{steps.step_3.result}}"}
-        This replaces those with the actual string result from step step_3.
-        """
         import re as _re
         if not self.context:
             return params
 
-        # Build a lookup of completed step results
         step_results: dict[str, str] = {}
         for s in self.context.plan.steps:
             if s.result:
                 step_results[s.id] = s.result
 
         def _sub(value: str) -> str:
-            # Match {{steps.STEP_ID.FIELD}} — field is ignored, we always use .result
             def replacer(m):
                 step_id = m.group(1)
-                return step_results.get(step_id, m.group(0))  # keep original if not found
+                return step_results.get(step_id, m.group(0))
             return _re.sub(r'\{\{steps\.([\w]+)(?:\.[\w]+)?\}\}', replacer, value)
 
         resolved = {}
@@ -310,9 +276,6 @@ class Executor:
         step.started_at = datetime.now().isoformat()
 
         # ── Smart extension routing ─────────────────────────────────────
-        # If the Chrome extension is connected, prefer it over Playwright
-        # for any YouTube / Gmail / Calendar / Meet / Drive action,
-        # regardless of which skill the planner specified.
         effective_skill = step.skill
         ext_handler = self.skills.get("extension")
         if (
@@ -326,7 +289,6 @@ class Executor:
                 f"[Router] Redirected {step.skill}.{step.action} → extension (Chrome extension is connected)",
                 step.id,
             )
-        # ───────────────────────────────────────────────────────────────
 
         await self._emit("step_started", {
             "stepId":      step.id,
@@ -343,16 +305,11 @@ class Executor:
         )
 
         try:
-            # ── Resolve template variables in params ──────────────────
-            # Replace {{steps.X.result}} with actual prior step outputs
             step.params = self._resolve_params(step.params)
 
             skill_handler = self.skills.get(effective_skill)
             if not skill_handler:
                 if effective_skill == "extension":
-                    # Extension not registered — don't silently fall back to browser
-                    # because browser doesn't know extension-specific actions
-                    # (searchYouTube, composeMail, etc.)
                     raise ConnectionError(
                         "Extension skill not registered. "
                         "Check startup — is the Chrome extension installed at chrome://extensions/?"
@@ -364,9 +321,7 @@ class Executor:
 
             action_key = _action_key(step.action)
 
-            # ── Extension reconnect wait (applies to ALL extension actions) ──
-            # Chrome MV3 service workers suspend after every command response
-            # and reconnect within ~1-3s. Wait up to 8s before giving up.
+            # ── Extension reconnect wait ───────────────────────────────
             if effective_skill == "extension" and action_key not in ("webagent", "webinteract"):
                 if not getattr(skill_handler, "is_connected", True):
                     self.context.add_log(
@@ -374,7 +329,7 @@ class Executor:
                         "[Executor] Extension suspended — waiting up to 8s for reconnect...",
                         step.id,
                     )
-                    for _w in range(16):   # 16 × 0.5s = 8s
+                    for _w in range(16):
                         await asyncio.sleep(0.5)
                         if getattr(skill_handler, "is_connected", False):
                             self.context.add_log(
@@ -389,22 +344,17 @@ class Executor:
                             "Make sure Chrome is open and the OpenClaw extension is installed."
                         )
 
-            # ── Inject shared context into step params ────────────────
-            # If a prior navigate step stored a tabId, inject it into
-            # web_agent params so it operates on the correct tab
-            # instead of querying the (possibly wrong) active tab.
+            # ── Inject shared context for web_agent ───────────────────
             if action_key in ("webagent", "webinteract"):
                 shared_tab_id = self.context.shared.get("last_tab_id")
                 raw_tab_id = step.params.get("tab_id")
-                # Coerce string values ("last", non-int) → real integer tab id
                 resolved_tab_id = None
                 if raw_tab_id is not None:
                     try:
                         coerced = int(raw_tab_id)
                         resolved_tab_id = coerced if coerced > 0 else None
                     except (TypeError, ValueError):
-                        resolved_tab_id = None  # "last" or other string → use shared
-                # Fall back to the shared tab from the prior navigate step
+                        resolved_tab_id = None
                 resolved_tab_id = resolved_tab_id or shared_tab_id
                 if resolved_tab_id != raw_tab_id:
                     self.context.add_log(
@@ -414,16 +364,13 @@ class Executor:
                     )
                 step.params["tab_id"] = resolved_tab_id
 
-            # ── Agentic Web Agent: special handling ──────────────────
-            # If the action is web_agent/web_interact, run the full
-            # agentic loop (extract DOM → LLM → execute → repeat)
+            # ── Agentic web agent ─────────────────────────────────────
             if action_key in ("webagent", "webinteract"):
                 from skills.browser.extension_bridge import run_web_agent
                 ext = self.skills.get("extension")
                 if ext is None:
                     raise ConnectionError("Extension skill not registered — check startup logs")
 
-                # MV3 reconnect wait (may already be handled above, but be safe)
                 if not getattr(ext, "is_connected", False):
                     self.context.add_log(
                         "INFO",
@@ -461,9 +408,7 @@ class Executor:
             step.result = str(result) if result else "Success"
             step.completed_at = datetime.now().isoformat()
 
-            # ── Store tabId in shared context for subsequent steps ────
-            # Browser navigate and extension navigate both return a tabId
-            # in the result string. Extract and store it.
+            # ── Store tabId in shared context ─────────────────────────
             if step.result:
                 import re as _re
                 tab_match = _re.search(r'"tabId"\s*:\s*(\d+)', step.result)
@@ -475,14 +420,9 @@ class Executor:
                         f"[Executor] Stored tabId={new_tab_id} for next steps",
                         step.id,
                     )
-                # Also update last_tab_id if web_agent navigated to a new page.
-                # web_agent results don't embed tabId JSON, but the shared tab
-                # context must stay current so the next extract/click step works.
                 elif action_key in ("webagent", "webinteract") or (
                     action_key == "navigate" and not tab_match
                 ):
-                    # Re-query extension for the tab matching the navigated URL
-                    # (handles Playwright navigate which returns no tabId JSON).
                     target_url = step.params.get("url", "") or ""
                     try:
                         ext = self.skills.get("extension")
@@ -490,7 +430,6 @@ class Executor:
                             tabs_data = await ext._send("getTabs", {}, timeout=5)
                             tabs = tabs_data.get("tabs", [])
                             if tabs and target_url:
-                                # Try to find the tab whose URL matches the navigated URL
                                 matched = None
                                 for tab in reversed(tabs):
                                     tab_url = tab.get("url", "")
@@ -500,7 +439,6 @@ class Executor:
                                     ):
                                         matched = tab
                                         break
-                                # Fall back to the most recently opened tab
                                 if matched is None:
                                     matched = max(tabs, key=lambda t: t.get("id", 0))
                                 self.context.shared["last_tab_id"] = matched["id"]
@@ -518,7 +456,7 @@ class Executor:
                                     step.id,
                                 )
                     except Exception:
-                        pass  # Non-fatal
+                        pass
 
             await self._emit("step_completed", {
                 "stepId": step.id,
@@ -528,6 +466,27 @@ class Executor:
 
             self.context.add_log("INFO", f"Completed: {step.result}", step.id)
             return True
+
+        except VerificationError as e:
+            # ── Verification failure: the action ran but couldn't be confirmed ──
+            # Treat exactly like any other failure so recovery/replan fires.
+            step.status = StepStatus.FAILED
+            step.error = str(e)
+            step.completed_at = datetime.now().isoformat()
+
+            await self._emit("step_failed", {
+                "stepId": step.id,
+                "status": "failed",
+                "error":  step.error,
+                "kind":   "verification_failure",
+            })
+
+            self.context.add_log(
+                "ERROR",
+                f"Verification failed: {step.error}",
+                step.id,
+            )
+            return False
 
         except Exception as e:
             step.status = StepStatus.FAILED
@@ -554,21 +513,15 @@ class Executor:
         Returns True if recovery succeeds (or is gracefully skipped),
         False if all retries are exhausted.
         """
-        # Do NOT attempt recovery for web_agent failures -- the recovery planner
-        # tends to generate duplicate multi-browser plans (open Chrome + Edge) which
-        # cause more confusion than just reporting the failure cleanly.
         if _action_key(failed_step.action) in ("webagent", "webinteract"):
             self.context.add_log(
                 "WARN",
-                f"[Recovery] Skipping replan for web_agent step '{failed_step.id}' "
+                f"[Recovery] Not replanning web_agent step '{failed_step.id}' "
                 f"-- error: {failed_step.error}",
                 failed_step.id,
             )
-            # Mark as skipped (not permanently failed) so execution continues
-            failed_step.status = StepStatus.SKIPPED
-            return True
+            return False
 
-        # Cap total recovery attempts to prevent cascading replans
         if self.context.recovery_count >= self.context.max_recoveries:
             self.context.add_log(
                 "WARN",
@@ -586,7 +539,6 @@ class Executor:
         )
 
         if recovered and recovered.steps:
-            # Insert recovery steps into the plan
             insert_pos = self.context.current_step_index + 1
             for i, recovery_step in enumerate(recovered.steps):
                 self.context.plan.steps.insert(insert_pos + i, recovery_step)
@@ -609,19 +561,16 @@ class Executor:
     # --- User Control Methods ---
 
     def pause(self):
-        """Pause execution after the current step completes."""
         if self.context:
             self.context.is_paused = True
             self.context.add_log("WARN", "Execution paused by user.")
 
     def resume(self):
-        """Resume paused execution."""
         if self.context:
             self.context.is_paused = False
             self.context.add_log("INFO", "Execution resumed by user.")
 
     def skip_step(self):
-        """Skip the current step."""
         if self.context and self.context.current_step:
             step = self.context.current_step
             step.status = StepStatus.SKIPPED
@@ -630,12 +579,10 @@ class Executor:
             self.context.add_log("WARN", f"Step {step.id} skipped by user.", step.id)
 
     def abort(self):
-        """Abort the entire execution."""
         if self.context:
             self.context.is_aborted = True
 
     def override_step(self, step_id: str, new_params: dict):
-        """Override parameters of a pending step."""
         if self.context:
             for step in self.context.plan.steps:
                 if step.id == step_id and step.status == StepStatus.PENDING:

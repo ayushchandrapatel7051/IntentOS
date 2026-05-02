@@ -177,3 +177,14 @@ function getFormInfo() {
 }
 
 console.log('[OpenClaw v2] Content script ready on', window.location.hostname);
+
+// Keep service worker alive
+setInterval(() => {
+  try {
+    chrome.runtime.sendMessage({ action: 'PING' }, () => {
+      if (chrome.runtime.lastError) { /* ignore */ }
+    });
+  } catch (e) {
+    // Port might be closed, ignore
+  }
+}, 20000);

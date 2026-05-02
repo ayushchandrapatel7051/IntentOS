@@ -104,15 +104,15 @@ SKILLS:
   vision    : capture_screen() | click_at(x,y) | type_text(text) | press_keys(keys=[...]) | scroll(clicks) | move_mouse(x,y)
 
 WEB AGENT RULES - MANDATORY:
-  - For ANY task that involves interacting with a non-Google website (filling forms, registering,
+  - For ANY task that involves interacting with a website (filling forms, registering,
     logging in, clicking buttons, submitting data, scraping content, etc.), ALWAYS use:
       extension.web_agent(url="https://...", task="detailed description of what to do")
+  - DO NOT output a separate "browser.navigate" step before "web_agent". web_agent handles navigation internally.
   - If the browser is ALREADY on the correct page, use url="" to operate on the active tab.
   - The web_agent automatically: navigates → extracts DOM → decides what to fill/click → executes.
   - NEVER use browser.navigate + browser.click for complex website interactions — use web_agent instead.
-  - web_agent works on ANY website, not just Google apps.
   - For simple "just open this URL" tasks, browser.navigate is fine.
-  - For YouTube/Gmail/Calendar/Meet, prefer the dedicated extension commands (faster, zero LLM cost).
+  - NEVER use web_agent for Google Apps (YouTube, Gmail, Calendar, Meet). ALWAYS use the dedicated extension commands (e.g. extension.createEvent) because Google DOMs are too complex for web_agent. Calculate dates yourself (e.g. tomorrow = "2026-05-03").
 
 RULES:
   - Prefer browser > terminal/apps > vision (vision = last resort)
