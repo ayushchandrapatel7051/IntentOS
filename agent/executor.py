@@ -342,6 +342,17 @@ class Executor:
 
     async def _execute_step(self, step: Step) -> bool:
         """Execute a single step by dispatching to the appropriate skill."""
+        
+        # --- Fallback safety guard ---
+        if step.action in ["web_agent", "webagent"]:
+            task = step.params.get("task", "").lower()
+            if "extract" in task and "click" not in task:
+                step.skill = "extension"
+                step.action = "get_page_text"
+                step.params = {
+                    "selector": "#mw-content-text"
+                }
+        # -----------------------------
         step.status = StepStatus.RUNNING
         step.started_at = datetime.now().isoformat()
 

@@ -235,17 +235,26 @@ COMPLEX TASK GUIDELINES:
   - For multi-file operations, generate one step per file.
   - For conditional logic (if X then Y), plan the most likely path.
   - Maximum 15 steps per plan. If more are needed, group related ops.
-PAGE CONTENT EXTRACTION RULES - MANDATORY:
-  When the task is "open page X and save/extract its content to a file":
-  - Use a SINGLE web_agent step whose task explicitly says "extract all text content"
-  - The web_agent will click the link, wait for the page to load, then run extract_text
-  - Then use files.write_file with content="{{steps.step_N.result}}" to save it
-  - NEVER use a separate extension.extract step — web_agent handles it with extract_text
-  Example for "search ronaldo, open wikipedia, save to file":
-    step_1: browser.navigate(url="https://www.google.com/search?q=ronaldo")
-    step_2: extension.web_agent(task="Click the Wikipedia link for Ronaldo from the search results. After the Wikipedia page loads, extract ALL visible text content from the Wikipedia article.")
-    step_3: files.write_file(path="ronaldo_wiki.txt", content="{{steps.step_2.result}}")
-  The key: web_agent task MUST say "extract all text content" or "extract ALL visible text" for extract_text to activate.
+PAGE CONTENT EXTRACTION RULES — UPDATED:
+
+  When the task is ONLY to read or extract content from a page:
+  - ALWAYS use extension.getPageText (NOT web_agent)
+
+  Examples:
+
+  Wikipedia:
+    step_1: browser.navigate(url="https://en.wikipedia.org/wiki/Virat_Kohli")
+    step_2: extension.getPageText(tab_id="{{steps.step_1.result.tabId}}", selector="#mw-content-text")
+
+  NEVER:
+  - use web_agent for static pages
+  - say "extract ALL visible text" in web_agent
+
+  web_agent is ONLY for:
+  - clicking
+  - forms
+  - login
+  - dynamic interaction
 
   Example for "create Google Meet and send link on WhatsApp":
     step_1: extension.createEvent(title="Meeting", date="2026-05-04", time="10:00", meet=true)
