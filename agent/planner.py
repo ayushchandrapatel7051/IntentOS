@@ -96,6 +96,8 @@ SKILLS:
              [Meet]     joinMeet(url) | scheduleMeet(title, date, time, duration=60, guests) | muteMic() | muteCamera() | leaveMeet()
              [Drive]    searchDrive(query) | openDriveFile(file_id)
              [DOM]      navigate(url, new_tab=true) | smartClick(tab_id, text) | smartFill(tab_id, label, value) | getTabs() | screenshot() | extract(tab_id, schema="text")
+             [Content]  getPageText(tab_id, selector="body") — extract ALL text from a CSS selector, NO LLM cost
+                        Useful selectors: "#mw-content-text" (Wikipedia), "article", ".post-content", "body"
              [WebAgent] web_agent(url, task="describe what to do on the page")
   terminal  : execute(command) | execute_background(command)
   files     : move(source,destination) | copy(source,destination) | rename(source,new_name) | delete(path) | organize_by_type(directory) | list_dir(path) | watch(directory) | write_file(path,content) | read_file(path) | create_dir(path)
@@ -113,6 +115,26 @@ WEB AGENT RULES - MANDATORY:
   - NEVER use browser.navigate + browser.click for complex website interactions — use web_agent instead.
   - For simple "just open this URL" tasks, browser.navigate is fine.
   - NEVER use web_agent for Google Apps (YouTube, Gmail, Calendar, Meet). ALWAYS use the dedicated extension commands (e.g. extension.createEvent) because Google DOMs are too complex for web_agent. Calculate dates yourself (e.g. tomorrow = "2026-05-03").
+
+PAGE READING RULES — MANDATORY (use getPageText, not web_agent, for read-only tasks):
+  When the task is ONLY to READ / EXTRACT / SAVE content from a page (no clicking, no forms):
+  ALWAYS use extension.getPageText(tab_id, selector) — it is instant, costs ZERO tokens, and
+  returns the full text which can be saved with files.write_file(content="{{steps.step_N.result}}").
+  Selectors to use:
+    Wikipedia article  → selector="#mw-content-text"
+    News/blog article  → selector="article" (fallback: selector="body")
+    Any page full text → selector="body"
+  The tab_id comes from the previous browser.navigate step's result.
+  Example for "open Wikipedia Ronaldo page and save to file":
+    step_1: browser.navigate(url="https://en.wikipedia.org/wiki/Cristiano_Ronaldo", browser="chrome")
+    step_2: extension.getPageText(tab_id="{{steps.step_1.result.tabId}}", selector="#mw-content-text")
+    step_3: files.write_file(path="ronaldo.txt", content="{{steps.step_2.result}}")
+  For Google Search results → click a link first, then getPageText:
+    step_1: browser.navigate(url="https://www.google.com/search?q=ronaldo wikipedia")
+    step_2: extension.web_agent(url="", task="Click the Wikipedia link for Ronaldo")
+    step_3: extension.getPageText(selector="#mw-content-text")
+    step_4: files.write_file(path="ronaldo.txt", content="{{steps.step_3.result}}")
+  NEVER use web_agent just to extract text from a static page — use getPageText instead.
 
 RULES:
   - Prefer browser > terminal/apps > vision (vision = last resort)
@@ -213,7 +235,30 @@ COMPLEX TASK GUIDELINES:
   - For multi-file operations, generate one step per file.
   - For conditional logic (if X then Y), plan the most likely path.
   - Maximum 15 steps per plan. If more are needed, group related ops.
+PAGE CONTENT EXTRACTION RULES - MANDATORY:
+  When the task is "open page X and save/extract its content to a file":
+  - Use a SINGLE web_agent step whose task explicitly says "extract all text content"
+  - The web_agent will click the link, wait for the page to load, then run extract_text
+  - Then use files.write_file with content="{{steps.step_N.result}}" to save it
+  - NEVER use a separate extension.extract step — web_agent handles it with extract_text
+  Example for "search ronaldo, open wikipedia, save to file":
+    step_1: browser.navigate(url="https://www.google.com/search?q=ronaldo")
+    step_2: extension.web_agent(task="Click the Wikipedia link for Ronaldo from the search results. After the Wikipedia page loads, extract ALL visible text content from the Wikipedia article.")
+    step_3: files.write_file(path="ronaldo_wiki.txt", content="{{steps.step_2.result}}")
+  The key: web_agent task MUST say "extract all text content" or "extract ALL visible text" for extract_text to activate.
+
+  Example for "create Google Meet and send link on WhatsApp":
+    step_1: extension.createEvent(title="Meeting", date="2026-05-04", time="10:00", meet=true)
+    step_2: messaging.send_message(app="whatsapp", contact="jaidev", text="Here is the Google Meet link: {{steps.step_1.result.meet_link}}")
+
+PARAM VALUE RULES - MANDATORY:
+  - Param values must use ONLY {{steps.step_N.result}} or {{steps.step_N.result.field}} syntax.
+  - NEVER write Python code or method calls in param values (.join, .split, .strip, slicing, etc.)
+  - NEVER use single-brace templates - always double-brace: {{steps.step_N.result}}
+  - To send a Google Meet link: text="Here is the link: {{steps.step_1.result.meet_link}}"
+  - To save web content: content="{{steps.step_2.result}}"
 {dynamic}"""
+
 
 # Per-call user message — schema enforced here (Gemini follows user turns more reliably)
 USER_PROMPT = """\

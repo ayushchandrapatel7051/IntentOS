@@ -233,6 +233,14 @@ _ACTION_MAP = {
     "extractpage":     "extractPage",
     "perform_actions": "performActions",
     "performactions":  "performActions",
+
+    # Direct content extraction (no LLM)
+    "get_page_text":   "getPageText",
+    "getpagetext":     "getPageText",
+    "page_text":       "getPageText",
+    "pagetext":        "getPageText",
+    "extract_text":    "getPageText",   # allow planner to use extract_text as action name
+    "extracttext":     "getPageText",
 }
 
 
@@ -580,18 +588,29 @@ def _format_result(command: str, result: dict) -> str:
             )
         return f"[Gmail] Compose window opened (to={result.get('to','')})"
 
+<<<<<<< HEAD
     if command in ("createEvent", "scheduleMeet"):
         status   = result.get("status", "event_form_opened")
         verified = result.get("verified", False)
         meet_link = result.get("meetLink")
+=======
+    if command == "createEvent":
+        status = result.get("status", "event_form_opened")
+        meet_link = result.get("meet_link") or ""
+>>>>>>> c9cad7d (Fixed some bugs)
         base = (
             f"[Calendar] {status} — "
             f"'{result.get('title','New Event')}' on {result.get('date','')} {result.get('time','')}"
         )
+<<<<<<< HEAD
         if verified:
             base += " ✓ verified"
         if meet_link:
             base += f" | Meet: {meet_link}"
+=======
+        if meet_link:
+            return base + f" | meet_link={meet_link}"
+>>>>>>> c9cad7d (Fixed some bugs)
         return base
 
     if command == "joinMeet":
@@ -620,6 +639,15 @@ def _format_result(command: str, result: dict) -> str:
         if isinstance(data, list):
             return f"[Extract] {len(data)} items:\n" + json.dumps(data[:10], indent=2)
         return f"[Extract] {str(data)[:500]}"
+
+    if command == "getPageText":
+        text = result.get("text", "")
+        sel  = result.get("selector", "body")
+        length = result.get("length", len(text))
+        # Return the raw text so downstream steps (write_file, messaging) get the content
+        if text:
+            return text
+        return f"[getPageText] No text found for selector '{sel}'"
 
     if command == "performActions":
         r = result
@@ -738,6 +766,7 @@ Output a JSON array of actions. Each action is one of:
 - {"action":"check", "selector":"CSS_SELECTOR", "value":true}
 - {"action":"scroll", "selector":"CSS_SELECTOR"}  ← only when element is NOT in list yet
 - {"action":"navigate", "url":"URL"}  ← navigate to a different page
+- {"action":"extract_text"}  ← NO selector needed. Captures ALL visible text from the current page. Use when task says "extract content", "read page", "save page text", "get article text", etc.
 - {"action":"done", "message":"WHAT_WAS_ACCOMPLISHED"}  ← TASK IS COMPLETE, STOP NOW
 
 CRITICAL RULES — read carefully:
@@ -813,11 +842,18 @@ async def run_web_agent(bridge: "ExtensionBridge", task: str, url: str = None,
 
     results_log = []
     last_actions_str = ""
+<<<<<<< HEAD
     consecutive_scroll_only = 0
     done_actions = []
     completed = False
     made_progress = False
     failure_reason = ""
+=======
+    consecutive_scroll_only = 0  # stall detection: too many scroll-only rounds
+    done_actions = []  # initialise here so stall-detection can reference it
+    last_page_url = ""
+    last_extracted_text = None  # track best extracted content across ALL iterations
+>>>>>>> c9cad7d (Fixed some bugs)
 
     if tab_id:
         results_log.append(f"Using existing tab {tab_id}")
@@ -920,7 +956,8 @@ async def run_web_agent(bridge: "ExtensionBridge", task: str, url: str = None,
         done_actions   = [a for a in actions if a.get("action") == "done"]
         nav_actions    = [a for a in actions if a.get("action") == "navigate"]
         dom_actions    = [a for a in actions if a.get("action") in (
-            "fill", "fill_react", "click", "enter", "select", "check", "scroll"
+            "fill", "fill_react", "click", "enter", "select", "check", "scroll",
+            "extract_text",  # special no-selector action to capture full page text
         )]
 
         non_scroll = [a for a in actions if a.get("action") not in ("scroll", "done")]
@@ -971,17 +1008,63 @@ async def run_web_agent(bridge: "ExtensionBridge", task: str, url: str = None,
                 else:
                     results_log.append(f"  ✗ {r['action']}({r['selector']}): {r.get('error')}")
 
+<<<<<<< HEAD
             if total and performed < total:
                 failure_reason = f"Only performed {performed}/{total} DOM actions"
                 break
 
             await asyncio.sleep(3)
 
+=======
+            # Wait for page to update after actions.
+            # If the batch included a click + extract_text, the click may have
+            # caused navigation — wait longer for the new page to fully load.
+            had_click = any(a.get("action") == "click" for a in dom_actions)
+            had_extract = any(a.get("action") == "extract_text" for a in dom_actions)
+            wait_secs = 6 if (had_click and had_extract) else 3
+            await asyncio.sleep(wait_secs)
+
+            # If extract_text is in this batch but the click caused navigation,
+            # the text captured above is from the OLD page. Re-run extract_text
+            # on the NEW page after giving it time to load.
+            if had_click and had_extract:
+                try:
+                    reextract = await bridge._send("performActions", {
+                        "tabId": tab_id,
+                        "actions": [{"action": "extract_text"}],
+                    }, timeout=15)
+                    for r in reextract.get("results", []):
+                        if r.get("action") == "extract_text" and r.get("ok") and r.get("text"):
+                            # Patch into exec_result so the code below picks it up
+                            for existing in exec_result.get("results", []):
+                                if existing.get("action") == "extract_text":
+                                    existing["text"] = r["text"]
+                                    break
+                except Exception:
+                    pass  # Non-fatal — use whatever text was captured
+
+
+        # ── Now honor done (LLM signals task is complete after its actions) ──
+        # Also check if extract_text was performed — if so, its text becomes the result.
+        extracted_text = None
+        for r in exec_result.get("results", []):
+            if r.get("action") == "extract_text" and r.get("ok") and r.get("text"):
+                extracted_text = r["text"]
+                results_log.append(f"  ✓ extract_text: captured {len(extracted_text)} chars")
+                # Keep the best extraction across all iterations
+                last_extracted_text = extracted_text
+                break
+
+>>>>>>> c9cad7d (Fixed some bugs)
         if done_actions:
             msg = done_actions[0].get("message", "Task completed")
             completed = True
             results_log.append(f"✓ {msg}")
             print(f"  [WebAgent] Done: {msg}")
+            # If page text was extracted (this iteration OR any prior), return it
+            best_text = extracted_text or last_extracted_text
+            if best_text:
+                return best_text
             break
 
         _ONE_SHOT_KEYWORDS = (
@@ -1023,6 +1106,11 @@ async def run_web_agent(bridge: "ExtensionBridge", task: str, url: str = None,
             break
     else:
         iteration = max_iterations - 1
+
+    # If any iteration extracted page text, return it as the primary result.
+    # This handles cases where extract_text ran without a 'done' in the same batch.
+    if last_extracted_text:
+        return last_extracted_text
 
     summary = "\n".join(results_log)
     if completed:

@@ -67,6 +67,10 @@ _EXTENSION_ROUTABLE_ACTIONS = {
     # Agentic web interaction
     "web_agent",      "webagent",
     "web_interact",   "webinteract",
+    # Direct content extraction (no LLM cost)
+    "get_page_text",  "getpagetext",
+    "page_text",      "pagetext",
+    "extract_text",   "extracttext",
 }
 
 _GOOGLE_DOMAINS = {
@@ -248,25 +252,149 @@ class Executor:
     # ── Template variable resolution ──────────────────────────────────
 
     def _resolve_params(self, params: dict) -> dict:
+<<<<<<< HEAD
+=======
+        """
+        Resolve template variables in string param values.
+
+        Supported forms:
+          {steps.step_N.result}              → full result string of step N
+          {{steps.step_N.result}}            → same (double-brace variant)
+          {steps.step_N.result.field}        → extract named field from step N result
+          {step_N.result}                    → same without 'steps.' prefix
+          {step_N.result.field}             → field extraction without prefix
+
+        Field extraction tries, in order:
+          1. If result is JSON: json_obj[field]
+          2. Scan result string for 'field=value' pattern (e.g. 'meet_link=https://...')
+          3. Return the full result string as a fallback
+        """
+>>>>>>> c9cad7d (Fixed some bugs)
         import re as _re
+        import json as _json
         if not self.context:
             return params
 
+<<<<<<< HEAD
+=======
+        # Build lookup: full result text and failed status for each step
+>>>>>>> c9cad7d (Fixed some bugs)
         step_results: dict[str, str] = {}
+        step_failed:  dict[str, bool] = {}
         for s in self.context.plan.steps:
             if s.result:
                 step_results[s.id] = s.result
+            if s.status.value in ("failed", "skipped") or s.error:
+                step_failed[s.id] = True
+
+        def _extract_field(result_str: str, field: str) -> str:
+            """Try to extract a named field from a result string."""
+            # 1. Try JSON parsing
+            try:
+                # strip any leading label like "[Calendar] ..."
+                # look for the first '{' to find embedded JSON
+                json_start = result_str.find('{')
+                if json_start != -1:
+                    obj = _json.loads(result_str[json_start:])
+                    if field in obj:
+                        return str(obj[field])
+            except Exception:
+                pass
+
+            # 2. Try 'key=value' pattern (our _format_result embeds 'meet_link=https://...')
+            pattern = rf'(?:^|\|\s*|\s+){_re.escape(field)}=(\S+)'
+            m = _re.search(pattern, result_str)
+            if m:
+                return m.group(1).strip()
+
+            # 3. Return full result string as fallback
+            return result_str
 
         def _sub(value: str) -> str:
+<<<<<<< HEAD
             def replacer(m):
                 step_id = m.group(1)
                 return step_results.get(step_id, m.group(0))
             return _re.sub(r'\{\{steps\.([\w]+)(?:\.[\w]+)?\}\}', replacer, value)
+=======
+            # Match {steps.X.result.field}, {{steps.X.result.field}},
+            #        {step_X.result.field}, etc.
+            # Group 1 = step id, Group 2 = optional sub-field (e.g. 'meet_link')
+            def replacer(m):
+                step_id = m.group(1)
+                subfield = m.group(2)  # None if not present
+
+                # Resolve step id (with/without 'step_' prefix)
+                result = step_results.get(step_id)
+                if result is None:
+                    result = step_results.get(f"step_{step_id}")
+
+                if result is not None:
+                    if subfield and subfield not in ("result", "output", "content"):
+                        # Caller wants a specific named field
+                        return _extract_field(result, subfield)
+                    return result
+
+                # Referenced step has no result yet — check failure
+                failed = step_failed.get(step_id) or step_failed.get(f"step_{step_id}")
+                if failed:
+                    raise ValueError(
+                        f"Cannot resolve template {m.group(0)!r}: "
+                        f"step '{step_id}' failed — check prior step errors."
+                    )
+                return m.group(0)  # step not yet done — leave as-is
+
+            # Regex captures:
+            #   group 1: step id (e.g. 'step_1' or '1')
+            #   group 2: optional sub-field path after .result (e.g. 'meet_link')
+            return _re.sub(
+                r'\{\{?(?:steps\.)?([\w]+)(?:\.(?:result|output|content))?(?:\.([\w]+))?\}\}?',
+                replacer,
+                value,
+            )
+
+        def _sanitize_python_exprs(value: str) -> str:
+            """
+            Detect Python-style f-string expressions the LLM sometimes generates
+            and rewrite them to valid IntentOS template syntax.
+
+            Examples of what the LLM wrongly generates:
+              {'\n'.join(steps.step_2.result.splitlines()[:10])}
+              {steps.step_2.result.strip()}
+              {steps.step_1.result.split()[0]}
+
+            All become: {{steps.step_N.result}} (or {{steps.step_N.result.field}})
+            """
+            # Detect a {…} block containing steps.step_N.result AND Python-like chars
+            py_expr = _re.search(
+                r'\{[^}]*\bsteps\.(step_\w+)\.result\b[^}]*\}',
+                value,
+            )
+            if py_expr:
+                full_match = py_expr.group(0)
+                step_ref   = py_expr.group(1)
+                # Only rewrite if it has Python-style chars (parens, brackets, quotes)
+                if any(ch in full_match for ch in ('(', '[', '"', "'")):
+                    # Also capture a sub-field like .meet_link
+                    sub = _re.search(
+                        r'\bsteps\.' + _re.escape(step_ref) + r'\.result\.(\w+)',
+                        full_match,
+                    )
+                    clean = ('{{steps.' + step_ref + '.result.' + sub.group(1) + '}}') \
+                            if sub else ('{{steps.' + step_ref + '.result}}')
+                    value = value.replace(full_match, clean)
+            return value
+>>>>>>> c9cad7d (Fixed some bugs)
 
         resolved = {}
         for k, v in params.items():
-            resolved[k] = _sub(v) if isinstance(v, str) else v
+            if isinstance(v, str):
+                v = _sanitize_python_exprs(v)  # strip Python expressions first
+                resolved[k] = _sub(v)
+            else:
+                resolved[k] = v
         return resolved
+
 
     # ─────────────────────────────────────────────────────────────────
 
@@ -492,6 +620,9 @@ class Executor:
             step.status = StepStatus.FAILED
             step.error = str(e)
             step.completed_at = datetime.now().isoformat()
+
+            # Always print the error so it's visible in the CLI (not just in logs)
+            print(f"  [Executor] ✗ {step.id} failed: {step.error[:300]}")
 
             await self._emit("step_failed", {
                 "stepId": step.id,

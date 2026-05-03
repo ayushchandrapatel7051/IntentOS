@@ -201,6 +201,9 @@ async function handleCommand({ command, params = {} }) {
     case 'extractPage':       return extractPageElements(params.tabId);
     case 'performActions':    return performPageActions(params.tabId, params.actions);
 
+    // ── Direct content extraction (no LLM needed) ─────────────────────
+    case 'getPageText':       return getPageText(params.tabId, params.selector);
+
     default:
       throw new Error(`Unknown command: ${command}`);
   }
@@ -258,6 +261,32 @@ async function getDomContent(tabId, selector = 'body') {
     args: [selector],
   });
   return { content: results[0]?.result || '' };
+}
+
+/**
+ * getPageText — directly extract visible text from a CSS selector.
+ * NO LLM calls, no element enumeration — just pure DOM innerText.
+ * Perfect for Wikipedia, news articles, documentation pages, etc.
+ *
+ * selector examples:
+ *   "#mw-content-text"  → Wikipedia article body
+ *   "article"           → generic article tag
+ *   "body"              → entire page (default)
+ */
+async function getPageText(tabId, selector = 'body') {
+  tabId = await resolveTabId(tabId);
+  await waitForTabLoad(tabId);
+  const results = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: (sel) => {
+      // Try the requested selector first; fall back to body
+      const el = document.querySelector(sel) || document.body;
+      return (el.innerText || el.textContent || '').trim();
+    },
+    args: [selector || 'body'],
+  });
+  const text = results[0]?.result || '';
+  return { text, selector: selector || 'body', length: text.length };
 }
 
 async function clickElement(tabId, selector) {
@@ -934,6 +963,7 @@ async function createCalendarEvent({ title, date, time, duration, guests, descri
   ], 10, 1500);
 
   if (clicked) {
+<<<<<<< HEAD
     // Wait for Calendar to redirect back to the calendar view (confirms save)
     await new Promise(r => setTimeout(r, 3000));
 
@@ -961,6 +991,36 @@ async function createCalendarEvent({ title, date, time, duration, guests, descri
     verified: false,
     meetLink,
   };
+=======
+    // Wait for Calendar to redirect to the event detail page after saving
+    await new Promise(r => setTimeout(r, 3000));
+    await waitForTabLoad(tab.id, 10000);
+
+    // Try to extract the Google Meet link from the saved event detail page
+    let meetLink = null;
+    if (meet) {
+      try {
+        const linkResults = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            // Look for meet.google.com links anywhere on the event detail page
+            const links = Array.from(document.querySelectorAll('a[href]'));
+            const meetAnchor = links.find(a => a.href && a.href.includes('meet.google.com'));
+            if (meetAnchor) return meetAnchor.href;
+            // Fallback: scan all text nodes for a meet URL pattern
+            const bodyText = document.body.innerText || '';
+            const m = bodyText.match(/https:\/\/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}/i);
+            return m ? m[0] : null;
+          },
+        });
+        meetLink = linkResults[0]?.result || null;
+      } catch (_) {}
+    }
+
+    return { tabId: tab.id, title, date, time, status: 'event_saved', meet_link: meetLink };
+  }
+  return { tabId: tab.id, title, date, time, status: 'save_button_not_found', meet_link: null };
+>>>>>>> c9cad7d (Fixed some bugs)
 }
 
 /** Convert "2026-05-01" + "14:30" + optional offset minutes → YYYYMMDDTHHmmss */
@@ -1249,7 +1309,34 @@ async function performPageActions(tabId, actions) {
 
       for (const act of actionList) {
         try {
+<<<<<<< HEAD
           const el = await waitForEl(act.selector, act.timeout || 5000);
+=======
+          // ── extract_text is a special no-selector action ────────────
+          if (act.action === 'extract_text') {
+            const pageText = document.body.innerText || document.body.textContent || '';
+            results.push({ action: 'extract_text', selector: '', ok: true, text: pageText });
+            continue;
+          }
+
+          // ── Sanitise selector: strip leading combinators ────────────
+          // The LLM sometimes generates selectors like " > a:nth-of-type(1)"
+          // which are invalid at document root. Strip the leading combinator.
+          let sel = (act.selector || '').trim();
+          sel = sel.replace(/^[>+~]\s*/, '').trim();
+          if (!sel) {
+            results.push({ action: act.action, selector: act.selector, ok: false, error: 'Empty selector after sanitisation' });
+            continue;
+          }
+          // Validate selector before calling querySelector to get a clean error
+          try { document.querySelector(sel); } catch (e) {
+            results.push({ action: act.action, selector: act.selector, ok: false, error: `Invalid selector: ${e.message}` });
+            continue;
+          }
+
+          // Wait for element (handles SPA route changes between sequential actions)
+          const el = await waitForEl(sel, act.timeout || 5000);
+>>>>>>> c9cad7d (Fixed some bugs)
           if (!el) {
             results.push({ action: act.action, selector: act.selector, ok: false, error: 'Element not found (timeout)' });
             continue;
@@ -1343,6 +1430,12 @@ async function performPageActions(tabId, actions) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }
               results.push({ action: 'scroll', selector: act.selector, ok: true });
+              break;
+            }
+            case 'extract_text': {
+              // Special no-selector action: grab full page text for downstream steps
+              const pageText = document.body.innerText || document.body.textContent || '';
+              results.push({ action: 'extract_text', selector: '', ok: true, text: pageText });
               break;
             }
             default:
