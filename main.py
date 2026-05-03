@@ -19,6 +19,7 @@ import sys
 import socket
 from pathlib import Path
 from dotenv import load_dotenv
+from memory.rag_store import RAGStore
 
 import logging
 
@@ -216,6 +217,9 @@ async def main():
 
     # Wire executor into the dashboard
     app.state.executor = executor
+
+    from integration_patch import apply_patches
+    apply_patches(executor, planner, app)
 
     console.print("[green]✓[/] Dashboard ready")
 

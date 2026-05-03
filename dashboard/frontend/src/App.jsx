@@ -4,6 +4,7 @@ import LiveLogs from './components/LiveLogs'
 import ReasoningPanel from './components/ReasoningPanel'
 import UserControls from './components/UserControls'
 import StatusBar from './components/StatusBar'
+import MemoryPanel from './components/MemoryPanel'
 import useWebSocket from './hooks/useWebSocket'
 import './App.css'
 
@@ -265,6 +266,10 @@ function App() {
               )}
             </div>
           </section>
+        </div>
+
+        <div style={{ marginTop: '16px', marginBottom: '16px' }}>
+          <MemoryPanel />
         </div>
 
         {/* Bottom — User Controls */}
