@@ -183,6 +183,13 @@ class Executor:
         self.broadcast = broadcast or self._noop_broadcast
         self.context: Optional[ExecutionContext] = None
 
+        self.rag_store = None
+        try:
+            from memory.rag_store import RAGStore
+            self.rag_store = RAGStore()
+        except Exception as e:
+            print(f"[Executor] RAGStore init failed: {e}")
+
     async def _noop_broadcast(self, event: dict):
         pass
 
@@ -238,6 +245,22 @@ class Executor:
 
         self.context.completed_at = datetime.now().isoformat()
 
+        if self.rag_store:
+            try:
+                rag_steps = [{"skill": s.skill, "action": s.action, "params": s.params} for s in plan.steps]
+                rag_result = "\n".join(
+                    f"{s.action}: {str(s.result)[:100]}..." if s.result else f"{s.action}: failed"
+                    for s in plan.steps
+                )
+                self.rag_store.add_execution(
+                    intent=plan.intent,
+                    steps=rag_steps,
+                    result=rag_result,
+                    success=(plan.status == "completed")
+                )
+            except Exception as e:
+                print(f"[Executor] Failed to save execution to RAG: {e}")
+
         await self._emit("plan_completed", {
             "status": plan.status,
             "completed_at": self.context.completed_at,
@@ -253,15 +276,40 @@ class Executor:
             return params
 
         step_results: dict[str, str] = {}
+        step_data: dict[str, str] = {}  # structured .data from web_agent / extraction
         for s in self.context.plan.steps:
             if s.result:
                 step_results[s.id] = s.result
+            if hasattr(s, 'output_data') and s.output_data:
+                step_data[s.id] = s.output_data
 
         def _sub(value: str) -> str:
+            # 1. Normalize variables with AT LEAST ONE brace (e.g., `{step_1.data}`, `{{steps.step1}}`, `{step1.meet_link}`)
+            value = _re.sub(r'\{+\s*(?:steps\.)?step_?(\d+)(\.[a-zA-Z0-9_]+)?\s*\}+', r'{{step_\1\2}}', value)
+            
+            # 2. Normalize completely naked variables with exact property names (e.g., `step1.data`, `step_2.meet_link`)
+            value = _re.sub(r'(?<![\w\{])(?:steps\.)?step_?(\d+)\.(data|meet_link)(?![\w\}])', r'{{step_\1.\2}}', value)
+
             def replacer(m):
                 step_id = m.group(1)
-                return step_results.get(step_id, m.group(0))
-            return _re.sub(r'\{\{steps\.([\w]+)(?:\.[\w]+)?\}\}', replacer, value)
+                prop = m.group(2) if m.lastindex and m.lastindex >= 2 else None
+
+                # {{step_1.data}} → extracted text from web_agent
+                if prop == "data":
+                    return step_data.get(step_id) or step_results.get(step_id, m.group(0))
+
+                res = step_results.get(step_id, m.group(0))
+
+                # {{step_1.meet_link}} → extract Google Meet URL from calendar result
+                if prop == "meet_link" and "Meet: " in res:
+                    url_match = _re.search(r"Meet:\s*(https://meet\.google\.com/[^\s]+)", res)
+                    if url_match:
+                        return url_match.group(1)
+
+                return res
+
+            # Matches standardized {{step_1}} and {{step_1.data}} etc.
+            return _re.sub(r'\{\{(step_\d+)(?:\.([a-zA-Z0-9_]+))?\}\}', replacer, value)
 
         resolved = {}
         for k, v in params.items():
@@ -405,8 +453,16 @@ class Executor:
                 result = await skill_handler.execute(step.action, step.params)
 
             step.status = StepStatus.DONE
-            step.result = str(result) if result else "Success"
             step.completed_at = datetime.now().isoformat()
+
+            # ── Handle structured dict results (web_agent extraction) ─────────
+            if isinstance(result, dict):
+                step.output_data = result.get("data")  # the real extracted text
+                summary = result.get("summary") or result.get("status") or "Success"
+                step.result = summary
+            else:
+                step.output_data = None
+                step.result = str(result) if result else "Success"
 
             # ── Store tabId in shared context ─────────────────────────
             if step.result:

@@ -790,7 +790,7 @@ GENERAL RULES:
 async def run_web_agent(bridge: "ExtensionBridge", task: str, url: str = None,
                         tab_id: int = None,
                         gemini_client=None, model_name: str = "gemini-2.5-flash",
-                        max_iterations: int = 5) -> str:
+                        max_iterations: int = 5) -> dict:
     if not bridge.is_connected:
         raise ConnectionError("Chrome extension not connected")
 
@@ -802,6 +802,13 @@ async def run_web_agent(bridge: "ExtensionBridge", task: str, url: str = None,
     except ImportError:
         raise ImportError("google-genai not installed")
 
+    # ── Detect extraction intent ────────────────────────────────────────────
+    _EXTRACT_KEYWORDS = ("extract", "read", "get", "scrape", "fetch", "retrieve",
+                         "copy", "pull", "collect", "gather", "summarize", "summarise",
+                         "write about", "research", "find information", "look up", "look up")
+    task_lower = task.lower()
+    is_extraction = any(kw in task_lower for kw in _EXTRACT_KEYWORDS)
+
     youtube_request = _youtube_search_request(task)
     if youtube_request:
         result = await bridge._send("searchYouTube", youtube_request, timeout=45)
@@ -809,7 +816,11 @@ async def run_web_agent(bridge: "ExtensionBridge", task: str, url: str = None,
         result.pop("success", None)
         if result.get("warning") or result.get("playing") is False:
             raise RuntimeError(_format_result("searchYouTube", result))
-        return "[WebAgent] Completed via YouTube shortcut:\n" + _format_result("searchYouTube", result)
+        return {
+            "success": True,
+            "verified": True,
+            "summary": _format_result("searchYouTube", result),
+        }
 
     results_log = []
     last_actions_str = ""
@@ -843,7 +854,25 @@ async def run_web_agent(bridge: "ExtensionBridge", task: str, url: str = None,
         elements = page_data.get("elements", [])[:WEB_AGENT_MAX_ELEMENTS]
         page_url = page_data.get("url", "")
         page_title = page_data.get("title", "")
-        page_text = _shorten(page_data.get("pageText", ""), WEB_AGENT_MAX_PAGE_TEXT_CHARS)
+        page_text = page_data.get("pageText", "")
+
+        # ── Extraction fast path: if the page already has content, return it ──
+        if is_extraction and page_text and len(page_text.strip()) > 100:
+            # Trim to ~2500 chars (~300–400 words)
+            trimmed = page_text.strip()[:2500]
+            if len(page_text.strip()) > 2500:
+                trimmed += "\n... (truncated)"
+            print(f"  [WebAgent] Extraction complete: {len(trimmed)} chars from '{page_title}'")
+            return {
+                "success": True,
+                "verified": True,
+                "data": trimmed,
+                "source_url": page_url,
+                "source_title": page_title,
+                "summary": f"Extracted {len(trimmed)} chars from '{page_title}'",
+            }
+
+        short_page_text = _shorten(page_text, WEB_AGENT_MAX_PAGE_TEXT_CHARS)
 
         if not elements:
             failure_reason = "No interactive elements found on page"
@@ -857,7 +886,7 @@ async def run_web_agent(bridge: "ExtensionBridge", task: str, url: str = None,
             f"TASK: {_shorten(task, WEB_AGENT_MAX_TASK_CHARS)}\n\n"
             f"PAGE URL: {page_url}\n"
             f"PAGE TITLE: {_shorten(page_title, 160)}\n\n"
-            f"VISIBLE TEXT:\n{page_text}\n\n"
+            f"VISIBLE TEXT:\n{short_page_text}\n\n"
             f"INTERACTIVE ELEMENTS:\n{elements_text}"
         )
 
@@ -872,7 +901,7 @@ async def run_web_agent(bridge: "ExtensionBridge", task: str, url: str = None,
                     config=genai_types.GenerateContentConfig(
                         system_instruction=_WEB_AGENT_PROMPT,
                         temperature=0.1,
-                        max_output_tokens=768,
+                        max_output_tokens=2048,
                     ),
                 ),
                 timeout=WEB_AGENT_LLM_TIMEOUT,
@@ -899,9 +928,9 @@ async def run_web_agent(bridge: "ExtensionBridge", task: str, url: str = None,
         try:
             actions = _parse_actions(raw_text)
         except json.JSONDecodeError:
-            failure_reason = f"LLM returned invalid JSON: {raw_text[:200]}"
-            results_log.append(failure_reason)
-            break
+            print(f"  [WebAgent] LLM returned invalid JSON: {raw_text[:200]}")
+            results_log.append(f"LLM returned invalid JSON (retrying).")
+            continue
 
         actions = [a for a in actions if isinstance(a, dict)]
         if not actions:
@@ -982,13 +1011,29 @@ async def run_web_agent(bridge: "ExtensionBridge", task: str, url: str = None,
             completed = True
             results_log.append(f"✓ {msg}")
             print(f"  [WebAgent] Done: {msg}")
+
+            # After DOM actions complete, try to extract page content if extraction task
+            if is_extraction:
+                try:
+                    post_page = await bridge._send("extractPage", {"tabId": tab_id}, timeout=15)
+                    final_text = post_page.get("pageText", "").strip()[:2500]
+                    if final_text:
+                        return {
+                            "success": True,
+                            "verified": True,
+                            "data": final_text,
+                            "source_url": post_page.get("url", page_url),
+                            "source_title": post_page.get("title", page_title),
+                            "summary": msg,
+                        }
+                except Exception:
+                    pass
             break
 
         _ONE_SHOT_KEYWORDS = (
             "like", "heart", "follow", "retweet", "share",
             "bookmark", "save", "subscribe", "upvote", "vote",
         )
-        task_lower = task.lower()
         is_one_shot_task = any(kw in task_lower for kw in _ONE_SHOT_KEYWORDS)
         had_successful_click = any(
             r.get("ok") and r.get("action") == "click"
@@ -1026,9 +1071,14 @@ async def run_web_agent(bridge: "ExtensionBridge", task: str, url: str = None,
 
     summary = "\n".join(results_log)
     if completed:
-        return f"[WebAgent] Completed in {iteration + 1} iteration(s):\n{summary}"
+        return {
+            "success": True,
+            "verified": True,
+            "summary": f"Completed in {iteration + 1} iteration(s):\n{summary}",
+        }
     if failure_reason:
         raise RuntimeError(f"[WebAgent] Stopped in iteration {iteration + 1}: {failure_reason}\n{summary}")
     if made_progress:
         raise RuntimeError(f"[WebAgent] Reached iteration limit before completion:\n{summary}")
     raise RuntimeError(f"[WebAgent] Stopped without completing the task:\n{summary}")
+

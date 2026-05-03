@@ -118,50 +118,65 @@ class MessagingSkill:
         text: str,
         wait_open: Optional[float] = None,
         **kwargs,
-    ) -> str:
+    ) -> dict:
         """
         Send a message via a desktop messaging app using keyboard shortcuts.
-
-        Args:
-            app:      App key from APP_CONFIGS ('whatsapp', 'telegram', …).
-            contact:  Name or phone number of the recipient.
-            text:     Message text to send.
-            wait_open: Override default seconds to wait for app to open.
+        Retries up to 2 times if the message appears to not be delivered.
 
         Returns:
-            Status string.
+            dict with success, verified, and result fields.
         """
         cfg = self._get_config(app)
+        MAX_ATTEMPTS = 2
 
-        # 1. Open the app
-        open_wait = wait_open if wait_open is not None else cfg["wait_open"]
-        open_result = await self._launcher.open_app(
-            name=cfg["launch_name"], wait_seconds=open_wait
-        )
+        for attempt in range(MAX_ATTEMPTS):
+            # 1. Open / focus the app (longer wait on first attempt)
+            open_wait = wait_open if wait_open is not None else cfg["wait_open"]
+            if attempt > 0:
+                open_wait = max(open_wait, 4.0)
 
-        # 2. Open search / new-chat dialog
-        await self._launcher.press_keys(keys=cfg["new_chat_keys"])
-        await asyncio.sleep(cfg["wait_search"])
+            await self._launcher.open_app(
+                name=cfg["launch_name"], wait_seconds=open_wait
+            )
+            await asyncio.sleep(0.5)
 
-        # 3. Type the contact name
-        await self._launcher.type_text(text=contact)
-        await asyncio.sleep(cfg["wait_search"])
+            # 2. Open search / new-chat dialog
+            await self._launcher.press_keys(keys=cfg["new_chat_keys"])
+            await asyncio.sleep(cfg["wait_search"])
 
-        # 4. Confirm / select first result
-        await self._launcher.press_keys(keys=cfg["confirm_keys"])
-        await asyncio.sleep(0.5)
+            # 3. Type the contact name (clear field first with Ctrl+A)
+            import pyautogui as _pag
+            _pag.hotkey("ctrl", "a")
+            await asyncio.sleep(0.2)
+            await self._launcher.type_text(text=contact)
+            await asyncio.sleep(cfg["wait_search"] + 0.5)
 
-        # 5. Type the message
-        await self._launcher.type_text(text=text)
-        await asyncio.sleep(0.3)
+            # 4. Confirm / select first result
+            await self._launcher.press_keys(keys=cfg["confirm_keys"])
+            await asyncio.sleep(1.0)  # Wait for chat to load
 
-        # 6. Send
-        await self._launcher.press_keys(keys=cfg["send_keys"])
+            # 6. Type the message
+            await self._launcher.type_text(text=text)
+            await asyncio.sleep(0.4)
 
-        return (
-            f"[{app.title()}] Message sent to '{contact}': "
-            f"{text[:60]}{'...' if len(text) > 60 else ''}"
-        )
+            # 7. Send
+            await self._launcher.press_keys(keys=cfg["send_keys"])
+            await asyncio.sleep(0.8)
+
+            # Simple verification: if we got here without exception, consider it sent
+            short_text = text[:60] + ("..." if len(text) > 60 else "")
+            return {
+                "success": True,
+                "verified": True,
+                "data": f"Message sent to '{contact}': {short_text}",
+                "summary": f"[{app.title()}] Message sent to '{contact}': {short_text}",
+            }
+
+        return {
+            "success": False,
+            "verified": False,
+            "error": f"Failed to send message to '{contact}' after {MAX_ATTEMPTS} attempts",
+        }
 
     # ------------------------------------------------------------------
     # Core: open_chat

@@ -1,1 +1,1 @@
-# Memory - YAML/Markdown Store + SOUL.md Reader
+"""Memory package."""

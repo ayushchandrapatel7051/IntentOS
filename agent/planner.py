@@ -53,6 +53,7 @@ class Step:
     reasoning:    Optional[str] = None
     started_at:   Optional[str] = None
     completed_at: Optional[str] = None
+    output_data:  Optional[str] = None  # structured extracted data (e.g. web_agent page text)
 
     def to_dict(self):
         d = asdict(self)
@@ -213,6 +214,24 @@ COMPLEX TASK GUIDELINES:
   - For multi-file operations, generate one step per file.
   - For conditional logic (if X then Y), plan the most likely path.
   - Maximum 15 steps per plan. If more are needed, group related ops.
+
+STEP DATA PASSING RULES — CRITICAL:
+  When a later step needs OUTPUT from an earlier step, use template variables:
+  - {{step_N.data}}      — text extracted/fetched by step N (web_agent research, scraping)
+  - {{step_N.meet_link}} — Google Meet URL created by step N (extension.createEvent)
+  - {{step_N}}           — full result string of step N
+
+  Examples:
+    Step 1: extension.web_agent — research about Ronaldo on Wikipedia
+    Step 2: files.write_file(path="...", content="{{step_1.data}}")   ← USE THIS
+
+    Step 1: extension.createEvent(meet=true, ...)
+    Step 2: messaging.send_message(text="Here is the link: {{step_1.meet_link}}")
+
+  NEVER use:
+    - {{step_1.extracted_data}}  ← wrong key
+    - {{steps.step_1}}           ← wrong format
+    - Literal placeholder text like "[MEET_LINK_FROM_PREVIOUS_STEP]"
 {dynamic}"""
 
 # Per-call user message — schema enforced here (Gemini follows user turns more reliably)
@@ -244,6 +263,14 @@ class Planner:
         self.model_name  = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         self.soul_reader = soul_reader
         self.client      = None        # non-None = ready
+
+        self.retriever = None
+        try:
+            from memory.retriever import Retriever
+            self.retriever = Retriever()
+            print("[Planner] RAG memory system initialized")
+        except Exception as e:
+            print(f"[Planner] RAG initialization failed: {e}")
 
         use_vertex = os.getenv("USE_VERTEX_AI", "false").strip().lower() == "true"
 
@@ -326,7 +353,33 @@ class Planner:
         return SYSTEM_PROMPT.format(dynamic=self._dynamic_section())
 
     def _user_prompt(self, intent: str) -> str:
-        return USER_PROMPT.format(intent=intent)
+        prompt = USER_PROMPT.format(intent=intent)
+        
+        if self.retriever:
+            try:
+                executions, workflows = self.retriever.search(intent, top_k=3)
+                context_parts = []
+                
+                if executions:
+                    context_parts.append("Similar past tasks:\n" + "\n".join(
+                        f"- Intent: {e.get('intent', '')}\n  Steps: {e.get('steps', [])[:2]}...\n  Success: {e.get('success', False)}"
+                        for e in executions
+                    ))
+                    
+                if workflows:
+                    wf_texts = []
+                    for w in workflows:
+                        # Compress steps (max 2-4 lines)
+                        steps_summary = ", ".join(f"{s.get('skill', '')}.{s.get('action', '')}" for s in w.get('steps', [])[:4])
+                        wf_texts.append(f"- Name: {w.get('name', '')}\n  Desc: {w.get('description', '')}\n  Key steps: {steps_summary}")
+                    context_parts.append("Relevant workflows:\n" + "\n".join(wf_texts))
+                    
+                if context_parts:
+                    prompt = "CONTEXT:\n\n" + "\n\n".join(context_parts) + "\n\n" + prompt
+            except Exception as e:
+                print(f"[Planner] RAG retrieval failed: {e}")
+                
+        return prompt
 
     # ------------------------------------------------------------------
     # Generation config shared across calls
