@@ -70,6 +70,45 @@ class RecoveryManager:
                 "message": "Generating recovery plan...",
             })
 
+        # --- LOOP DETECTION FIX ---
+        if "loop" in error.lower() or "stopped in iteration" in error.lower():
+            from agent.planner import ActionPlan, Step
+            
+            # force fallback plan
+            fallback_steps = []
+
+            # assume last step had tab_id
+            tab_ref = "{{steps.step_1.result.tabId}}"
+
+            fallback_steps.append(Step(
+                id="recovery_1",
+                skill="extension",
+                action="getPageText",
+                params={
+                    "tab_id": tab_ref,
+                    "selector": "#mw-content-text"
+                },
+                description="Fallback: extract page text directly"
+            ))
+
+            fallback_steps.append(Step(
+                id="recovery_2",
+                skill="messaging",
+                action="send_message",
+                params={
+                    "app": "whatsapp",
+                    "contact": "jaidev",
+                    "text": "{{steps.recovery_1.result.text}}"
+                },
+                description="Send extracted content"
+            ))
+
+            return ActionPlan(
+                intent="Recovery plan: extract and send content",
+                steps=fallback_steps,
+                summary="Recovered from loop using getPageText"
+            )
+
         try:
             recovery_plan = await self.planner.replan(
                 failed_step=failed_step,

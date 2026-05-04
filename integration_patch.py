@@ -188,6 +188,9 @@ def _fix_step_params(params: dict) -> dict:
                 r'{{steps.\1}}',
                 v
             )
+            # FIX result.text missing access
+            if isinstance(v, str) and ".result}}" in v and ".text" not in v:
+                v = v.replace(".result}}", ".result.text}}")
         fixed[k] = v
     return fixed
 

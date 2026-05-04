@@ -237,6 +237,13 @@ COMPLEX TASK GUIDELINES:
   - Maximum 15 steps per plan. If more are needed, group related ops.
 PAGE CONTENT EXTRACTION RULES — UPDATED:
 
+# HARD OVERRIDE RULE (CRITICAL)
+- If the intent contains words like "extract", "read", "get content", "scrape", "copy text":
+  ALWAYS use extension.getPageText
+  NEVER use web_agent for these cases (this is a strict rule, not optional)
+- If a well-known direct URL exists (e.g., Wikipedia pages), ALWAYS navigate directly.
+  DO NOT search Google first.
+
   When the task is ONLY to read or extract content from a page:
   - ALWAYS use extension.getPageText (NOT web_agent)
 

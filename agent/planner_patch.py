@@ -19,6 +19,11 @@ def fix_template_syntax(plan_dict: dict) -> dict:
                         r'{{steps.\1}}',
                         v
                     )
+                    # FIX result.text missing access
+                    if isinstance(v, str) and ".result}}" in v and ".text" not in v:
+                        # automatically convert {{steps.step_X.result}} → {{steps.step_X.result.text}}
+                        v = v.replace(".result}}", ".result.text}}")
+
                     step["params"][k] = v
     return plan_dict
 

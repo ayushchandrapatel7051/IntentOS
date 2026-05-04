@@ -588,6 +588,14 @@ class Executor:
                 f"Failed: {step.error}\n{traceback.format_exc()}",
                 step.id,
             )
+
+            if step.error and "loop" in step.error.lower():
+                self.context.add_log(
+                    "WARNING",
+                    "Loop detected. Suggest switching to getPageText instead of web_agent",
+                    step.id
+                )
+
             return False
 
     async def _handle_failure(self, failed_step: Step) -> bool:
