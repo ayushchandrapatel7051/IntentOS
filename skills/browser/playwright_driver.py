@@ -119,11 +119,74 @@ class PlaywrightDriver:
         }
         url = engines.get(engine.lower(), engines["google"])
         result = await asyncio.to_thread(_open_url_in_browser, url, browser)
-        return f"Searched '{query}' — {result}"
+        return f"Searched '{query}' \u2014 {result}"
+
+    async def youtube_search(
+        self,
+        query: str,
+        video_index: int = 1,
+        browser: str = "chrome",
+        **kwargs,
+    ) -> str:
+        """
+        Search YouTube and play the Nth result.
+        Primary path: Playwright (clicks Nth result precisely).
+        Fallback path: subprocess open in real browser (when YouTube blocks Playwright).
+        """
+        search_url = "https://www.youtube.com/results?search_query=" + query.replace(" ", "+")
+
+        try:
+            await self._ensure_playwright(browser)
+            await self._pw_page.goto(search_url, wait_until="domcontentloaded", timeout=20_000)
+
+            selectors = [
+                "ytd-video-renderer a#video-title",
+                "ytd-video-renderer h3 a",
+                "#contents ytd-video-renderer a[href*='/watch']",
+            ]
+
+            video_links = []
+            for sel in selectors:
+                try:
+                    await self._pw_page.wait_for_selector(sel, timeout=10_000)
+                    all_links = await self._pw_page.query_selector_all(sel)
+                    real = []
+                    for el in all_links:
+                        href = await el.get_attribute("href") or ""
+                        if "/watch" in href:
+                            real.append(el)
+                    if len(real) >= video_index:
+                        video_links = real
+                        break
+                except Exception:
+                    continue
+
+            if len(video_links) < video_index:
+                raise RuntimeError(f"Only {len(video_links)} results found for '{query}'")
+
+            target = video_links[video_index - 1]
+            title = (
+                await target.get_attribute("title")
+                or await target.inner_text()
+                or f"video #{video_index}"
+            )
+            await target.scroll_into_view_if_needed()
+            await target.click()
+            return f"Playing YouTube result #{video_index}: \"{title.strip()}\""
+
+        except Exception as pw_err:
+            # YouTube blocks Playwright (ERR_ABORTED / bot detection).
+            # Fallback: open the search URL in the user's real browser via subprocess.
+            result = await asyncio.to_thread(_open_url_in_browser, search_url, browser)
+            return (
+                f"[Fallback] Opened YouTube search for '{query}' in real {browser.title()} "
+                f"({type(pw_err).__name__}). {result}"
+            )
 
     # ------------------------------------------------------------------
-    # Complex actions — Playwright (automation)
+    # Complex actions -- Playwright (automation)
     # ------------------------------------------------------------------
+
 
     async def _ensure_playwright(self, browser: str = "edge"):
         """Ensure a Playwright browser page is available for automation."""
@@ -201,16 +264,17 @@ class PlaywrightDriver:
     async def execute(self, action: str, params: dict) -> str:
         """Dispatch a browser action by name."""
         actions = {
-            "navigate":     self.navigate,
-            "search":       self.search,
-            "fill_form":    self.fill_form,
-            "click":        self.click,
-            "extract_text": self.extract_text,
-            "screenshot":   self.take_screenshot,
-            "manage_tabs":  self.manage_tabs,
-            "type_text":    self.type_text,
-            "wait_for":     self.wait_for_selector,
-            "evaluate":     self.evaluate_js,
+            "navigate":        self.navigate,
+            "search":          self.search,
+            "youtube_search":  self.youtube_search,   # full Playwright flow: search + click Nth
+            "fill_form":       self.fill_form,
+            "click":           self.click,
+            "extract_text":    self.extract_text,
+            "screenshot":      self.take_screenshot,
+            "manage_tabs":     self.manage_tabs,
+            "type_text":       self.type_text,
+            "wait_for":        self.wait_for_selector,
+            "evaluate":        self.evaluate_js,
         }
 
         handler = actions.get(action)

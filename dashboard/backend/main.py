@@ -1,27 +1,34 @@
 """
-OpenClaw Dashboard — FastAPI Backend
+IntentOS Dashboard — FastAPI Backend
 =======================================
 REST API + WebSocket server for the Command Center Dashboard.
 """
 
 import os
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from dashboard.backend.ws_manager import ConnectionManager
 from dashboard.backend.routes import create_router
+
+
+# Path to the Vite-built frontend
+_FRONTEND_DIST = Path(__file__).parent.parent / "frontend" / "dist"
 
 
 def create_app(executor=None, ws_manager=None, planner=None, store=None) -> FastAPI:
     """Create and configure the FastAPI application."""
     
     app = FastAPI(
-        title="OpenClaw Command Center",
+        title="IntentOS Command Center",
         description="Real-time agent execution dashboard",
         version="1.0.0-alpha",
     )
 
-    # CORS — allow dashboard frontend
+    # CORS — allow dashboard frontend (dev server on :3000)
     frontend_port = os.getenv("DASHBOARD_FRONTEND_PORT", "3000")
     app.add_middleware(
         CORSMiddleware,
@@ -29,6 +36,8 @@ def create_app(executor=None, ws_manager=None, planner=None, store=None) -> Fast
             f"http://localhost:{frontend_port}",
             "http://127.0.0.1:3000",
             "http://localhost:3000",
+            "http://127.0.0.1:8000",
+            "http://localhost:8000",
         ],
         allow_credentials=True,
         allow_methods=["*"],
@@ -69,13 +78,39 @@ def create_app(executor=None, ws_manager=None, planner=None, store=None) -> Fast
         except WebSocketDisconnect:
             manager.disconnect(websocket)
 
-    @app.get("/")
-    async def root():
-        return {
-            "name": "OpenClaw Command Center",
-            "version": "1.0.0-alpha",
-            "status": "running",
-        }
+    # ── Serve built React frontend (production) ──────────────────────
+    if _FRONTEND_DIST.exists():
+        # Mount static assets (JS/CSS/images)
+        app.mount(
+            "/assets",
+            StaticFiles(directory=str(_FRONTEND_DIST / "assets")),
+            name="assets",
+        )
+
+        @app.get("/", include_in_schema=False)
+        async def serve_spa_root():
+            return FileResponse(str(_FRONTEND_DIST / "index.html"))
+
+        @app.get("/{full_path:path}", include_in_schema=False)
+        async def serve_spa_fallback(full_path: str):
+            """Catch-all: serve index.html for any non-API path (SPA routing)."""
+            # Don't intercept API or WebSocket routes
+            if full_path.startswith("api/") or full_path == "ws":
+                from fastapi import HTTPException
+                raise HTTPException(status_code=404)
+            file_path = _FRONTEND_DIST / full_path
+            if file_path.exists() and file_path.is_file():
+                return FileResponse(str(file_path))
+            return FileResponse(str(_FRONTEND_DIST / "index.html"))
+    else:
+        @app.get("/", include_in_schema=False)
+        async def root():
+            return {
+                "name": "IntentOS Command Center",
+                "version": "1.0.0-alpha",
+                "status": "running",
+                "note": "Frontend not built. Run: cd dashboard/frontend && npm run build",
+            }
 
     return app
 

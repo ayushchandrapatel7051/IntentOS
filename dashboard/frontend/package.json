@@ -1,19 +1,19 @@
 {
-  "name": "frontend",
+  "name": "intentos-dashboard",
+  "version": "0.1.0",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev":     "vite --port 3000",
+    "build":   "vite build",
     "preview": "vite preview"
   },
-  "devDependencies": {
-    "typescript": "~6.0.2",
-    "vite": "^8.0.10"
-  },
   "dependencies": {
-    "react": "^19.2.5",
-    "react-dom": "^19.2.5"
+    "react":     "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.10"
   }
 }

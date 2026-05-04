@@ -90,11 +90,52 @@ You must handle COMPLEX, multi-step tasks reliably.
 
 SKILLS:
   browser   : navigate(url, browser="edge") | search(query, engine="google") | fill_form(selector,value) | click(selector) | extract_text(selector) | screenshot() | manage_tabs(operation) | type_text(text) | wait_for(selector) | evaluate(code)
+  extension : [YouTube]  playYouTube() | pauseYouTube() | setVolume(level=50) | seekTo(seconds) | getVideoInfo() | nextVideo()
+             [Gmail]    sendMail(to, subject, body) | composeMail(to, subject, body, send=false) | searchMail(query) | getUnread() | replyMail(tab_id, body)
+             [Calendar] createEvent(title, date="YYYY-MM-DD", time="HH:MM", duration=60, guests="a@b.com", meet=false) | openCalendar() | getEvents(date)
+             [Meet]     joinMeet(url) | scheduleMeet(title, date, time, duration=60, guests) | muteMic() | muteCamera() | leaveMeet()
+             [Drive]    searchDrive(query) | openDriveFile(file_id)
+             [DOM]      navigate(url, new_tab=true) | smartClick(tab_id, text) | smartFill(tab_id, label, value) | getTabs() | screenshot() | extract(tab_id, schema="text")
+             [Content]  getPageText(tab_id, selector="body") — extract ALL text from a CSS selector, NO LLM cost
+                        Useful selectors: "#mw-content-text" (Wikipedia), "article", ".post-content", "body"
+             [WebAgent] web_agent(url, task="describe what to do on the page")
   terminal  : execute(command) | execute_background(command)
   files     : move(source,destination) | copy(source,destination) | rename(source,new_name) | delete(path) | organize_by_type(directory) | list_dir(path) | watch(directory) | write_file(path,content) | read_file(path) | create_dir(path)
   apps      : open_app(name, wait_seconds=2) | press_keys(keys=[...]) | type_text(text) | list_apps(filter) | scan_apps()
   messaging : send_message(app, contact, text) | open_chat(app, contact)   [app="whatsapp" or "telegram"]
   vision    : capture_screen() | click_at(x,y) | type_text(text) | press_keys(keys=[...]) | scroll(clicks) | move_mouse(x,y)
+  ai        : ask(prompt="question", context="long text to analyze") | summarize(context="text to summarize")
+
+WEB AGENT RULES - MANDATORY:
+  - For ANY task that involves interacting with a website (filling forms, registering,
+    logging in, clicking buttons, submitting data, scraping content, etc.), ALWAYS use:
+      extension.web_agent(url="https://...", task="detailed description of what to do")
+  - DO NOT output a separate "browser.navigate" step before "web_agent". web_agent handles navigation internally.
+  - If the browser is ALREADY on the correct page, use url="" to operate on the active tab.
+  - The web_agent automatically: navigates → extracts DOM → decides what to fill/click → executes.
+  - NEVER use browser.navigate + browser.click for complex website interactions — use web_agent instead.
+  - For simple "just open this URL" tasks, browser.navigate is fine.
+  - NEVER use web_agent for Google Apps (YouTube, Gmail, Calendar, Meet). ALWAYS use the dedicated extension commands (e.g. extension.createEvent) because Google DOMs are too complex for web_agent. Calculate dates yourself (e.g. tomorrow = "2026-05-03").
+
+PAGE READING RULES — MANDATORY (use getPageText, not web_agent, for read-only tasks):
+  When the task is ONLY to READ / EXTRACT / SAVE content from a page (no clicking, no forms):
+  ALWAYS use extension.getPageText(tab_id, selector) — it is instant, costs ZERO tokens, and
+  returns the full text which can be saved with files.write_file(content="{{steps.step_N.result}}").
+  Selectors to use:
+    Wikipedia article  → selector="#mw-content-text"
+    News/blog article  → selector="article" (fallback: selector="body")
+    Any page full text → selector="body"
+  The tab_id comes from the previous browser.navigate step's result.
+  Example for "open Wikipedia Ronaldo page and save to file":
+    step_1: browser.navigate(url="https://en.wikipedia.org/wiki/Cristiano_Ronaldo", browser="chrome")
+    step_2: extension.getPageText(tab_id="{{steps.step_1.result.tabId}}", selector="#mw-content-text")
+    step_3: files.write_file(path="ronaldo.txt", content="{{steps.step_2.result}}")
+  For Google Search results → click a link first, then getPageText:
+    step_1: browser.navigate(url="https://www.google.com/search?q=ronaldo wikipedia")
+    step_2: extension.web_agent(url="", task="Click the Wikipedia link for Ronaldo")
+    step_3: extension.getPageText(selector="#mw-content-text")
+    step_4: files.write_file(path="ronaldo.txt", content="{{steps.step_3.result}}")
+  NEVER use web_agent just to extract text from a static page — use getPageText instead.
 
 RULES:
   - Prefer browser > terminal/apps > vision (vision = last resort)
@@ -108,7 +149,42 @@ RULES:
       * Chain commands with ; not &&
       * Create dirs: New-Item -ItemType Directory -Force -Path <path>
 
+EXTENSION SKILL RULES - MANDATORY (use extension, not browser, for these):
+  The extension skill controls Chrome/Edge DOM directly — use it for any Google app action.
+
+  ROUTING GUIDE (what action → which extension command):
+  ┌─ YouTube ──────────────────────────────────────────────────────────────────────────────┐
+  │  "search/play YouTube"       → extension.searchYouTube(query, video_index=1)            │
+  │  "play Nth video"            → extension.searchYouTube(query, video_index=N)            │
+  │  "first/second/third/..."   → video_index = 1/2/3/... (1-based, not 0-based)           │
+  │  "play/pause YouTube"        → extension.playYouTube / extension.pauseYouTube          │
+  │  "set volume to X"           → extension.setVolume(level=X)  [0-100]                   │
+  │  "skip/next video"           → extension.nextVideo()                                   │
+  └────────────────────────────────────────────────────────────────────────────────────────┘
+  ┌─ Gmail ────────────────────────────────────────────────────────────────────────────────┐
+  │  "send email to X"           → extension.sendMail(to="X", subject="...", body="...")   │
+  │  "compose email"             → extension.composeMail(to, subject, body, send=false)    │
+  │  "check/search email"        → extension.searchMail(query) or extension.getUnread()   │
+  └────────────────────────────────────────────────────────────────────────────────────────┘
+  ┌─ Google Calendar & Meet ───────────────────────────────────────────────────────────────┐
+  │  "create calendar event"     → extension.createEvent(title, date, time, duration=60)   │
+  │  "schedule Google Meet"      → extension.createEvent(..., meet=true)                   │
+  │  "join meeting URL"          → extension.joinMeet(url="https://meet.google.com/...")   │
+  │  "mute/unmute mic/camera"    → extension.muteMic() / extension.muteCamera()           │
+  │  "leave meeting"             → extension.leaveMeet()                                  │
+  └────────────────────────────────────────────────────────────────────────────────────────┘
+  ┌─ Google Drive ─────────────────────────────────────────────────────────────────────────┐
+  │  "search Drive for X"        → extension.searchDrive(query="X")                       │
+  └────────────────────────────────────────────────────────────────────────────────────────┘
+  If extension skill is unavailable or user did not install it, fall back to browser.navigate.
+
 BROWSER RULES - MANDATORY:
+
+  - For "play a song", "play YouTube video", or "play YouTube Music":
+      ALWAYS use TWO steps:
+        step 1: browser.navigate(url="https://music.youtube.com" or "https://www.youtube.com", browser="chrome")
+        step 2: extension.web_agent(url="", task="Search for 'X' and play the first result")
+      NEVER use searchYouTube or youtube_search (they have been removed).
   - NEVER use apps.open_app for any browser (edge, chrome, firefox). The browser skill opens the browser automatically.
   - Combine open+navigate into ONE step: browser.navigate(url=..., browser="chrome" or "edge")
   - "open chrome" or "open chrome and search X" -> browser.navigate(url="https://www.google.com/search?q=X", browser="chrome")
@@ -116,7 +192,7 @@ BROWSER RULES - MANDATORY:
   - "open edge" with no query -> browser.navigate(url="https://www.bing.com", browser="edge")
   - "open chrome" with no query -> browser.navigate(url="https://www.google.com", browser="chrome")
   - Always pass browser="chrome" when user says chrome, browser="edge" when user says edge.
-  - No browser specified: use browser="edge" as default.
+  - No browser specified: use browser="chrome" as default.
 
 VS CODE RULES - MANDATORY:
   - To open a file in VS Code: apps.open_app(name="visual studio code <filepath>")
@@ -157,10 +233,52 @@ COMPLEX TASK GUIDELINES:
       1. files.organize_by_type(directory=...)
       2. files.write_file(path=..., content=...) — create report
       3. messaging/browser step to send it
+  - For "summarize a file" or "tell me what this file is about":
+      1. files.read_file(path=...)
+      2. ai.summarize(context="{{steps.step_1.result}}")
   - For multi-file operations, generate one step per file.
   - For conditional logic (if X then Y), plan the most likely path.
   - Maximum 15 steps per plan. If more are needed, group related ops.
+PAGE CONTENT EXTRACTION RULES — UPDATED:
+
+# HARD OVERRIDE RULE (CRITICAL)
+- If the intent contains words like "extract", "read", "get content", "scrape", "copy text":
+  ALWAYS use extension.getPageText
+  NEVER use web_agent for these cases (this is a strict rule, not optional)
+- If a well-known direct URL exists (e.g., Wikipedia pages), ALWAYS navigate directly.
+  DO NOT search Google first.
+
+  When the task is ONLY to read or extract content from a page:
+  - ALWAYS use extension.getPageText (NOT web_agent)
+
+  Examples:
+
+  Wikipedia:
+    step_1: browser.navigate(url="https://en.wikipedia.org/wiki/Virat_Kohli")
+    step_2: extension.getPageText(tab_id="{{steps.step_1.result.tabId}}", selector="#mw-content-text")
+
+  NEVER:
+  - use web_agent for static pages
+  - say "extract ALL visible text" in web_agent
+
+  web_agent is ONLY for:
+  - clicking
+  - forms
+  - login
+  - dynamic interaction
+
+  Example for "create Google Meet and send link on WhatsApp":
+    step_1: extension.createEvent(title="Meeting", date="2026-05-04", time="10:00", meet=true)
+    step_2: messaging.send_message(app="whatsapp", contact="jaidev", text="Here is the Google Meet link: {{steps.step_1.result.meet_link}}")
+
+PARAM VALUE RULES - MANDATORY:
+  - Param values must use ONLY {{steps.step_N.result}} or {{steps.step_N.result.field}} syntax.
+  - NEVER write Python code or method calls in param values (.join, .split, .strip, slicing, etc.)
+  - NEVER use single-brace templates - always double-brace: {{steps.step_N.result}}
+  - To send a Google Meet link: text="Here is the link: {{steps.step_1.result.meet_link}}"
+  - To save web content: content="{{steps.step_2.result}}"
 {dynamic}"""
+
 
 # Per-call user message — schema enforced here (Gemini follows user turns more reliably)
 USER_PROMPT = """\
@@ -437,7 +555,7 @@ class Planner:
                 "Check your credentials.json permissions and GCP_PROJECT in .env."
             )
         raw = self._safe_text(response)
-        print(f"[Planner] Raw: {raw[:300]}")
+        print(f"[Planner] Raw: {raw[:1000]}")
         return self._parse(raw, intent)
 
     async def replan(

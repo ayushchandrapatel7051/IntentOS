@@ -19,11 +19,19 @@ import sys
 import socket
 from pathlib import Path
 from dotenv import load_dotenv
+from memory.rag_store import RAGStore
+
+import logging
 
 # Force UTF-8 output on Windows (needed for the banner art)
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+# Silence the noisy websockets handshake tracebacks that appear on every
+# Chrome MV3 service worker reconnect — these are expected, not errors.
+logging.getLogger("websockets").setLevel(logging.CRITICAL)
+logging.getLogger("websockets.server").setLevel(logging.CRITICAL)
 
 
 def _find_free_port(preferred: int, host: str = "127.0.0.1") -> int:
@@ -35,7 +43,31 @@ def _find_free_port(preferred: int, host: str = "127.0.0.1") -> int:
                 return port
         except OSError:
             continue
-    raise RuntimeError(f"No free port found in range {preferred}–{preferred + 20}")
+    raise RuntimeError(f"No free port found in range {preferred}-{preferred + 20}")
+
+
+def _kill_port_occupant(port: int) -> bool:
+    """
+    Kill any process LISTENING on the given TCP port (Windows).
+    Used to free port 8765 when restarting IntentOS without stopping the old process.
+    Returns True if a process was found and killed.
+    """
+    import subprocess as _sp
+    try:
+        r = _sp.run(["netstat", "-ano"], capture_output=True, text=True, timeout=5)
+        for line in r.stdout.splitlines():
+            if f":{port}" in line and "LISTENING" in line:
+                parts = line.strip().split()
+                if parts:
+                    pid = int(parts[-1])
+                    if pid > 0 and pid != os.getpid():
+                        _sp.run(["taskkill", "/F", "/PID", str(pid)],
+                                capture_output=True, timeout=5)
+                        return True
+    except Exception:
+        pass
+    return False
+
 
 # Load environment variables
 load_dotenv()
@@ -140,9 +172,36 @@ async def main():
         from skills.vision.screen_controller import ScreenController
         vision = ScreenController()
         skill_registry.register("vision", vision)
-        console.print("  [green]✓[/] Vision (MSS + PyAutoGUI — no API cost)")
+        console.print("  [green]\u2713[/] Vision (MSS + PyAutoGUI — no API cost)")
     except Exception as e:
-        console.print(f"  [yellow]⚠[/] Vision: {e}")
+        console.print(f"  [yellow]\u26a0[/] Vision: {e}")
+
+    # AI Skill — LLM text analysis and summarization
+    try:
+        from skills.ai.ai_skill import AISkill
+        ai_skill = AISkill(planner=planner)
+        skill_registry.register("ai", ai_skill)
+        console.print("  [green]\u2713[/] AI (LLM Reasoning)")
+    except Exception as e:
+        console.print(f"  [yellow]\u26a0[/] AI: {e}")
+
+    # Extension Skill — Chrome Extension WebSocket bridge (YouTube, Gmail, Meet, Calendar)
+    extension_bridge = None
+    try:
+        from skills.browser.extension_bridge import ExtensionBridge
+        ext_port = int(os.getenv("EXTENSION_WS_PORT", "8765"))
+
+        # Free port if a stale IntentOS process is still holding it (Errno 10048 on Windows)
+        if _kill_port_occupant(ext_port):
+            console.print(f"  [yellow]>[/] Freed stale process on port {ext_port}, restarting bridge...")
+            await asyncio.sleep(0.7)  # Give the OS time to release the socket
+
+        extension_bridge = ExtensionBridge(port=ext_port)
+        await extension_bridge.start_server()
+        skill_registry.register("extension", extension_bridge)
+        console.print(f"  [green]\u2713[/] Extension Bridge (ws://127.0.0.1:{ext_port}) \u2014 waiting for Chrome extension")
+    except Exception as e:
+        console.print(f"  [yellow]\u26a0[/] Extension Bridge: {e}")
 
     # --- Initialize Dashboard ---
     console.print("[cyan]▸[/] Starting Command Center Dashboard...", end=" ")
@@ -167,6 +226,9 @@ async def main():
 
     # Wire executor into the dashboard
     app.state.executor = executor
+
+    from integration_patch import apply_patches
+    apply_patches(executor, planner, app)
 
     console.print("[green]✓[/] Dashboard ready")
 

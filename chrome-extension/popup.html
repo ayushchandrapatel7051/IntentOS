@@ -44,7 +44,7 @@
       border-radius: 50%;
     }
     .dot.connected { background: #10b981; box-shadow: 0 0 8px #10b981; }
-    .dot.disconnected { background: #ef4444; }
+    .dot.disconnected { background: #ef4444; box-shadow: 0 0 4px #ef4444; }
     .status-text { font-size: 13px; color: #8896b3; }
     .recent {
       background: #151d2e;
@@ -72,6 +72,18 @@
       font-size: 10px;
       color: #556280;
     }
+    .reconnect-btn {
+      margin-top: 8px;
+      width: 100%;
+      padding: 6px;
+      background: #1e2d4a;
+      color: #8896b3;
+      border: 1px solid #2a3f6a;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .reconnect-btn:hover { background: #2a3f6a; color: #e8ecf4; }
   </style>
 </head>
 <body>
@@ -82,8 +94,12 @@
 
   <div class="status" id="status">
     <span class="dot disconnected" id="statusDot"></span>
-    <span class="status-text" id="statusText">Connecting to agent...</span>
+    <span class="status-text" id="statusText">Checking connection...</span>
   </div>
+
+  <button class="reconnect-btn" id="reconnectBtn" style="display:none">
+    🔄 Reconnect to Agent
+  </button>
 
   <div class="recent">
     <h3>Recent Commands</h3>
@@ -93,31 +109,9 @@
   </div>
 
   <div class="footer">
-    OpenClaw v1.0.0-α — Intent-Based OS
+    OpenClaw v2.0.0 — Intent-Based OS
   </div>
 
-  <script>
-    // Check connection status from storage
-    chrome.storage.local.get(['connectionStatus', 'recentCommands'], (data) => {
-      const dot = document.getElementById('statusDot');
-      const text = document.getElementById('statusText');
-
-      if (data.connectionStatus === 'connected') {
-        dot.className = 'dot connected';
-        text.textContent = 'Connected to agent';
-      } else {
-        dot.className = 'dot disconnected';
-        text.textContent = 'Agent not connected';
-      }
-
-      if (data.recentCommands && data.recentCommands.length > 0) {
-        const list = document.getElementById('recentList');
-        list.innerHTML = data.recentCommands
-          .slice(0, 5)
-          .map(cmd => `<div class="recent-item">${cmd}</div>`)
-          .join('');
-      }
-    });
-  </script>
+  <script src="popup.js"></script>
 </body>
 </html>
