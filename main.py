@@ -176,6 +176,15 @@ async def main():
     except Exception as e:
         console.print(f"  [yellow]\u26a0[/] Vision: {e}")
 
+    # AI Skill — LLM text analysis and summarization
+    try:
+        from skills.ai.ai_skill import AISkill
+        ai_skill = AISkill(planner=planner)
+        skill_registry.register("ai", ai_skill)
+        console.print("  [green]\u2713[/] AI (LLM Reasoning)")
+    except Exception as e:
+        console.print(f"  [yellow]\u26a0[/] AI: {e}")
+
     # Extension Skill — Chrome Extension WebSocket bridge (YouTube, Gmail, Meet, Calendar)
     extension_bridge = None
     try:

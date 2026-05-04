@@ -23,7 +23,7 @@ It combines the blazing fast reasoning power of **Google Gemini 2.5 Flash** with
 | 🚀 **App Launcher** | Lightning fast native desktop app launching with intelligent fuzzy-matching via `apps.json` |
 | 💬 **Messaging** | Send WhatsApp and Telegram messages via desktop app automation |
 | 💻 **Terminal Control** | Execute shell commands and manipulate the system natively via subprocess |
-| 📁 **File Management** | Move, rename, delete, organise files; auto-watch directories with watchdog |
+| 📁 **File Management** | Move, rename, delete, organise files; **Universal Text Extractor** for reading PDFs, DOCX, Images (OCR), and more; auto-watch directories with watchdog |
 | 👁️ **Screen Vision** | Zero-API-cost local screen automation using MSS screenshots + PyAutoGUI |
 | 🔄 **Failure Recovery** | Auto-detect errors, retry with exponential backoff, and replan using past RAG failure contexts |
 | 📊 **Command Center** | Real-time React dashboard with Live Logs, Chain-of-Thought reasoning, and Neural Memory Explorer |
@@ -115,6 +115,7 @@ IntentOS/
 | `"Create a google meet link for May 4 and send it to Jaidev"` | Triggers browser skill → creates event → copies link → routes to WhatsApp |
 | `"Extract the main introduction of Virat Kohli from Wikipedia"` | Navigates to Wikipedia → executes deterministic DOM text extraction → returns content |
 | `"Start backend work"` | Uses App Launcher to open VS Code → runs dev server |
+| `"Summarize the financial_report.pdf"` | Reads the PDF using Universal Text Extractor → LLM summarizes the content |
 | `"What's on today?"` | Fetches calendar → formats summary → sends to WhatsApp |
 
 ## Security

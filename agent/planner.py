@@ -104,6 +104,7 @@ SKILLS:
   apps      : open_app(name, wait_seconds=2) | press_keys(keys=[...]) | type_text(text) | list_apps(filter) | scan_apps()
   messaging : send_message(app, contact, text) | open_chat(app, contact)   [app="whatsapp" or "telegram"]
   vision    : capture_screen() | click_at(x,y) | type_text(text) | press_keys(keys=[...]) | scroll(clicks) | move_mouse(x,y)
+  ai        : ask(prompt="question", context="long text to analyze") | summarize(context="text to summarize")
 
 WEB AGENT RULES - MANDATORY:
   - For ANY task that involves interacting with a website (filling forms, registering,
@@ -232,6 +233,9 @@ COMPLEX TASK GUIDELINES:
       1. files.organize_by_type(directory=...)
       2. files.write_file(path=..., content=...) — create report
       3. messaging/browser step to send it
+  - For "summarize a file" or "tell me what this file is about":
+      1. files.read_file(path=...)
+      2. ai.summarize(context="{{steps.step_1.result}}")
   - For multi-file operations, generate one step per file.
   - For conditional logic (if X then Y), plan the most likely path.
   - Maximum 15 steps per plan. If more are needed, group related ops.

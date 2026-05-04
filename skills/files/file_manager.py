@@ -150,9 +150,16 @@ class FileManager:
             raise FileNotFoundError(f"File not found: {path}")
         if not file_path.is_file():
             raise ValueError(f"Not a file: {path}")
-        content = file_path.read_text(encoding="utf-8", errors="replace")
-        if len(content) > 10000:
-            content = content[:10000] + f"\n... (truncated, {len(content)} total chars)"
+            
+        try:
+            from skills.files.extractor import extract
+            content = extract(str(file_path))
+        except Exception as e:
+            content = file_path.read_text(encoding="utf-8", errors="replace")
+            content = f"[Extractor failed, fallback to plain text: {e}]\n\n{content}"
+            
+        if len(content) > 15000:
+            content = content[:15000] + f"\n... (truncated, {len(content)} total chars)"
         return content
 
     async def create_dir(self, path: str, **kwargs) -> str:
