@@ -1,0 +1,62 @@
+# ==========================================
+# IntentOS — .dockerignore
+# ==========================================
+# Keeps Docker build context lean and fast.
+# Files listed here are NOT sent to the Docker daemon.
+
+# --- Version control ---
+.git/
+.gitignore
+
+# --- Secrets (never bake into images) ---
+.env
+credentials.json
+*.pem
+*.key
+
+# --- Python artefacts ---
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+*.egg-info/
+
+# --- Node / frontend build artefacts ---
+node_modules/
+dashboard/frontend/node_modules/
+dashboard/frontend/dist/
+npm-debug.log*
+
+# --- Runtime data (not needed in image) ---
+logs/
+screenshots/
+sandbox-workspace/
+memory/rag/
+memory/workflows/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Docker ---
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# --- CI ---
+.github/
+
+# --- Docs ---
+README.md
+CHANGELOG.md

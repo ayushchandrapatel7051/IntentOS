@@ -1,89 +1,109 @@
 # ==========================================
-# OpenClaw Docker Compose Configuration
+# IntentOS — Docker Compose
 # ==========================================
-# Services: dashboard-backend, dashboard-frontend, sandbox
-
-version: '3.9'
+# Services:
+#   intentos-backend   — FastAPI + Pi Engine agent (Python)
+#   intentos-frontend  — React dashboard (nginx)
+#   intentos-whatsapp  — WhatsApp bridge (Node.js)
+#
+# Usage:
+#   docker compose up -d              # start all
+#   docker compose up -d backend      # start backend only
+#   docker compose logs -f backend    # live logs
+#   docker compose down               # stop all
+# ==========================================
 
 services:
-  # --- Dashboard Backend (FastAPI + WebSocket) ---
-  dashboard-backend:
+
+  # ── Backend: FastAPI + Pi Engine Agent ──
+  intentos-backend:
     build:
       context: .
       dockerfile: Dockerfile
-      target: backend
-    container_name: openclaw-backend
+      target: agent
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    image: intentos/backend:latest
+    container_name: intentos-backend
+    restart: unless-stopped
     ports:
       - "${DASHBOARD_PORT:-8000}:8000"
     volumes:
-      - .:/app
-      - ./memory/workflows:/app/memory/workflows
-      - ./logs:/app/logs
-      - ./screenshots:/app/screenshots
+      # Persist memory and logs across container restarts
+      - intentos-memory:/app/memory
+      - intentos-logs:/app/logs
+      - intentos-screenshots:/app/screenshots
+      # Mount credentials for Vertex AI (read-only)
+      - ./credentials.json:/app/credentials.json:ro
     env_file:
       - .env
-    command: uvicorn dashboard.backend.main:app --host 0.0.0.0 --port 8000 --reload
-    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     networks:
-      - openclaw-net
+      - intentos-net
 
-  # --- Dashboard Frontend (React + Vite) ---
-  dashboard-frontend:
+  # ── Frontend: React Dashboard via nginx ──
+  intentos-frontend:
     build:
       context: ./dashboard/frontend
-      dockerfile: Dockerfile.frontend
-    container_name: openclaw-frontend
+      dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    image: intentos/frontend:latest
+    container_name: intentos-frontend
+    restart: unless-stopped
     ports:
       - "${DASHBOARD_FRONTEND_PORT:-3000}:3000"
-    volumes:
-      - ./dashboard/frontend/src:/app/src
-    environment:
-      - VITE_WS_URL=ws://localhost:${DASHBOARD_PORT:-8000}/ws
-      - VITE_API_URL=http://localhost:${DASHBOARD_PORT:-8000}/api
-    command: npm run dev -- --host 0.0.0.0
-    restart: unless-stopped
+    depends_on:
+      intentos-backend:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:3000/" ]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
-      - openclaw-net
+      - intentos-net
 
-  # --- WhatsApp Service (Node.js) ---
-  whatsapp-service:
+  # ── WhatsApp: Node.js Bridge (optional) ──
+  intentos-whatsapp:
     build:
       context: .
       dockerfile: Dockerfile
-      target: whatsapp
-    container_name: openclaw-whatsapp
-    ports:
-      - "${WHATSAPP_SERVICE_PORT:-3001}:3001"
-    volumes:
-      - ./whatsapp-auth:/app/whatsapp-auth
-    command: node skills/messaging/whatsapp_adapter.js
+      target: agent
+    image: intentos/whatsapp:latest
+    container_name: intentos-whatsapp
     restart: unless-stopped
-    networks:
-      - openclaw-net
-
-  # --- Sandbox (Isolated Shell Execution) ---
-  sandbox:
-    image: ubuntu:24.04
-    container_name: openclaw-sandbox
-    stdin_open: true
-    tty: true
+    command: node skills/messaging/whatsapp_adapter.js
     volumes:
-      - ./sandbox-workspace:/workspace
-    working_dir: /workspace
-    cap_drop:
-      - ALL
-    cap_add:
-      - NET_RAW
-    security_opt:
-      - no-new-privileges:true
-    mem_limit: 512m
-    cpus: 1.0
+      - intentos-whatsapp-auth:/app/whatsapp-auth
+    depends_on:
+      intentos-backend:
+        condition: service_healthy
+    profiles:
+      - whatsapp
     networks:
-      - openclaw-net
+      - intentos-net
 
 networks:
-  openclaw-net:
+  intentos-net:
     driver: bridge
+    name: intentos-net
 
 volumes:
-  whatsapp-auth:
+  intentos-memory:
+    name: intentos-memory
+  intentos-logs:
+    name: intentos-logs
+  intentos-screenshots:
+    name: intentos-screenshots
+  intentos-whatsapp-auth:
+    name: intentos-whatsapp-auth

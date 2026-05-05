@@ -21,7 +21,7 @@ IntentOS is an AI agent that lets you control your entire computer — browser, 
 ```
 🤖 IntentOS > summarize "C:\Downloads\report.pdf"
 🤖 IntentOS > send "I'll be late" to Rahul on WhatsApp
-🤖 IntentOS > open VS Code and run the dev server
+🤖 IntentOS > open youtube, search python programming and play first video
 🤖 IntentOS > find all Python files in my project and list the largest ones
 ```
 
@@ -172,6 +172,113 @@ python main.py
 | REST API | http://127.0.0.1:8000 | FastAPI backend + docs at `/docs` |
 | Dashboard | http://127.0.0.1:3000 | React command center (after `npm run frontend`) |
 | WebSocket | ws://127.0.0.1:8765 | Chrome extension bridge |
+
+---
+
+## 🐳 Docker
+
+### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+- `credentials.json` (Google Cloud service account key) placed at the repo root
+- `.env` file configured (copy from `.env.example`)
+
+### Setup
+
+```bash
+# Enable Vertex AI API on your GCP project (one-time)
+gcloud services enable aiplatform.googleapis.com --project=YOUR_PROJECT_ID
+
+# Grant Vertex AI access to your service account (one-time)
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:YOUR_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/aiplatform.user"
+```
+
+### Running with Docker
+
+```bash
+# Start all services (backend + frontend)
+docker compose up -d
+
+# Start only the backend
+docker compose up -d intentos-backend
+
+# Start only the frontend
+docker compose up -d intentos-frontend
+
+# Start with WhatsApp bridge (optional profile)
+docker compose --profile whatsapp up -d
+```
+
+### Building & Rebuilding
+
+```bash
+# Build all images
+docker compose build
+
+# Build a specific service
+docker compose build intentos-frontend
+docker compose build intentos-backend
+
+# Rebuild from scratch after code changes (no cache)
+docker compose build --no-cache
+
+# Rebuild and restart in one command
+docker compose up -d --build
+```
+
+### Logs
+
+```bash
+# Live logs for all services
+docker compose logs -f
+
+# Live logs for a specific service
+docker compose logs -f intentos-backend
+docker compose logs -f intentos-frontend
+
+# Last 100 lines
+docker compose logs --tail=100 intentos-backend
+```
+
+### Stopping & Cleanup
+
+```bash
+# Stop all containers (keeps volumes)
+docker compose down
+
+# Stop and remove volumes (clears memory, logs, screenshots)
+docker compose down -v
+
+# Remove all IntentOS images
+docker rmi intentos/backend:latest intentos/frontend:latest
+```
+
+### Container Health
+
+```bash
+# Check running containers and health status
+docker compose ps
+
+# Inspect a specific container
+docker inspect intentos-backend
+
+# Open a shell inside a running container
+docker exec -it intentos-backend bash
+docker exec -it intentos-frontend sh
+```
+
+### Volumes
+
+IntentOS uses named Docker volumes to persist data across container restarts:
+
+| Volume | Contents |
+|---|---|
+| `intentos-memory` | ChromaDB vector store + YAML workflows |
+| `intentos-logs` | Agent execution logs |
+| `intentos-screenshots` | Screen vision captures |
+| `intentos-whatsapp-auth` | WhatsApp session auth (optional) |
 
 ---
 

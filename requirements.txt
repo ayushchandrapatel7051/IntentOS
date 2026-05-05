@@ -38,6 +38,13 @@ beautifulsoup4>=4.14.0           # HTML/EPUB parsing
 pytesseract>=0.3.0               # OCR from images (requires Tesseract binary)
 
 # ── Neural Memory (RAG) ───────────────────
+# NOTE: torch must be pinned to CPU build BEFORE chromadb and
+# sentence-transformers are installed, otherwise pip pulls the
+# 1GB+ CUDA build automatically. The Dockerfile handles this for
+# Docker builds. This index URL covers local pip installs too.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.5.1+cpu
+torchaudio==2.5.1+cpu          # Required by some sentence-transformers models
 chromadb>=0.5.0                  # Local vector database
 sentence-transformers>=3.0.0     # Semantic embedding model
 
