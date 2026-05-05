@@ -1,134 +1,246 @@
-# 🐾 OpenClaw (IntentOS)
+<div align="center">
 
-## Intent-Based Operating System
+# IntentOS
 
-> Control your entire computer with natural language.
+**An Intent-Based Operating System — control your entire computer with natural language.**
 
-**Version:** 1.0.0-alpha | **License:** MIT | **Runtime:** Node.js 22 + Python 3.9+
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://python.org)
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B-green?logo=node.js&logoColor=white)](https://nodejs.org)
+[![Gemini](https://img.shields.io/badge/Powered%20by-Gemini%202.5%20Flash-orange?logo=google&logoColor=white)](https://ai.google.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0--alpha-blue)](CHANGELOG.md)
+
+</div>
 
 ---
 
-## Overview
+## What is IntentOS?
 
-OpenClaw is an intent-based operating system layer that lets you control your entire computer — browser, terminal, messaging, files, applications, and calendar — using plain English commands. Instead of manually clicking through apps, you simply state what you want and OpenClaw's AI agent loop figures out how to execute it.
+IntentOS is an AI agent that lets you control your entire computer — browser, files, messaging, apps, terminal — using plain English. Instead of clicking through menus, you just say what you want.
 
-It combines the blazing fast reasoning power of **Google Gemini 2.5 Flash** with OpenClaw's **Pi Engine** agent loop, **ChromaDB Semantic Memory**, and a rich set of automation tools — all surfaced through a live **React Command Center Dashboard**.
+```
+🤖 IntentOS > summarize "C:\Downloads\report.pdf"
+🤖 IntentOS > send "I'll be late" to Rahul on WhatsApp
+🤖 IntentOS > open VS Code and run the dev server
+🤖 IntentOS > find all Python files in my project and list the largest ones
+```
 
-## Key Capabilities
+IntentOS decomposes your intent into a sequence of atomic steps using **Gemini 2.5 Flash**, executes them using a rich skill library, and learns from past runs using **ChromaDB neural memory**.
+
+---
+
+## Features
 
 | Capability | Description |
 |---|---|
-| 🧠 **Neural Memory (RAG)** | ChromaDB + Sentence Transformers semantic memory for past workflow retrieval, knowledge storing, and failure pattern avoidance |
-| 🌐 **Browser Control** | Intelligent web navigation and deterministic content extraction via Chrome Extension WebSocket Bridge + Playwright |
-| 🚀 **App Launcher** | Lightning fast native desktop app launching with intelligent fuzzy-matching via `apps.json` |
-| 💬 **Messaging** | Send WhatsApp and Telegram messages via desktop app automation |
-| 💻 **Terminal Control** | Execute shell commands and manipulate the system natively via subprocess |
-| 📁 **File Management** | Move, rename, delete, organise files; **Universal Text Extractor** for reading PDFs, DOCX, Images (OCR), and more; auto-watch directories with watchdog |
-| 👁️ **Screen Vision** | Zero-API-cost local screen automation using MSS screenshots + PyAutoGUI |
-| 🔄 **Failure Recovery** | Auto-detect errors, retry with exponential backoff, and replan using past RAG failure contexts |
-| 📊 **Command Center** | Real-time React dashboard with Live Logs, Chain-of-Thought reasoning, and Neural Memory Explorer |
+| 🧠 **Neural Memory (RAG)** | ChromaDB + Sentence Transformers semantic recall of past workflows and failure patterns |
+| 🌐 **Browser Control** | Web navigation and DOM extraction via Chrome Extension WebSocket bridge + Playwright |
+| 📁 **Universal File Extractor** | Read and extract text from PDF, DOCX, DOC, XLSX, PPTX, EPUB, images (OCR), and any plain-text file — fully local, no API cost |
+| 🚀 **App Launcher** | Fuzzy-matched native app launching via `apps.json` |
+| 💬 **Messaging** | Send WhatsApp and Telegram messages via desktop automation |
+| 💻 **Terminal** | Execute shell commands with live output streaming |
+| 👁️ **Screen Vision** | Zero-API-cost local screen analysis via MSS + PyAutoGUI |
+| 🔄 **Auto-Recovery** | Detects failures, retries with exponential backoff, and replans using RAG failure memory |
+| 📊 **Live Dashboard** | React command center at `localhost:3000` with real-time logs, step chain-of-thought, and memory explorer |
 
-## Quick Start
-
-### Prerequisites
-- Node.js 22+
-- Python 3.9+
-- API Keys: Google Cloud Platform (Vertex AI Gemini API credentials)
-
-### Installation
-
-```bash
-# 1. Clone
-git clone https://github.com/ayushchandrapatel7051/IntentOS.git
-cd IntentOS
-
-# 2. Install Python dependencies
-pip install -r requirements.txt
-pip install chromadb sentence-transformers
-
-# 3. Install Node.js dependencies
-npm install
-
-# 4. Install dashboard frontend
-cd dashboard/frontend && npm install && cd ../..
-
-# 5. Configure environment
-cp .env.example .env
-# Edit .env with your GCP details (PROJECT_ID, LOCATION) and authenticate:
-# gcloud auth application-default login
-
-# 6. Start OpenClaw
-python main.py
-```
-
-### Open the Dashboard
-Navigate to **http://localhost:8000** for the FastAPI backend, or run the frontend dev server:
-
-```bash
-cd dashboard/frontend
-npm run dev
-```
-
-Dashboard will be available at **http://localhost:5173**
+---
 
 ## Architecture
 
 ```
-User (Voice / Text) → Intent Parser (Gemini 2.5 Flash)
-                    → Pi Engine (Agent Loop & Reasoning)
-                    → Skills: Browser | Terminal | Messaging | Files | Apps | Vision
-                    → Neural Memory (ChromaDB RAG + YAML store)
-                    → Command Center Dashboard (FastAPI + React + WebSocket)
+User (text / voice)
+        │
+        ▼
+  Intent Parser  ──  Gemini 2.5 Flash (Vertex AI)
+        │
+        ▼
+   Pi Engine (Agent Loop)
+        │
+   ┌────┴────┐
+   │ Planner │  →  step-by-step plan
+   │Executor │  →  dispatches to skills
+   │Recovery │  →  retries & replanning
+   └────┬────┘
+        │
+   ┌────▼──────────────────────────────────┐
+   │              Skills Layer             │
+   │  browser │ files │ terminal │ apps   │
+   │  messaging │ vision │ ai │ extension │
+   └───────────────────────────────────────┘
+        │
+   Neural Memory (ChromaDB RAG + YAML store)
+        │
+   Dashboard (FastAPI + React + WebSocket)
 ```
-
-## Project Structure
-
-```text
-IntentOS/
-├── agent/               # Pi Engine agent loop
-│   ├── planner.py       # Intent → step decomposition (Gemini API)
-│   ├── executor.py      # Step execution dispatcher
-│   ├── rag_executor.py  # RAG memory execution augmentations
-│   └── recovery.py      # Failure detection and retry
-├── skills/              # Skill Execution Layer
-│   ├── browser/         # Chrome Extension WebSocket bridge + Playwright
-│   ├── messaging/       # WhatsApp / Telegram desktop macro routing
-│   ├── terminal/        # PowerShell / Shell execution
-│   ├── apps/            # Longest-prefix app launcher matching
-│   ├── files/           # File management
-│   └── vision/          # Screenshot + PyAutoGUI
-├── memory/              # ChromaDB RAG Semantic Store + YAML workflows
-├── dashboard/
-│   ├── backend/         # FastAPI + WebSocket server
-│   └── frontend/        # React Command Center UI + Memory Explorer
-├── chrome-extension/    # Manifest V3 Chrome extension (DOM Agent)
-├── main.py              # Application entry point
-├── integration_patch.py # Dynamic startup patcher for RAG & Planning rules
-└── SOUL.md              # User macros & behaviour rules
-```
-
-## Example Commands
-
-| Command | What Happens |
-|---|---|
-| `"Send I'll be late to Rahul"` | Opens WhatsApp → finds Rahul → sends message |
-| `"Create a google meet link for May 4 and send it to Jaidev"` | Triggers browser skill → creates event → copies link → routes to WhatsApp |
-| `"Extract the main introduction of Virat Kohli from Wikipedia"` | Navigates to Wikipedia → executes deterministic DOM text extraction → returns content |
-| `"Start backend work"` | Uses App Launcher to open VS Code → runs dev server |
-| `"Summarize the financial_report.pdf"` | Reads the PDF using Universal Text Extractor → LLM summarizes the content |
-| `"What's on today?"` | Fetches calendar → formats summary → sends to WhatsApp |
-
-## Security
-
-- File deletion always prompts for confirmation in the CLI / Dashboard
-- Messaging sessions are stored locally only
-- Execution is strictly bounded to the configured local skills
-- Terminal operations are continuously logged via WebSockets
-
-## License
-
-MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 
-**Built with** OpenClaw Pi Engine + Google Gemini 2.5 Flash + ChromaDB
+## Project Structure
+
+```
+IntentOS/
+├── agent/                   # Pi Engine — planning, execution, recovery
+│   ├── planner.py           # Intent → step plan (Gemini API)
+│   ├── executor.py          # Step dispatcher & template resolver
+│   ├── rag_executor.py      # RAG memory hooks for executor
+│   ├── planner_patch.py     # Plan post-processing (template fixups)
+│   └── recovery.py          # Failure detection & retry logic
+│
+├── skills/                  # Modular skill execution layer
+│   ├── files/               # File management + universal text extractor
+│   │   ├── file_manager.py  # CRUD, organize, watch
+│   │   └── extractor.py     # PDF, DOCX, XLSX, PPTX, OCR, etc.
+│   ├── browser/             # Playwright + Chrome Extension bridge
+│   ├── terminal/            # Subprocess shell execution
+│   ├── apps/                # Native app launcher (apps.json fuzzy match)
+│   ├── messaging/           # WhatsApp / Telegram desktop macros
+│   ├── vision/              # MSS screenshot + PyAutoGUI
+│   └── ai/                  # LLM reasoning (summarize, ask, analyze)
+│
+├── memory/                  # Persistence layer
+│   ├── rag_store.py         # ChromaDB vector store (workflows + knowledge)
+│   ├── store.py             # YAML workflow store
+│   ├── soul_reader.py       # SOUL.md macro & rule parser
+│   └── workflows/           # Saved workflow YAML files (git-ignored)
+│
+├── dashboard/
+│   ├── backend/             # FastAPI + WebSocket server
+│   └── frontend/            # React Vite dashboard
+│
+├── chrome-extension/        # Manifest V3 Chrome extension (DOM agent)
+│   ├── background.js        # WebSocket bridge + tab manager
+│   ├── content.js           # DOM extraction & interaction
+│   └── manifest.json
+│
+├── voice/
+│   └── stt_client.py        # Sarvam AI speech-to-text client
+│
+├── main.py                  # Application entry point
+├── integration_patch.py     # Runtime patches (RAG + planning rules)
+├── scan_apps.py             # App scanner — populates apps.json
+├── SOUL.md                  # User-defined macros & behaviour rules
+├── .env.example             # Environment variable template
+├── requirements.txt         # Python dependencies
+└── package.json             # Node.js dependencies (WhatsApp adapter)
+```
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+| Requirement | Version | Notes |
+|---|---|---|
+| Python | 3.10+ | `python --version` |
+| Node.js | 18+ | Only needed for WhatsApp messaging |
+| Google Cloud | — | Vertex AI project with Gemini API enabled |
+| Tesseract | 5.x | Optional — needed for image OCR only |
+
+### Installation
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/ayushchandrapatel7051/IntentOS.git
+cd IntentOS
+
+# 2. Set up environment
+cp .env.example .env
+# Edit .env — set GCP_PROJECT_ID and GCP_LOCATION
+
+# 3. Authenticate with Google Cloud
+gcloud auth application-default login
+# OR place your service account key at ./credentials.json
+
+# 4. Install Python dependencies
+pip install -r requirements.txt
+
+# 5. (Optional) Install Node.js dependencies for WhatsApp
+npm install
+
+# 6. (Optional) Install dashboard frontend
+cd dashboard/frontend && npm install && cd ../..
+
+# 7. Run IntentOS
+python main.py
+```
+
+### Access Points
+
+| Service | URL | Description |
+|---|---|---|
+| REST API | http://127.0.0.1:8000 | FastAPI backend + docs at `/docs` |
+| Dashboard | http://127.0.0.1:3000 | React command center (after `npm run frontend`) |
+| WebSocket | ws://127.0.0.1:8765 | Chrome extension bridge |
+
+---
+
+## Chrome Extension
+
+Load the extension for browser control:
+
+1. Open Chrome → `chrome://extensions`
+2. Enable **Developer Mode**
+3. Click **Load unpacked** → select the `chrome-extension/` folder
+4. The extension icon should appear — click it to connect
+
+---
+
+## SOUL.md — Personalisation
+
+`SOUL.md` lets you define custom macros, shortcuts, and behaviour rules:
+
+```markdown
+## Macros
+- "start work" → open VS Code, open terminal, run npm run dev
+- "standup" → open Notion, open Slack, summarise yesterday's git log
+
+## Rules
+- Always confirm before deleting files
+- Prefer dark mode apps
+```
+
+---
+
+## Supported File Types (Universal Extractor)
+
+| Category | Extensions |
+|---|---|
+| Documents | `.pdf` `.docx` `.doc` `.pptx` `.rtf` `.epub` |
+| Spreadsheets | `.xlsx` `.xls` `.ods` `.csv` `.tsv` |
+| Data / Code | `.json` `.jsonl` `.ipynb` `.py` `.js` `.ts` `.md` `.yaml` and all plain-text |
+| Images (OCR) | `.jpg` `.png` `.gif` `.bmp` `.tiff` `.webp` |
+| Archives | `.zip` `.tar` `.gz` (lists contents) |
+
+All extraction is **local** — no file contents are sent to any external API.
+
+---
+
+## Example Commands
+
+```
+summarize "C:\Documents\Q4_Report.pdf"
+open Chrome and go to gmail.com
+send "meeting at 3pm" to team on WhatsApp
+find all .log files in Downloads and delete ones older than 7 days
+create a Python script that renames all JPEGs by date and save to Desktop
+tell me what's in this Excel file "C:\data\sales.xlsx"
+```
+
+---
+
+## Contributing
+
+Pull requests are welcome. For major changes, open an issue first.
+
+```bash
+# Run from repo root
+python main.py          # Start the agent
+python scan_apps.py     # Regenerate apps.json for your machine
+```
+
+---
+
+## License
+
+[MIT](LICENSE) © IntentOS Contributors

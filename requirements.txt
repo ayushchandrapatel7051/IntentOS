@@ -1,58 +1,59 @@
 # ==========================================
-# IntentOS - Python Dependencies
+# IntentOS — Python Dependencies
 # ==========================================
-# Python 3.11+ required
+# Python 3.10+ required
+# Install: pip install -r requirements.txt
 
-# --- AI / LLM ---
-google-genai>=1.0.0          # Gemini Flash 2.5 — planning
+# ── AI / LLM ──────────────────────────────
+google-genai>=1.0.0              # Gemini 2.5 Flash — intent planning
 
-# --- Web Framework ---
-fastapi>=0.115.0             # Dashboard backend
-uvicorn[standard]>=0.32.0    # ASGI server
-websockets>=13.0             # WebSocket support
-python-multipart>=0.0.12     # Form data parsing
+# ── Web Framework (Dashboard API) ─────────
+fastapi>=0.115.0                 # REST API + WebSocket server
+uvicorn[standard]>=0.32.0        # ASGI server
+websockets>=13.0                 # WebSocket support
+python-multipart>=0.0.12         # Form/file upload parsing
 
-# --- Screen / Input ---
-mss>=9.0.2                   # Screenshot capture
-Pillow>=11.0.0               # Image processing
-pyautogui>=0.9.54            # Mouse/keyboard simulation + hotkeys
-pyperclip>=1.11.0            # Clipboard management (for Apps skill)
+# ── Screen & Input Control ────────────────
+mss>=9.0.2                       # Fast multi-monitor screenshots
+Pillow>=11.0.0                   # Image processing
+pyautogui>=0.9.54                # Mouse/keyboard simulation
+pyperclip>=1.11.0                # Clipboard read/write
 
-# --- Browser Automation ---
-playwright>=1.48.0           # Playwright CDP bridge
+# ── Browser Automation ────────────────────
+playwright>=1.48.0               # CDP bridge + headless browser
 
-# --- File Management & Extraction ---
-watchdog>=5.0.0              # Directory watcher
-pypdf>=6.10.0                # PDF text extraction
-python-docx>=1.2.0           # Word document extraction
-docx2txt>=0.8                # Legacy .doc Word support
-pandas>=2.3.0                # Excel/CSV data processing
-openpyxl>=3.1.0              # Excel file support
-python-pptx>=1.0.0           # PowerPoint extraction
-striprtf>=0.0.32             # RTF text extraction
-EbookLib>=0.20               # EPUB support
-beautifulsoup4>=4.14.0       # HTML/EPUB parsing
-pytesseract>=0.3.0           # OCR extraction (requires Tesseract binary)
-xlrd>=2.0.0                  # Legacy Excel (.xls) support
-odfpy>=1.4.0                 # OpenDocument (.ods) support
+# ── File Management & Text Extraction ─────
+watchdog>=5.0.0                  # Directory change watcher
+pypdf>=6.10.0                    # PDF text extraction
+python-docx>=1.2.0               # Word (.docx) extraction
+docx2txt>=0.8                    # Legacy Word (.doc) extraction
+pandas>=2.3.0                    # Excel/CSV/data processing
+openpyxl>=3.1.0                  # Excel (.xlsx) read/write engine
+xlrd>=2.0.0                      # Legacy Excel (.xls) engine
+odfpy>=1.4.0                     # OpenDocument (.ods) engine
+python-pptx>=1.0.0               # PowerPoint (.pptx) extraction
+striprtf>=0.0.32                 # RTF text extraction
+EbookLib>=0.20                   # EPUB support
+beautifulsoup4>=4.14.0           # HTML/EPUB parsing
+pytesseract>=0.3.0               # OCR from images (requires Tesseract binary)
 
-# --- Memory & RAG ---
-chromadb>=0.5.0              # Vector database for memory
-sentence-transformers>=3.0.0 # Local embeddings for RAG
+# ── Neural Memory (RAG) ───────────────────
+chromadb>=0.5.0                  # Local vector database
+sentence-transformers>=3.0.0     # Semantic embedding model
 
-# --- Voice Input ---
-requests>=2.32.0             # Sarvam AI HTTP client
-sounddevice>=0.5.1           # Audio recording
-scipy>=1.14.0                # Audio file I/O
+# ── Voice Input ───────────────────────────
+requests>=2.32.0                 # Sarvam AI STT HTTP client
+sounddevice>=0.5.1               # Microphone audio capture
+scipy>=1.14.0                    # WAV audio I/O
 
-# --- Data & Config ---
-pyyaml>=6.0.2                # YAML store
-python-dotenv>=1.0.1         # .env loading
-pydantic>=2.10.0             # Data validation
-numpy>=2.2.0                 # Numerical processing (for STT/Voice)
+# ── Data & Config ─────────────────────────
+pyyaml>=6.0.2                    # YAML workflow store
+python-dotenv>=1.0.1             # .env file loading
+pydantic>=2.10.0                 # Data validation & schemas
+numpy>=1.26.0,<2.0.0             # Numerical ops (RAG/voice deps)
 
-# --- Utilities ---
-rich>=13.9.0                 # Console formatting
-colorama>=0.4.6              # Windows color support
-aiohttp>=3.11.0              # Async HTTP client
-aiofiles>=24.1.0             # Async file I/O
+# ── Utilities ─────────────────────────────
+rich>=13.9.0                     # Beautiful terminal output
+colorama>=0.4.6                  # Windows ANSI colour support
+aiohttp>=3.11.0                  # Async HTTP client
+aiofiles>=24.1.0                 # Async file I/O

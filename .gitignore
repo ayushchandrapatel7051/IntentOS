@@ -1,21 +1,59 @@
+# ==========================================
+# IntentOS — .gitignore
+# ==========================================
+
+# --- Secrets & Credentials ---
 .env
-node_modules/
+credentials.json
+*.pem
+*.key
+*.p12
+
+# --- Python ---
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
-.pytest_cache/
+*.pyd
+.Python
+*.egg-info/
+.eggs/
 dist/
 build/
-*.egg-info/
-sandbox-workspace/
-screenshots/
-logs/
-credentials/
-.vscode/
-.idea/
-*.log
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# --- Node.js ---
+node_modules/
 dashboard/frontend/node_modules/
 dashboard/frontend/dist/
-credentials.json
-apps.json
-requirements.txt
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# --- Generated / Runtime data ---
+logs/
+screenshots/
+sandbox-workspace/
+memory/workflows/*.yaml
+memory/rag/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Misc ---
+*.log
