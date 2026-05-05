@@ -1,0 +1,28 @@
+created_at: '2026-04-30T18:52:25.967353'
+fingerprint: '"aids "hello ass" freaks gc" group jiggly named open send whatsapp'
+id: 20260430_185225_9dd85090
+intent: open whatsapp and send "Hello Jiggly Ass" on the group named "AIDS freaks
+  gc"
+outcome: completed
+plan:
+  created_at: '2026-04-30T18:52:14.127432'
+  intent: open whatsapp and send "Hello Jiggly Ass" on the group named "AIDS freaks
+    gc"
+  status: completed
+  steps:
+  - action: send_message
+    completed_at: '2026-04-30T18:52:25.957034'
+    description: Send the specified message to the designated WhatsApp group.
+    error: null
+    id: step_1
+    params:
+      app: whatsapp
+      contact: AIDS freaks gc
+      is_group: true
+      text: Hello Jiggly Ass
+    reasoning: The user explicitly requested to send a message on WhatsApp to a group.
+    result: '[Whatsapp] Message sent to group ''AIDS freaks gc'': Hello Jiggly Ass'
+    skill: messaging
+    started_at: '2026-04-30T18:52:14.134957'
+    status: done
+  summary: Open WhatsApp and send a message to a group chat.

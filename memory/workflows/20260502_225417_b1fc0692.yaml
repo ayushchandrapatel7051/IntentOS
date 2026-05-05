@@ -1,0 +1,29 @@
+created_at: '2026-05-02T22:54:17.610410'
+fingerprint: 6pm at google meet schedule tommorow
+id: 20260502_225417_b1fc0692
+intent: schedule a google meet at 6pm tommorow
+outcome: completed
+plan:
+  created_at: '2026-05-02T22:54:03.243931'
+  intent: schedule a google meet at 6pm tommorow
+  status: completed
+  steps:
+  - action: createEvent
+    completed_at: '2026-05-02T22:54:17.602929'
+    description: Schedule a Google Meet for tomorrow at 6 PM.
+    error: null
+    id: step_1
+    params:
+      date: '2024-05-16'
+      meet: true
+      time: '18:00'
+      title: Google Meet
+    reasoning: The user wants to schedule a Google Meet, which requires the extension.createEvent
+      skill with meet=true. The date needs to be calculated for tomorrow and time
+      is 6 PM.
+    result: '[Calendar] event_saved — ''Google Meet'' on 2024-05-16 18:00 ✓ verified
+      | Meet: https://meet.google.com/yxr-pbch-crc?hs=122&authuser=0'
+    skill: extension
+    started_at: '2026-05-02T22:54:03.248637'
+    status: done
+  summary: Schedule a Google Meet for tomorrow at 6 PM.

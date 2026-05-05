@@ -41,7 +41,6 @@ yarn-error.log*
 logs/
 screenshots/
 sandbox-workspace/
-memory/workflows/*.yaml
 memory/rag/
 
 # --- OS ---

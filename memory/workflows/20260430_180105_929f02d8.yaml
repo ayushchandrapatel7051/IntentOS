@@ -1,0 +1,24 @@
+created_at: '2026-04-30T18:01:05.588461'
+fingerprint: notepad open
+id: 20260430_180105_929f02d8
+intent: open notepad
+outcome: completed
+plan:
+  created_at: '2026-04-30T18:01:03.546345'
+  intent: open notepad
+  status: completed
+  steps:
+  - action: open_app
+    completed_at: '2026-04-30T18:01:05.581247'
+    description: Open Notepad.
+    error: null
+    id: step_1
+    params:
+      name: notepad
+    reasoning: The user explicitly asked to open Notepad, so the 'open_app' action
+      with 'notepad' as the name is the most direct way to fulfill this request.
+    result: Opened 'notepad' successfully
+    skill: apps
+    started_at: '2026-04-30T18:01:03.551691'
+    status: done
+  summary: Open the Notepad application.

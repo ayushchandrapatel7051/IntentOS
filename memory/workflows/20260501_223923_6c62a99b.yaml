@@ -1,0 +1,31 @@
+created_at: '2026-05-01T22:39:23.589503'
+fingerprint: 2 2026 6pm calender chrome google may meet open save schedule
+id: 20260501_223923_6c62a99b
+intent: open google meet and schedule a meet for 2 may 2026 6pm and save it on google
+  calender on chrome
+outcome: completed
+plan:
+  created_at: '2026-05-01T22:39:17.274958'
+  intent: open google meet and schedule a meet for 2 may 2026 6pm and save it on google
+    calender on chrome
+  status: completed
+  steps:
+  - action: createEvent
+    completed_at: '2026-05-01T22:39:23.581970'
+    description: Schedule a Google Meet event for the specified date and time, saving
+      it to Google Calendar.
+    error: null
+    id: step_1
+    params:
+      date: '2026-05-02'
+      meet: true
+      time: '18:00'
+      title: Scheduled Meet
+    reasoning: The user wants to schedule a Google Meet and save it to Google Calendar,
+      which is directly supported by the `extension.createEvent` skill with `meet=true`.
+    result: '[Calendar] event_saved — ''Scheduled Meet'' on 2026-05-02 18:00'
+    skill: extension
+    started_at: '2026-05-01T22:39:17.279861'
+    status: done
+  summary: Schedule a Google Meet event for May 2, 2026, at 6 PM and save it to Google
+    Calendar.

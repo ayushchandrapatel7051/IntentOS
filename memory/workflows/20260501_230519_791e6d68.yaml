@@ -1,0 +1,26 @@
+created_at: '2026-05-01T23:05:19.189481'
+fingerprint: create google link meet meeting
+id: 20260501_230519_791e6d68
+intent: create a meeting link on google meet
+outcome: completed
+plan:
+  created_at: '2026-05-01T23:04:59.684230'
+  intent: create a meeting link on google meet
+  status: completed
+  steps:
+  - action: createEvent
+    completed_at: '2026-05-01T23:05:19.184909'
+    description: Create a new Google Meet link by creating a calendar event.
+    error: null
+    id: step_1
+    params:
+      meet: true
+      title: New Meeting
+    reasoning: The user wants to create a Google Meet link. The `createEvent` action
+      with the `meet` parameter set to true is the most direct way to generate a new
+      meeting link.
+    result: '[Calendar] event_saved — ''New Meeting'' on  '
+    skill: extension
+    started_at: '2026-05-01T23:04:59.686445'
+    status: done
+  summary: Create a Google Meet link
