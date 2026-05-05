@@ -1,0 +1,27 @@
+created_at: '2026-05-02T22:30:10.402055'
+fingerprint: cybernetic440@@gmail.com hello mail send subject with
+id: 20260502_223010_0b87f4b8
+intent: send a mail to cybernetic440@@gmail.com with subject hello
+outcome: completed
+plan:
+  created_at: '2026-05-02T22:30:09.365354'
+  intent: send a mail to cybernetic440@@gmail.com with subject hello
+  status: completed
+  steps:
+  - action: sendMail
+    completed_at: '2026-05-02T22:30:10.389303'
+    description: Send an email to the specified recipient with the given subject.
+    error: null
+    id: step_1
+    params:
+      body: ''
+      subject: hello
+      to: cybernetic440@gmail.com
+    reasoning: The user explicitly asked to send an email to a specific address with
+      a subject, which directly maps to the `sendMail` action of the Gmail extension.
+    result: "{\n  \"tabId\": 1302597905,\n  \"url\": \"https://mail.google.com/mail/?view=cm&fs=1&to=cybernetic440%40gmail.com&su=hello&body=\"\
+      \n}"
+    skill: extension
+    started_at: '2026-05-02T22:30:09.370714'
+    status: done
+  summary: Send an email to cybernetic440@gmail.com with the subject 'hello'.

@@ -25,6 +25,7 @@ playwright>=1.48.0           # Playwright CDP bridge
 watchdog>=5.0.0              # Directory watcher
 pypdf>=6.10.0                # PDF text extraction
 python-docx>=1.2.0           # Word document extraction
+docx2txt>=0.8                # Legacy .doc Word support
 pandas>=2.3.0                # Excel/CSV data processing
 openpyxl>=3.1.0              # Excel file support
 python-pptx>=1.0.0           # PowerPoint extraction
@@ -34,6 +35,10 @@ beautifulsoup4>=4.14.0       # HTML/EPUB parsing
 pytesseract>=0.3.0           # OCR extraction (requires Tesseract binary)
 xlrd>=2.0.0                  # Legacy Excel (.xls) support
 odfpy>=1.4.0                 # OpenDocument (.ods) support
+
+# --- Memory & RAG ---
+chromadb>=0.5.0              # Vector database for memory
+sentence-transformers>=3.0.0 # Local embeddings for RAG
 
 # --- Voice Input ---
 requests>=2.32.0             # Sarvam AI HTTP client

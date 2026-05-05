@@ -1,0 +1,31 @@
+created_at: '2026-04-30T18:42:27.021420'
+fingerprint: '"aids "srajan clown" freaks gc" group hotspur message named open send
+  shetty, tottehnam whatsapp'
+id: 20260430_184227_0daf6ebf
+intent: open whatsapp and send a message "Srajan Shetty, Tottehnam Hotspur Clown"  in
+  the group named "AIDS freaks gc"
+outcome: completed
+plan:
+  created_at: '2026-04-30T18:42:14.290582'
+  intent: open whatsapp and send a message "Srajan Shetty, Tottehnam Hotspur Clown"  in
+    the group named "AIDS freaks gc"
+  status: completed
+  steps:
+  - action: send_message
+    completed_at: '2026-04-30T18:42:27.013815'
+    description: Send the specified message to the WhatsApp group.
+    error: null
+    id: step_1
+    params:
+      app: whatsapp
+      contact: AIDS freaks gc
+      is_group: true
+      text: Srajan Shetty, Tottehnam Hotspur Clown
+    reasoning: The user wants to send a message to a WhatsApp group, so the messaging.send_message
+      action is used with the provided details.
+    result: '[Whatsapp] Message sent to group ''AIDS freaks gc'': Srajan Shetty, Tottehnam
+      Hotspur Clown'
+    skill: messaging
+    started_at: '2026-04-30T18:42:14.295123'
+    status: done
+  summary: Open WhatsApp and send a message to a group chat.

@@ -1,0 +1,28 @@
+created_at: '2026-05-02T22:55:58.352650'
+fingerprint: 2026 3may 6pm at google meet schedule
+id: 20260502_225558_84e7c43b
+intent: schedule a google meet at 6pm on 3may 2026
+outcome: completed
+plan:
+  created_at: '2026-05-02T22:55:48.029824'
+  intent: schedule a google meet at 6pm on 3may 2026
+  status: completed
+  steps:
+  - action: createEvent
+    completed_at: '2026-05-02T22:55:58.343242'
+    description: Schedule a Google Meet event.
+    error: null
+    id: step_1
+    params:
+      date: '2026-05-03'
+      meet: true
+      time: '18:00'
+      title: Google Meet
+    reasoning: The user wants to schedule a Google Meet, which is directly supported
+      by the extension.createEvent skill with the meet=true parameter. The date and
+      time are extracted from the intent.
+    result: '[Calendar] event_saved — ''Google Meet'' on 2026-05-03 18:00 ✓ verified'
+    skill: extension
+    started_at: '2026-05-02T22:55:48.034623'
+    status: done
+  summary: Schedule a Google Meet event for May 3, 2026, at 6 PM.

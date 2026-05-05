@@ -1,0 +1,11 @@
+created_at: '2026-05-01T00:17:06.036326'
+fingerprint: '[planner] ```json raw:'
+id: 20260501_001706_fe7210fa
+intent: '[Planner] Raw: ```json'
+outcome: completed
+plan:
+  created_at: '2026-05-01T00:17:06.031883'
+  intent: '[Planner] Raw: ```json'
+  status: completed
+  steps: []
+  summary: No specific intent provided.
