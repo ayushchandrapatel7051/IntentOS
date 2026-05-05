@@ -1,0 +1,26 @@
+created_at: '2026-04-29T19:32:23.368662'
+fingerprint: '"hey are how jaidev open send whatsapp you"'
+id: 20260429_193223_f0867572
+intent: open whatsapp and send "Hey how are you" to Jaidev
+outcome: completed
+plan:
+  created_at: '2026-04-29T19:32:14.476777'
+  intent: open whatsapp and send "Hey how are you" to Jaidev
+  status: completed
+  steps:
+  - action: send_message
+    completed_at: '2026-04-29T19:32:23.367504'
+    description: Send the message 'Hey how are you' to Jaidev on WhatsApp.
+    error: null
+    id: step_1
+    params:
+      app: whatsapp
+      contact: Jaidev
+      text: Hey how are you
+    reasoning: The user explicitly requested to send a message to a specific contact
+      on WhatsApp.
+    result: '[Whatsapp] Message sent to ''Jaidev'': Hey how are you'
+    skill: messaging
+    started_at: '2026-04-29T19:32:14.478294'
+    status: done
+  summary: Open WhatsApp and send a message to Jaidev.

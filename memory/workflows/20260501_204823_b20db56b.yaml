@@ -1,0 +1,24 @@
+created_at: '2026-05-01T20:48:23.963020'
+fingerprint: 'down” then: “scroll'
+id: 20260501_204823_b20db56b
+intent: 'then: “Scroll down”'
+outcome: completed
+plan:
+  created_at: '2026-05-01T20:48:23.641642'
+  intent: 'then: “Scroll down”'
+  status: completed
+  steps:
+  - action: scroll
+    completed_at: '2026-05-01T20:48:23.958787'
+    description: Scroll down the current view.
+    error: null
+    id: step_1
+    params:
+      clicks: 1
+    reasoning: The user explicitly asked to 'Scroll down', which directly maps to
+      the vision.scroll action with a positive click value.
+    result: Scrolled up 1 clicks
+    skill: vision
+    started_at: '2026-05-01T20:48:23.644634'
+    status: done
+  summary: Scroll down the current view.

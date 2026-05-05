@@ -16,12 +16,24 @@ python-multipart>=0.0.12     # Form data parsing
 mss>=9.0.2                   # Screenshot capture
 Pillow>=11.0.0               # Image processing
 pyautogui>=0.9.54            # Mouse/keyboard simulation + hotkeys
+pyperclip>=1.11.0            # Clipboard management (for Apps skill)
 
 # --- Browser Automation ---
 playwright>=1.48.0           # Playwright CDP bridge
 
-# --- File Management ---
+# --- File Management & Extraction ---
 watchdog>=5.0.0              # Directory watcher
+pypdf>=6.10.0                # PDF text extraction
+python-docx>=1.2.0           # Word document extraction
+pandas>=2.3.0                # Excel/CSV data processing
+openpyxl>=3.1.0              # Excel file support
+python-pptx>=1.0.0           # PowerPoint extraction
+striprtf>=0.0.32             # RTF text extraction
+EbookLib>=0.20               # EPUB support
+beautifulsoup4>=4.14.0       # HTML/EPUB parsing
+pytesseract>=0.3.0           # OCR extraction (requires Tesseract binary)
+xlrd>=2.0.0                  # Legacy Excel (.xls) support
+odfpy>=1.4.0                 # OpenDocument (.ods) support
 
 # --- Voice Input ---
 requests>=2.32.0             # Sarvam AI HTTP client
@@ -32,21 +44,10 @@ scipy>=1.14.0                # Audio file I/O
 pyyaml>=6.0.2                # YAML store
 python-dotenv>=1.0.1         # .env loading
 pydantic>=2.10.0             # Data validation
+numpy>=2.2.0                 # Numerical processing (for STT/Voice)
 
 # --- Utilities ---
 rich>=13.9.0                 # Console formatting
 colorama>=0.4.6              # Windows color support
 aiohttp>=3.11.0              # Async HTTP client
 aiofiles>=24.1.0             # Async file I/O
-
-# ==========================================
-# REMOVED (cost reduction):
-#   python-telegram-bot    — replaced by desktop app + shortcuts
-#   telethon               — replaced by desktop app + shortcuts
-#   google-api-python-client — calendar via browser instead
-#   google-auth-oauthlib
-#   google-auth-httplib2
-#   APScheduler
-#   pyaudio                — meeting co-pilot (can add back later)
-#   openai-whisper         — meeting co-pilot (can add back later)
-# ==========================================

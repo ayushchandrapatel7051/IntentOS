@@ -7,11 +7,9 @@ __pycache__/
 dist/
 build/
 *.egg-info/
-whatsapp-auth/
 sandbox-workspace/
 screenshots/
 logs/
-memory/workflows/*.yaml
 credentials/
 .vscode/
 .idea/

@@ -1,0 +1,504 @@
+created_at: '2026-05-03T10:10:32.067759'
+fingerprint: content jaidev open rolando send whatsapp wikipedia
+id: 20260503_101032_3a289338
+intent: open rolando wikipedia and send content to jaidev on whatsapp
+outcome: completed
+plan:
+  created_at: '2026-05-03T10:09:55.335076'
+  intent: open rolando wikipedia and send content to jaidev on whatsapp
+  status: completed
+  steps:
+  - action: navigate
+    completed_at: '2026-05-03T10:09:56.362896'
+    description: Search Google for 'Rolando Wikipedia'.
+    error: null
+    id: step_1
+    params:
+      browser: chrome
+      url: https://www.google.com/search?q=Rolando+Wikipedia
+    reasoning: First, find the Wikipedia page for Rolando using a Google search.
+    result: "{\n  \"tabId\": 1231640477,\n  \"url\": \"https://www.google.com/search?q=Rolando+Wikipedia\"\
+      \n}"
+    skill: browser
+    started_at: '2026-05-03T10:09:55.340072'
+    status: done
+  - action: web_agent
+    completed_at: '2026-05-03T10:10:23.317837'
+    description: Click the Wikipedia link from the search results and extract all
+      text content from the page.
+    error: null
+    id: step_2
+    params:
+      tab_id: 1231640477
+      task: Click the Wikipedia link for Rolando from the search results. After the
+        Wikipedia page loads, extract ALL visible text content from the Wikipedia
+        article.
+      url: ''
+    reasoning: Use web_agent to interact with the search results, navigate to the
+      Wikipedia page, and extract its full content.
+    result: "Jump to content\nMain menu\nSearch\nDonate\nCreate account\nLog in\n\
+      Contents hide\n(Top)\nClub career\nToggle Club career subsection\nBelenenses\n\
+      Porto\nMarseille\nBraga\nInternational career\nCareer statistics\nToggle Career\
+      \ statistics subsection\nClub\nInternational\nHonours\nReferences\nExternal\
+      \ links\nRolando (footballer)\n37 languages\nArticle\nTalk\nRead\nEdit\nView\
+      \ history\nTools\nAppearance hide\nText\nSmall\nStandard\nLarge\nWidth\nStandard\n\
+      Wide\nColor\nAutomatic\nLight\nDark\nFrom Wikipedia, the free encyclopedia\n\
+      In this Portuguese name, the first or maternal family name is Pires and the\
+      \ second or paternal family name is Fonseca.\nNot to be confused with Ronaldo.\n\
+      Rolando\nRolando playing for Anderlecht\n\nPersonal information\nFull name\t\
+      Rolando Jorge Pires da Fonseca[1]\nDate of birth\t31 August 1985 (age 40)[1]\n\
+      Place of birth\tSão Vicente, Cape Verde[1]\nHeight\t1.89 m (6 ft 2 in)[1]\n\
+      Position\tCentre-back\nYouth career\n1999–2003\tCampomaiorense\n2003–2004\t\
+      Belenenses\nSenior career*\nYears\tTeam\tApps\t(Gls)\n2004–2008\tBelenenses\t\
+      97\t(7)\n2008–2015\tPorto\t112\t(7)\n2013\t→ Napoli (loan)\t7\t(0)\n2013–2014\t\
+      → Inter Milan (loan)\t29\t(4)\n2015\t→ Anderlecht (loan)\t4\t(0)\n2015–2019\t\
+      Marseille\t90\t(6)\n2020–2022\tBraga\t13\t(0)\nTotal\t\t352\t(24)\nInternational\
+      \ career\n2006–2007\tPortugal U21\t7\t(0)\n2009–2018\tPortugal\t21\t(0)\n\n\
+      show\nMedal record\n\n* Club domestic league appearances and goals\n\nRolando\
+      \ Jorge Pires da Fonseca (born 31 August 1985), known simply as Rolando, is\
+      \ a Portuguese former professional footballer who played as a central defender.\n\
+      \nHe played 222 Primeira Liga games for Belenenses, Porto and Braga, winning\
+      \ several honours including the league, Taça de Portugal and Europa League treble\
+      \ with the second club in 2011. Abroad, he played on loan for Napoli and Inter\
+      \ Milan in Italy and Anderlecht in Belgium, and spent four years in France with\
+      \ Marseille.\n\nRolando was part of the Portugal squads at the 2010 FIFA World\
+      \ Cup and UEFA Euro 2012, reaching the semi-finals in the latter tournament\
+      \ and earning 21 caps.\n\nClub career[edit]\nBelenenses[edit]\n\nRolando was\
+      \ born in São Vicente, Cape Verde. After beginning his career in the youth ranks\
+      \ of lowly S.C. Campomaiorense, he finished his development with Lisbon's C.F.\
+      \ Os Belenenses, which he joined at the age of 18. In his Primeira Liga debut,\
+      \ on 28 August 2004, he played 90 minutes and scored a goal in a 3–0 home win\
+      \ against C.S. Marítimo.[2]\n\nRolando went on to become an essential defensive\
+      \ figure onwards, appearing in all 30 games in the 2007–08 season as the team\
+      \ finished in eighth place.\n\nPorto[edit]\n\nOn 15 April 2008, FC Porto confirmed\
+      \ that Rolando had agreed to part ways with Belenenses and join them on a four-year\
+      \ contract.[3][4] In his first season he quickly beat competition from veteran\
+      \ Pedro Emanuel, partnering Bruno Alves in the centre[5] and netting three times[6][7][8]\
+      \ in 28 matches as the northerners won the league and the domestic cup. In the\
+      \ summer of 2009, the club acquired an additional 10% of his economic rights\
+      \ and the player also extended his link until 30 June 2014.[9]\n\nIn 2010–11,\
+      \ Rolando rarely missed a game for Porto who won another national championship.\
+      \ On 17 February 2011 he opened the score at Sevilla FC through a header, in\
+      \ an eventual 2–1 win in the round of 32 of the UEFA Europa League,[10] which\
+      \ ended in conquest.[11]\n\nRolando started 2011–12 in scoring fashion, netting\
+      \ both goals in the Portuguese Supercup, a 2–1 victory over Vitória S.C. in\
+      \ Aveiro.[12] On 30 January 2013, completely ostracised by manager Vítor Pereira\
+      \ as practically all Portuguese players, he was transferred to SSC Napoli of\
+      \ the Serie A, being loaned until June.[13]\n\nOn 10 August 2013, Inter Milan\
+      \ confirmed the signing of Rolando in a season-long loan, for €600,000.[14][15]\
+      \ He scored his first goal for the side on 27 October, contributing to a 4–2\
+      \ home defeat of Hellas Verona FC.[16]\n\nIn February 2015, after spending the\
+      \ first half of the new campaign ousted from the squad due to a run-in with\
+      \ the board of directors after he refused to join the team's pre-season,[17][18]\
+      \ Rolando was loaned to R.S.C. Anderlecht until June.[19]\n\nMarseille[edit]\n\
+      \nOn 1 September 2015, Rolando was signed by Olympique de Marseille.[20] His\
+      \ playtime was initially cut short, as the replacement to head coach Marcelo\
+      \ Bielsa, Míchel, saw little use in him, and was eventually transfer listed\
+      \ by Franck Passi after his first season in France.[21]\n\nHowever, Rolando\
+      \ returned to the squad under the newly appointed Rudi Garcia,[22] becoming\
+      \ an integral part of the team's defense[23] and notably contributing to a 0–0\
+      \ away draw to title holders Paris Saint-Germain FC.[24] On 3 May 2018, brought\
+      \ from the bench for Morgan Sanson in extra time, he scored in the dying minutes\
+      \ of the Europa League semi-finals against FC Red Bull Salzburg for a 2–1 away\
+      \ loss and 3–2 aggregate win.[25]\n\nBraga[edit]\n\nRolando returned to his\
+      \ country of adoption on 27 February 2020, with the 34-year-old free agent joining\
+      \ S.C. Braga – coached by his former Belenenses teammate Ruben Amorim – on a\
+      \ two-and-a-half-year contract.[26] He finished 2020–21 as a cup winner, scoring\
+      \ the opening goal of a 5–0 home win over S.C.U. Torreense in the last 16.[27]\n\
+      \nBraga sought to offload Rolando before the 2021–22 season, but he turned down\
+      \ all available offers due to his high wage demands. He was completely frozen\
+      \ out by manager Carlos Carvalhal for the last year of his contract, despite\
+      \ long-term injuries to David Carmo and Nuno Sequeira in the backline.[28]\n\
+      \nRolando left the Estádio Municipal de Braga in July 2022, with only 16 competitive\
+      \ appearances to his credit.[29]\n\nInternational career[edit]\nRolando (right)\
+      \ playing against Argentina in February 2011.\n\nAlthough born in Cape Verde,\
+      \ Rolando moved to Portugal aged 14 and became a naturalised citizen in 2006.\
+      \ He immediately started playing for the nation's under-21s, for whom he appeared\
+      \ at the 2006[30] and 2007 UEFA European Championships.[31]\n\nOn 11 February\
+      \ 2009, Rolando was first called up to the full side, playing 90 minutes in\
+      \ a friendly match with Finland in Faro (1–0 win).[32] He was selected for the\
+      \ 2010 FIFA World Cup in South Africa,[33] but did not leave the bench.\n\n\
+      At UEFA Euro 2012, Rolando made three appearances for the semi-finalists, all\
+      \ as a late substitute.[34][35][36] After a four-year international absence,\
+      \ he returned to the international fold for a friendly against Egypt in March\
+      \ 2018.[37] He was named in a preliminary 35-man squad for the year's World\
+      \ Cup weeks later,[38] but did not make the final cut.[39]\n\nCareer statistics[edit]\n\
+      Club[edit]\nAs of 26 May 2019[40][41]\nAppearances and goals by club, season\
+      \ and competition\nClub\tSeason\tLeague\tNational cup\tContinental\tOther\t\
+      Total\nDivision\tApps\tGoals\tApps\tGoals\tApps\tGoals\tApps\tGoals\tApps\t\
+      Goals\nBelenenses\t2004–05\tPrimeira Liga\t16\t2\t0\t0\t—\t—\t16\t2\n2005–06\t\
+      25\t3\t0\t0\t—\t—\t25\t3\n2006–07\t26\t0\t0\t0\t—\t—\t26\t0\n2007–08\t30\t2\t\
+      0\t0\t2\t0\t—\t32\t2\nTotal\t97\t7\t0\t0\t2\t0\t0\t0\t99\t7\nPorto\t2008–09\t\
+      Primeira Liga\t28\t3\t4\t0\t10\t1\t0\t0\t42\t4\n2009–10\t28\t3\t7\t2\t7\t1\t\
+      1\t0\t43\t6\n2010–11\t29\t0\t6\t1\t15\t2\t1\t0\t51\t3\n2011–12\t26\t1\t2\t0\t\
+      8\t0\t1\t2\t37\t3\n2012–13\t1\t0\t0\t0\t0\t0\t0\t0\t1\t0\nTotal\t112\t7\t19\t\
+      3\t40\t4\t3\t2\t174\t16\nNapoli (loan)\t2012–13\tSerie A\t7\t0\t0\t0\t2\t0\t\
+      —\t9\t0\nInter Milan (loan)\t2013–14\tSerie A\t29\t4\t0\t0\t—\t—\t29\t4\nAnderlecht\
+      \ (loan)\t2014–15\tBelgian Pro League\t4\t0\t2\t0\t2\t0\t2\t0\t10\t0\nMarseille\t\
+      2015–16\tLigue 1\t19\t1\t5\t0\t5\t0\t—\t29\t1\n2016–17\t30\t4\t5\t0\t—\t—\t\
+      35\t4\n2017–18\t31\t1\t3\t0\t12\t1\t—\t46\t2\n2018–19\t10\t0\t2\t0\t1\t0\t—\t\
+      13\t0\nTotal\t90\t6\t15\t0\t18\t1\t0\t0\t123\t7\nCareer total\t339\t24\t36\t\
+      3\t64\t5\t5\t2\t444\t34\nInternational[edit]\nAppearances and goals by national\
+      \ team and year[42]\nNational team\tYear\tApps\tGoals\nPortugal\t2009\t6\t0\n\
+      2010\t2\t0\n2011\t4\t0\n2012\t6\t0\n2014\t1\t0\n2018\t2\t0\nTotal\t21\t0\nHonours[edit]\n\
+      Rolando (left, kneeling behind Hulk) during Porto's run to the Europa League\
+      \ title in 2010–11\n\nPorto\n\nPrimeira Liga: 2008–09, 2010–11, 2011–12, 2012–13[41]\n\
+      Taça de Portugal: 2008–09, 2009–10, 2010–11[41]\nSupertaça Cândido de Oliveira:\
+      \ 2009, 2010, 2011, 2012[41]\nUEFA Europa League: 2010–11[41]\nUEFA Super Cup\
+      \ runner-up: 2011[41]\nTaça da Liga runner-up: 2009–10[41]\n\nAnderlecht\n\n\
+      Belgian Cup runner-up: 2014–15[41]\n\nMarseille\n\nCoupe de France runner-up:\
+      \ 2015–16[41]\nUEFA Europa League runner-up: 2017–18[43]\n\nBraga\n\nTaça de\
+      \ Portugal: 2020–21[44]\nReferences[edit]\n^ \nJump up to:\na b c d \"Rolando\"\
+      \ (in Portuguese). Mais Futebol. Retrieved 21 February 2021.\n^ \"Portugal/Futebol:\
+      \ Superliga – Sporting começa com vitória\" [Portugal/Football: Superleague\
+      \ – Sporting start with win] (in Portuguese). Angola Press News Agency. 29 August\
+      \ 2004. Retrieved 2 November 2017.\n^ \"Porto sign Belenenses defender\". FIFA.\
+      \ 15 April 2008. Archived from the original on 18 April 2008. Retrieved 16 April\
+      \ 2008.\n^ \"Porto lure Rolando away from Lisbon\". UEFA. 16 April 2008. Retrieved\
+      \ 18 May 2022.\n^ \"Jesualdo em Alvalade sem os 11 titulares\" [Jesualdo in\
+      \ Alvalade without the 11 starters] (in Portuguese). Rádio e Televisão de Portugal.\
+      \ 3 February 2009. Retrieved 23 March 2018.\n^ \"Campeão explica por que é o\
+      \ melhor\" [Champions explain why they are the best]. Correio da Manhã (in Portuguese).\
+      \ 5 April 2009. Retrieved 23 March 2018.\n^ \"Benquerença ajuda dragões a golear\"\
+      \ [Benquerença helps in dragon rout]. Correio da Manhã (in Portuguese). 20 April\
+      \ 2009. Retrieved 23 March 2018.\n^ \"Passeio na ilha anuncia o tetra\" [Island\
+      \ sight-seeing announces the tetra]. Correio da Manhã (in Portuguese). 4 May\
+      \ 2009. Retrieved 23 March 2018.\n^ \"Relatório e contas 2009/2010\" [Report\
+      \ and finance 2009/2010] (PDF) (in Portuguese). Portuguese Securities Market\
+      \ Commission. 29 October 2010. Retrieved 23 January 2016.\n^ Bryan, Paul (17\
+      \ February 2011). \"Guarín gives Porto narrow win in Seville\". UEFA. Retrieved\
+      \ 18 May 2022.\n^ \"Falcao doet Porto zegevieren in Europa League\" [Falcao\
+      \ makes Porto prevail in Europa League] (in Dutch). Sporza. 18 May 2011. Retrieved\
+      \ 23 March 2018.\n^ Kundert, Tom (7 August 2011). \"Rolando double fires Porto\
+      \ to Super Cup triumph\". PortuGOAL. Archived from the original on 2 July 2013.\
+      \ Retrieved 30 April 2012.\n^ \"Ufficiale: Rolando e Radosevic al Napoli. Ceduti\
+      \ Uvini al Siena e Fernandez al Getafe\" [Official: Rolando and Radosevic to\
+      \ Napoli. Loaned Uvini to Siena and Fernandez to Getafe] (in Italian). S.S.C.\
+      \ Napoli. 31 January 2013. Retrieved 1 February 2013.\n^ \"Rolando bolsters\
+      \ Nerazzurri rearguard\". Inter Milan. 10 August 2013. Retrieved 11 August 2013.\n\
+      ^ F.C. Internazionale Milano S.p.A. bilancio (financial report and accounts)\
+      \ on 30 June 2014 (in Italian), PDF purchased from Italian C.C.I.A.A.\n^ Clari,\
+      \ Valerio (27 October 2013). \"Inter 4–2 Verona. The goals came from Palacio,\
+      \ Cambiasso, Rolando and an own goal by Moras\". La Gazzetta dello Sport. Archived\
+      \ from the original on 29 October 2013. Retrieved 27 October 2013.\n^ \"Lei\
+      \ Webster não garante saída a Rolando\" [Webster Act does not guarantee Rolando\
+      \ departure] (in Portuguese). Rádio Renascença. 1 August 2014. Retrieved 4 February\
+      \ 2015.\n^ Gonçalves, Igor (3 December 2014). \"FC Porto dificulta saída de\
+      \ Rolando\" [FC Porto make it hard for Rolando to leave]. Correio da Manhã (in\
+      \ Portuguese). Retrieved 4 February 2015.\n^ \"Rolando Jorge Pires Fonseca to\
+      \ RSCA!\". R.S.C. Anderlecht. 2 February 2015. Retrieved 8 February 2015.\n\
+      ^ \"Rolando: \"L'OM, mon cadeau d'anniversaire\"\" [Rolando: \"L’OM, my birthday\
+      \ present\"] (in French). Olympique Marseille. 1 September 2015. Retrieved 23\
+      \ January 2016.\n^ \"Marseille transfer list Romain Alessandrini & Rolando\"\
+      . Get French Football News. 19 July 2016. Retrieved 19 February 2017.\n^ Holyman,\
+      \ Ian (20 October 2016). \"Marseille appoint Rudi Garcia as new coach on three-year\
+      \ contract\". ESPN FC. Retrieved 19 February 2017.\n^ Lyttleton, Ben (21 November\
+      \ 2016). \"Rolando taking advantage of second chance at Marseille\". Sports\
+      \ Illustrated. Retrieved 19 February 2017.\n^ \"Paris Saint-Germain held to\
+      \ goalless draw by Marseille in Le Classique\". Eurosport. 23 October 2016.\
+      \ Retrieved 8 March 2017.\n^ \"FC Red Bull Salzburg 2–1 Marseille\". BBC Sport.\
+      \ 3 May 2018. Retrieved 3 May 2018.\n^ \"Braga confirma contratação de Rolando\"\
+      \ [Braga confirm signing of Rolando]. Jornal de Notícias (in Portuguese). 27\
+      \ February 2020. Retrieved 27 February 2020.\n^ \"SC Braga goleia Torreense\
+      \ e segue em frente na Taça de Portugal. Veja os golos\" [SC Braga thrash Torreense\
+      \ and advance in the Portuguese Cup. See the goals] (in Portuguese). TSF. 13\
+      \ January 2021. Retrieved 22 September 2021.\n^ Rocha, Pedro (5 January 2022).\
+      \ \"Rolando é um caso perdido no Braga: vai cumprir contrato sem competir\"\
+      \ [Rolando is a lost case at Braga: he will complete his contract without competing].\
+      \ O Jogo (in Portuguese). Retrieved 16 May 2022.\n^ Andrade, Tomaz (1 July 2022).\
+      \ \"Rolando deixa o Braga com apenas 16 jogos ao fim de 855 dias\" [Rolando\
+      \ leaves Braga with just 16 games after 855 days]. O Jogo (in Portuguese). Retrieved\
+      \ 21 August 2022.\n^ \"Portugal perde por 1–0 com França na estreia\" [Portugal\
+      \ lose 1–0 to France in debut] (in Portuguese). TSF. 23 May 2006. Retrieved\
+      \ 23 March 2018.\n^ \"Portugal-Itália, 0–0 (3–4 gp)\" [Portugal-Italy, 0–0 (3–4\
+      \ pk)]. Record (in Portuguese). 21 June 2007. Retrieved 23 March 2018.\n^ \"\
+      Portugal vence Finlândia 1–0 em jogo particular\" [Portugal beat Finland 1–0\
+      \ in friendly game]. Açoriano Oriental (in Portuguese). 11 February 2009. Retrieved\
+      \ 4 October 2017.\n^ \"World Cup 2010: Pepe named in Portugal squad\". BBC Sport.\
+      \ 1 June 2010. Retrieved 10 June 2020.\n^ \"Euro 2012: Denmark 2–3 Portugal\
+      \ – Late Varela goal gives Portugal hope\". The Scotsman. 13 June 2012. Retrieved\
+      \ 10 June 2020.\n^ \"Euro 2012: Ronaldo delivers for Portugal as chaotic Netherlands\
+      \ crash out\". Belfast Telegraph. 18 June 2012. Retrieved 10 June 2020.\n^ Bonesteel,\
+      \ Matt (21 June 2012). \"Euro 2012: Cristiano Ronaldo sends Portugal to the\
+      \ semifinals with 1–0 win over Czech Republic\". The Washington Post. Retrieved\
+      \ 10 June 2020.\n^ Kundert, Tom (18 March 2018). \"Rolando gets surprise call-up\
+      \ for Portugal\". PortuGOAL. Retrieved 10 June 2020.\n^ \"Revealed: Every World\
+      \ Cup 2018 squad – 23-man & preliminary lists & when will they be announced?\"\
+      . Goal. 17 May 2018. Retrieved 17 May 2018.\n^ \"Nearly half Portugal's Euro\
+      \ squad to miss World Cup\". Special Broadcasting Service. 17 May 2018. Retrieved\
+      \ 17 May 2018.\n^ Rolando at ForaDeJogo (archived) \n^ \nJump up to:\na b c\
+      \ d e f g h i Rolando at Soccerway\n^ Rolando at EU-Football.info (archive)\n\
+      ^ Hafez, Shamoon (16 May 2018). \"Marseille 0–0 Atlético Madrid\". BBC Sport.\
+      \ Retrieved 17 May 2018.\n^ Ribeiro, Patrick (23 May 2021). \"Braga beat nine-man\
+      \ Benfica to lift Portuguese Cup\". PortuGOAL. Retrieved 24 May 2021.\nExternal\
+      \ links[edit]\nWikimedia Commons has media related to Rolando (Portuguese footballer).\n\
+      Rolando at ForaDeJogo (archived) \nRolando at L'Équipe Football (in French)\n\
+      Rolando national team profile at the Portuguese Football Federation (in Portuguese)\n\
+      Rolando at National-Football-Teams.com\nshow\nPortugal squads\n\n\nCategories:\
+      \ 1985 birthsLiving peoplePeople from São Vicente, Cape VerdeCape Verdean emigrants\
+      \ to PortugalSportspeople of Cape Verdean descentBlack Portuguese sportspeople21st-century\
+      \ Portuguese sportsmenPortuguese men's footballersMen's association football\
+      \ central defendersPrimeira Liga playersC.F. Os Belenenses playersFC Porto playersS.C.\
+      \ Braga playersSerie A playersSSC Napoli playersInter Milan playersBelgian Pro\
+      \ League playersR.S.C. Anderlecht playersLigue 1 playersChampionnat National\
+      \ 2 playersOlympique de Marseille playersUEFA Europa League–winning playersPortugal\
+      \ men's under-21 international footballersPortugal men's international footballers2010\
+      \ FIFA World Cup playersUEFA Euro 2012 playersPortuguese expatriate men's footballersExpatriate\
+      \ men's footballers in ItalyExpatriate men's footballers in BelgiumExpatriate\
+      \ men's footballers in FrancePortuguese expatriate sportspeople in ItalyPortuguese\
+      \ expatriate sportspeople in BelgiumPortuguese expatriate sportspeople in France\n\
+      This page was last edited on 21 January 2026, at 04:22 (UTC).\nText is available\
+      \ under the Creative Commons Attribution-ShareAlike 4.0 License; additional\
+      \ terms may apply. By using this site, you agree to the Terms of Use and Privacy\
+      \ Policy. Wikipedia® is a registered trademark of the Wikimedia Foundation,\
+      \ Inc., a non-profit organization.\nPrivacy policy\nAbout Wikipedia\nDisclaimers\n\
+      Contact Wikipedia\nLegal & safety contacts\nCode of Conduct\nDevelopers\nStatistics\n\
+      Cookie statement\nMobile view"
+    skill: extension
+    started_at: '2026-05-03T10:09:56.362896'
+    status: done
+  - action: send_message
+    completed_at: '2026-05-03T10:10:31.993218'
+    description: Send the extracted Wikipedia content to Jaidev on WhatsApp.
+    error: null
+    id: step_3
+    params:
+      app: whatsapp
+      contact: jaidev
+      text: "Here is the Wikipedia content for Rolando:\n\nJump to content\nMain menu\n\
+        Search\nDonate\nCreate account\nLog in\nContents hide\n(Top)\nClub career\n\
+        Toggle Club career subsection\nBelenenses\nPorto\nMarseille\nBraga\nInternational\
+        \ career\nCareer statistics\nToggle Career statistics subsection\nClub\nInternational\n\
+        Honours\nReferences\nExternal links\nRolando (footballer)\n37 languages\n\
+        Article\nTalk\nRead\nEdit\nView history\nTools\nAppearance hide\nText\nSmall\n\
+        Standard\nLarge\nWidth\nStandard\nWide\nColor\nAutomatic\nLight\nDark\nFrom\
+        \ Wikipedia, the free encyclopedia\nIn this Portuguese name, the first or\
+        \ maternal family name is Pires and the second or paternal family name is\
+        \ Fonseca.\nNot to be confused with Ronaldo.\nRolando\nRolando playing for\
+        \ Anderlecht\n\nPersonal information\nFull name\tRolando Jorge Pires da Fonseca[1]\n\
+        Date of birth\t31 August 1985 (age 40)[1]\nPlace of birth\tSão Vicente, Cape\
+        \ Verde[1]\nHeight\t1.89 m (6 ft 2 in)[1]\nPosition\tCentre-back\nYouth career\n\
+        1999–2003\tCampomaiorense\n2003–2004\tBelenenses\nSenior career*\nYears\t\
+        Team\tApps\t(Gls)\n2004–2008\tBelenenses\t97\t(7)\n2008–2015\tPorto\t112\t\
+        (7)\n2013\t→ Napoli (loan)\t7\t(0)\n2013–2014\t→ Inter Milan (loan)\t29\t\
+        (4)\n2015\t→ Anderlecht (loan)\t4\t(0)\n2015–2019\tMarseille\t90\t(6)\n2020–2022\t\
+        Braga\t13\t(0)\nTotal\t\t352\t(24)\nInternational career\n2006–2007\tPortugal\
+        \ U21\t7\t(0)\n2009–2018\tPortugal\t21\t(0)\n\nshow\nMedal record\n\n* Club\
+        \ domestic league appearances and goals\n\nRolando Jorge Pires da Fonseca\
+        \ (born 31 August 1985), known simply as Rolando, is a Portuguese former professional\
+        \ footballer who played as a central defender.\n\nHe played 222 Primeira Liga\
+        \ games for Belenenses, Porto and Braga, winning several honours including\
+        \ the league, Taça de Portugal and Europa League treble with the second club\
+        \ in 2011. Abroad, he played on loan for Napoli and Inter Milan in Italy and\
+        \ Anderlecht in Belgium, and spent four years in France with Marseille.\n\n\
+        Rolando was part of the Portugal squads at the 2010 FIFA World Cup and UEFA\
+        \ Euro 2012, reaching the semi-finals in the latter tournament and earning\
+        \ 21 caps.\n\nClub career[edit]\nBelenenses[edit]\n\nRolando was born in São\
+        \ Vicente, Cape Verde. After beginning his career in the youth ranks of lowly\
+        \ S.C. Campomaiorense, he finished his development with Lisbon's C.F. Os Belenenses,\
+        \ which he joined at the age of 18. In his Primeira Liga debut, on 28 August\
+        \ 2004, he played 90 minutes and scored a goal in a 3–0 home win against C.S.\
+        \ Marítimo.[2]\n\nRolando went on to become an essential defensive figure\
+        \ onwards, appearing in all 30 games in the 2007–08 season as the team finished\
+        \ in eighth place.\n\nPorto[edit]\n\nOn 15 April 2008, FC Porto confirmed\
+        \ that Rolando had agreed to part ways with Belenenses and join them on a\
+        \ four-year contract.[3][4] In his first season he quickly beat competition\
+        \ from veteran Pedro Emanuel, partnering Bruno Alves in the centre[5] and\
+        \ netting three times[6][7][8] in 28 matches as the northerners won the league\
+        \ and the domestic cup. In the summer of 2009, the club acquired an additional\
+        \ 10% of his economic rights and the player also extended his link until 30\
+        \ June 2014.[9]\n\nIn 2010–11, Rolando rarely missed a game for Porto who\
+        \ won another national championship. On 17 February 2011 he opened the score\
+        \ at Sevilla FC through a header, in an eventual 2–1 win in the round of 32\
+        \ of the UEFA Europa League,[10] which ended in conquest.[11]\n\nRolando started\
+        \ 2011–12 in scoring fashion, netting both goals in the Portuguese Supercup,\
+        \ a 2–1 victory over Vitória S.C. in Aveiro.[12] On 30 January 2013, completely\
+        \ ostracised by manager Vítor Pereira as practically all Portuguese players,\
+        \ he was transferred to SSC Napoli of the Serie A, being loaned until June.[13]\n\
+        \nOn 10 August 2013, Inter Milan confirmed the signing of Rolando in a season-long\
+        \ loan, for €600,000.[14][15] He scored his first goal for the side on 27\
+        \ October, contributing to a 4–2 home defeat of Hellas Verona FC.[16]\n\n\
+        In February 2015, after spending the first half of the new campaign ousted\
+        \ from the squad due to a run-in with the board of directors after he refused\
+        \ to join the team's pre-season,[17][18] Rolando was loaned to R.S.C. Anderlecht\
+        \ until June.[19]\n\nMarseille[edit]\n\nOn 1 September 2015, Rolando was signed\
+        \ by Olympique de Marseille.[20] His playtime was initially cut short, as\
+        \ the replacement to head coach Marcelo Bielsa, Míchel, saw little use in\
+        \ him, and was eventually transfer listed by Franck Passi after his first\
+        \ season in France.[21]\n\nHowever, Rolando returned to the squad under the\
+        \ newly appointed Rudi Garcia,[22] becoming an integral part of the team's\
+        \ defense[23] and notably contributing to a 0–0 away draw to title holders\
+        \ Paris Saint-Germain FC.[24] On 3 May 2018, brought from the bench for Morgan\
+        \ Sanson in extra time, he scored in the dying minutes of the Europa League\
+        \ semi-finals against FC Red Bull Salzburg for a 2–1 away loss and 3–2 aggregate\
+        \ win.[25]\n\nBraga[edit]\n\nRolando returned to his country of adoption on\
+        \ 27 February 2020, with the 34-year-old free agent joining S.C. Braga – coached\
+        \ by his former Belenenses teammate Ruben Amorim – on a two-and-a-half-year\
+        \ contract.[26] He finished 2020–21 as a cup winner, scoring the opening goal\
+        \ of a 5–0 home win over S.C.U. Torreense in the last 16.[27]\n\nBraga sought\
+        \ to offload Rolando before the 2021–22 season, but he turned down all available\
+        \ offers due to his high wage demands. He was completely frozen out by manager\
+        \ Carlos Carvalhal for the last year of his contract, despite long-term injuries\
+        \ to David Carmo and Nuno Sequeira in the backline.[28]\n\nRolando left the\
+        \ Estádio Municipal de Braga in July 2022, with only 16 competitive appearances\
+        \ to his credit.[29]\n\nInternational career[edit]\nRolando (right) playing\
+        \ against Argentina in February 2011.\n\nAlthough born in Cape Verde, Rolando\
+        \ moved to Portugal aged 14 and became a naturalised citizen in 2006. He immediately\
+        \ started playing for the nation's under-21s, for whom he appeared at the\
+        \ 2006[30] and 2007 UEFA European Championships.[31]\n\nOn 11 February 2009,\
+        \ Rolando was first called up to the full side, playing 90 minutes in a friendly\
+        \ match with Finland in Faro (1–0 win).[32] He was selected for the 2010 FIFA\
+        \ World Cup in South Africa,[33] but did not leave the bench.\n\nAt UEFA Euro\
+        \ 2012, Rolando made three appearances for the semi-finalists, all as a late\
+        \ substitute.[34][35][36] After a four-year international absence, he returned\
+        \ to the international fold for a friendly against Egypt in March 2018.[37]\
+        \ He was named in a preliminary 35-man squad for the year's World Cup weeks\
+        \ later,[38] but did not make the final cut.[39]\n\nCareer statistics[edit]\n\
+        Club[edit]\nAs of 26 May 2019[40][41]\nAppearances and goals by club, season\
+        \ and competition\nClub\tSeason\tLeague\tNational cup\tContinental\tOther\t\
+        Total\nDivision\tApps\tGoals\tApps\tGoals\tApps\tGoals\tApps\tGoals\tApps\t\
+        Goals\nBelenenses\t2004–05\tPrimeira Liga\t16\t2\t0\t0\t—\t—\t16\t2\n2005–06\t\
+        25\t3\t0\t0\t—\t—\t25\t3\n2006–07\t26\t0\t0\t0\t—\t—\t26\t0\n2007–08\t30\t\
+        2\t0\t0\t2\t0\t—\t32\t2\nTotal\t97\t7\t0\t0\t2\t0\t0\t0\t99\t7\nPorto\t2008–09\t\
+        Primeira Liga\t28\t3\t4\t0\t10\t1\t0\t0\t42\t4\n2009–10\t28\t3\t7\t2\t7\t\
+        1\t1\t0\t43\t6\n2010–11\t29\t0\t6\t1\t15\t2\t1\t0\t51\t3\n2011–12\t26\t1\t\
+        2\t0\t8\t0\t1\t2\t37\t3\n2012–13\t1\t0\t0\t0\t0\t0\t0\t0\t1\t0\nTotal\t112\t\
+        7\t19\t3\t40\t4\t3\t2\t174\t16\nNapoli (loan)\t2012–13\tSerie A\t7\t0\t0\t\
+        0\t2\t0\t—\t9\t0\nInter Milan (loan)\t2013–14\tSerie A\t29\t4\t0\t0\t—\t—\t\
+        29\t4\nAnderlecht (loan)\t2014–15\tBelgian Pro League\t4\t0\t2\t0\t2\t0\t\
+        2\t0\t10\t0\nMarseille\t2015–16\tLigue 1\t19\t1\t5\t0\t5\t0\t—\t29\t1\n2016–17\t\
+        30\t4\t5\t0\t—\t—\t35\t4\n2017–18\t31\t1\t3\t0\t12\t1\t—\t46\t2\n2018–19\t\
+        10\t0\t2\t0\t1\t0\t—\t13\t0\nTotal\t90\t6\t15\t0\t18\t1\t0\t0\t123\t7\nCareer\
+        \ total\t339\t24\t36\t3\t64\t5\t5\t2\t444\t34\nInternational[edit]\nAppearances\
+        \ and goals by national team and year[42]\nNational team\tYear\tApps\tGoals\n\
+        Portugal\t2009\t6\t0\n2010\t2\t0\n2011\t4\t0\n2012\t6\t0\n2014\t1\t0\n2018\t\
+        2\t0\nTotal\t21\t0\nHonours[edit]\nRolando (left, kneeling behind Hulk) during\
+        \ Porto's run to the Europa League title in 2010–11\n\nPorto\n\nPrimeira Liga:\
+        \ 2008–09, 2010–11, 2011–12, 2012–13[41]\nTaça de Portugal: 2008–09, 2009–10,\
+        \ 2010–11[41]\nSupertaça Cândido de Oliveira: 2009, 2010, 2011, 2012[41]\n\
+        UEFA Europa League: 2010–11[41]\nUEFA Super Cup runner-up: 2011[41]\nTaça\
+        \ da Liga runner-up: 2009–10[41]\n\nAnderlecht\n\nBelgian Cup runner-up: 2014–15[41]\n\
+        \nMarseille\n\nCoupe de France runner-up: 2015–16[41]\nUEFA Europa League\
+        \ runner-up: 2017–18[43]\n\nBraga\n\nTaça de Portugal: 2020–21[44]\nReferences[edit]\n\
+        ^ \nJump up to:\na b c d \"Rolando\" (in Portuguese). Mais Futebol. Retrieved\
+        \ 21 February 2021.\n^ \"Portugal/Futebol: Superliga – Sporting começa com\
+        \ vitória\" [Portugal/Football: Superleague – Sporting start with win] (in\
+        \ Portuguese). Angola Press News Agency. 29 August 2004. Retrieved 2 November\
+        \ 2017.\n^ \"Porto sign Belenenses defender\". FIFA. 15 April 2008. Archived\
+        \ from the original on 18 April 2008. Retrieved 16 April 2008.\n^ \"Porto\
+        \ lure Rolando away from Lisbon\". UEFA. 16 April 2008. Retrieved 18 May 2022.\n\
+        ^ \"Jesualdo em Alvalade sem os 11 titulares\" [Jesualdo in Alvalade without\
+        \ the 11 starters] (in Portuguese). Rádio e Televisão de Portugal. 3 February\
+        \ 2009. Retrieved 23 March 2018.\n^ \"Campeão explica por que é o melhor\"\
+        \ [Champions explain why they are the best]. Correio da Manhã (in Portuguese).\
+        \ 5 April 2009. Retrieved 23 March 2018.\n^ \"Benquerença ajuda dragões a\
+        \ golear\" [Benquerença helps in dragon rout]. Correio da Manhã (in Portuguese).\
+        \ 20 April 2009. Retrieved 23 March 2018.\n^ \"Passeio na ilha anuncia o tetra\"\
+        \ [Island sight-seeing announces the tetra]. Correio da Manhã (in Portuguese).\
+        \ 4 May 2009. Retrieved 23 March 2018.\n^ \"Relatório e contas 2009/2010\"\
+        \ [Report and finance 2009/2010] (PDF) (in Portuguese). Portuguese Securities\
+        \ Market Commission. 29 October 2010. Retrieved 23 January 2016.\n^ Bryan,\
+        \ Paul (17 February 2011). \"Guarín gives Porto narrow win in Seville\". UEFA.\
+        \ Retrieved 18 May 2022.\n^ \"Falcao doet Porto zegevieren in Europa League\"\
+        \ [Falcao makes Porto prevail in Europa League] (in Dutch). Sporza. 18 May\
+        \ 2011. Retrieved 23 March 2018.\n^ Kundert, Tom (7 August 2011). \"Rolando\
+        \ double fires Porto to Super Cup triumph\". PortuGOAL. Archived from the\
+        \ original on 2 July 2013. Retrieved 30 April 2012.\n^ \"Ufficiale: Rolando\
+        \ e Radosevic al Napoli. Ceduti Uvini al Siena e Fernandez al Getafe\" [Official:\
+        \ Rolando and Radosevic to Napoli. Loaned Uvini to Siena and Fernandez to\
+        \ Getafe] (in Italian). S.S.C. Napoli. 31 January 2013. Retrieved 1 February\
+        \ 2013.\n^ \"Rolando bolsters Nerazzurri rearguard\". Inter Milan. 10 August\
+        \ 2013. Retrieved 11 August 2013.\n^ F.C. Internazionale Milano S.p.A. bilancio\
+        \ (financial report and accounts) on 30 June 2014 (in Italian), PDF purchased\
+        \ from Italian C.C.I.A.A.\n^ Clari, Valerio (27 October 2013). \"Inter 4–2\
+        \ Verona. The goals came from Palacio, Cambiasso, Rolando and an own goal\
+        \ by Moras\". La Gazzetta dello Sport. Archived from the original on 29 October\
+        \ 2013. Retrieved 27 October 2013.\n^ \"Lei Webster não garante saída a Rolando\"\
+        \ [Webster Act does not guarantee Rolando departure] (in Portuguese). Rádio\
+        \ Renascença. 1 August 2014. Retrieved 4 February 2015.\n^ Gonçalves, Igor\
+        \ (3 December 2014). \"FC Porto dificulta saída de Rolando\" [FC Porto make\
+        \ it hard for Rolando to leave]. Correio da Manhã (in Portuguese). Retrieved\
+        \ 4 February 2015.\n^ \"Rolando Jorge Pires Fonseca to RSCA!\". R.S.C. Anderlecht.\
+        \ 2 February 2015. Retrieved 8 February 2015.\n^ \"Rolando: \"L'OM, mon cadeau\
+        \ d'anniversaire\"\" [Rolando: \"L’OM, my birthday present\"] (in French).\
+        \ Olympique Marseille. 1 September 2015. Retrieved 23 January 2016.\n^ \"\
+        Marseille transfer list Romain Alessandrini & Rolando\". Get French Football\
+        \ News. 19 July 2016. Retrieved 19 February 2017.\n^ Holyman, Ian (20 October\
+        \ 2016). \"Marseille appoint Rudi Garcia as new coach on three-year contract\"\
+        . ESPN FC. Retrieved 19 February 2017.\n^ Lyttleton, Ben (21 November 2016).\
+        \ \"Rolando taking advantage of second chance at Marseille\". Sports Illustrated.\
+        \ Retrieved 19 February 2017.\n^ \"Paris Saint-Germain held to goalless draw\
+        \ by Marseille in Le Classique\". Eurosport. 23 October 2016. Retrieved 8\
+        \ March 2017.\n^ \"FC Red Bull Salzburg 2–1 Marseille\". BBC Sport. 3 May\
+        \ 2018. Retrieved 3 May 2018.\n^ \"Braga confirma contratação de Rolando\"\
+        \ [Braga confirm signing of Rolando]. Jornal de Notícias (in Portuguese).\
+        \ 27 February 2020. Retrieved 27 February 2020.\n^ \"SC Braga goleia Torreense\
+        \ e segue em frente na Taça de Portugal. Veja os golos\" [SC Braga thrash\
+        \ Torreense and advance in the Portuguese Cup. See the goals] (in Portuguese).\
+        \ TSF. 13 January 2021. Retrieved 22 September 2021.\n^ Rocha, Pedro (5 January\
+        \ 2022). \"Rolando é um caso perdido no Braga: vai cumprir contrato sem competir\"\
+        \ [Rolando is a lost case at Braga: he will complete his contract without\
+        \ competing]. O Jogo (in Portuguese). Retrieved 16 May 2022.\n^ Andrade, Tomaz\
+        \ (1 July 2022). \"Rolando deixa o Braga com apenas 16 jogos ao fim de 855\
+        \ dias\" [Rolando leaves Braga with just 16 games after 855 days]. O Jogo\
+        \ (in Portuguese). Retrieved 21 August 2022.\n^ \"Portugal perde por 1–0 com\
+        \ França na estreia\" [Portugal lose 1–0 to France in debut] (in Portuguese).\
+        \ TSF. 23 May 2006. Retrieved 23 March 2018.\n^ \"Portugal-Itália, 0–0 (3–4\
+        \ gp)\" [Portugal-Italy, 0–0 (3–4 pk)]. Record (in Portuguese). 21 June 2007.\
+        \ Retrieved 23 March 2018.\n^ \"Portugal vence Finlândia 1–0 em jogo particular\"\
+        \ [Portugal beat Finland 1–0 in friendly game]. Açoriano Oriental (in Portuguese).\
+        \ 11 February 2009. Retrieved 4 October 2017.\n^ \"World Cup 2010: Pepe named\
+        \ in Portugal squad\". BBC Sport. 1 June 2010. Retrieved 10 June 2020.\n^\
+        \ \"Euro 2012: Denmark 2–3 Portugal – Late Varela goal gives Portugal hope\"\
+        . The Scotsman. 13 June 2012. Retrieved 10 June 2020.\n^ \"Euro 2012: Ronaldo\
+        \ delivers for Portugal as chaotic Netherlands crash out\". Belfast Telegraph.\
+        \ 18 June 2012. Retrieved 10 June 2020.\n^ Bonesteel, Matt (21 June 2012).\
+        \ \"Euro 2012: Cristiano Ronaldo sends Portugal to the semifinals with 1–0\
+        \ win over Czech Republic\". The Washington Post. Retrieved 10 June 2020.\n\
+        ^ Kundert, Tom (18 March 2018). \"Rolando gets surprise call-up for Portugal\"\
+        . PortuGOAL. Retrieved 10 June 2020.\n^ \"Revealed: Every World Cup 2018 squad\
+        \ – 23-man & preliminary lists & when will they be announced?\". Goal. 17\
+        \ May 2018. Retrieved 17 May 2018.\n^ \"Nearly half Portugal's Euro squad\
+        \ to miss World Cup\". Special Broadcasting Service. 17 May 2018. Retrieved\
+        \ 17 May 2018.\n^ Rolando at ForaDeJogo (archived) \n^ \nJump up to:\na b\
+        \ c d e f g h i Rolando at Soccerway\n^ Rolando at EU-Football.info (archive)\n\
+        ^ Hafez, Shamoon (16 May 2018). \"Marseille 0–0 Atlético Madrid\". BBC Sport.\
+        \ Retrieved 17 May 2018.\n^ Ribeiro, Patrick (23 May 2021). \"Braga beat nine-man\
+        \ Benfica to lift Portuguese Cup\". PortuGOAL. Retrieved 24 May 2021.\nExternal\
+        \ links[edit]\nWikimedia Commons has media related to Rolando (Portuguese\
+        \ footballer).\nRolando at ForaDeJogo (archived) \nRolando at L'Équipe Football\
+        \ (in French)\nRolando national team profile at the Portuguese Football Federation\
+        \ (in Portuguese)\nRolando at National-Football-Teams.com\nshow\nPortugal\
+        \ squads\n\n\nCategories: 1985 birthsLiving peoplePeople from São Vicente,\
+        \ Cape VerdeCape Verdean emigrants to PortugalSportspeople of Cape Verdean\
+        \ descentBlack Portuguese sportspeople21st-century Portuguese sportsmenPortuguese\
+        \ men's footballersMen's association football central defendersPrimeira Liga\
+        \ playersC.F. Os Belenenses playersFC Porto playersS.C. Braga playersSerie\
+        \ A playersSSC Napoli playersInter Milan playersBelgian Pro League playersR.S.C.\
+        \ Anderlecht playersLigue 1 playersChampionnat National 2 playersOlympique\
+        \ de Marseille playersUEFA Europa League–winning playersPortugal men's under-21\
+        \ international footballersPortugal men's international footballers2010 FIFA\
+        \ World Cup playersUEFA Euro 2012 playersPortuguese expatriate men's footballersExpatriate\
+        \ men's footballers in ItalyExpatriate men's footballers in BelgiumExpatriate\
+        \ men's footballers in FrancePortuguese expatriate sportspeople in ItalyPortuguese\
+        \ expatriate sportspeople in BelgiumPortuguese expatriate sportspeople in\
+        \ France\nThis page was last edited on 21 January 2026, at 04:22 (UTC).\n\
+        Text is available under the Creative Commons Attribution-ShareAlike 4.0 License;\
+        \ additional terms may apply. By using this site, you agree to the Terms of\
+        \ Use and Privacy Policy. Wikipedia® is a registered trademark of the Wikimedia\
+        \ Foundation, Inc., a non-profit organization.\nPrivacy policy\nAbout Wikipedia\n\
+        Disclaimers\nContact Wikipedia\nLegal & safety contacts\nCode of Conduct\n\
+        Developers\nStatistics\nCookie statement\nMobile view"
+    reasoning: Finally, send the extracted content to the specified contact via WhatsApp.
+    result: '[Whatsapp] Message sent to ''jaidev'': Here is the Wikipedia content
+      for Rolando:
+
+
+      Jump to content
+
+      ...'
+    skill: messaging
+    started_at: '2026-05-03T10:10:23.319847'
+    status: done
+  summary: Search for 'Rolando Wikipedia', extract the content from the Wikipedia
+    page, and send it to Jaidev on WhatsApp.
