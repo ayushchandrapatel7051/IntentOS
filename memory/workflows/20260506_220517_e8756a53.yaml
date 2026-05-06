@@ -1,0 +1,163 @@
+created_at: '2026-05-06T22:05:17.643000'
+fingerprint: day start
+id: 20260506_220517_e8756a53
+intent: start my day
+outcome: completed
+plan:
+  created_at: '2026-05-06T22:04:48.364236'
+  intent: start my day
+  status: completed
+  steps:
+  - action: navigate
+    completed_at: '2026-05-06T22:04:49.529465'
+    description: Check today's calendar
+    error: null
+    id: smd_01
+    params:
+      url: https://calendar.google.com
+    reasoning: Structured SOUL.md macro step (open_browser)
+    result: "{\n  \"tabId\": 1302602149,\n  \"url\": \"https://calendar.google.com\"\
+      \n}"
+    skill: browser
+    started_at: '2026-05-06T22:04:48.495152'
+    status: done
+  - action: get_events
+    completed_at: '2026-05-06T22:04:55.141188'
+    description: Fetch today's events
+    error: 'Chrome extension disconnected during ''getEvents'' after 3 attempts: received
+      1005 (no status received [internal]); then sent 1005 (no status received [internal])'
+    id: smd_02
+    params:
+      date: '2026-05-06'
+    reasoning: Structured SOUL.md macro step (read_calendar)
+    result: null
+    skill: extension
+    started_at: '2026-05-06T22:04:49.530634'
+    status: failed
+  - action: navigate
+    completed_at: '2026-05-06T22:05:10.379071'
+    description: Open Google Calendar in browser as a fallback for fetching events.
+    error: null
+    id: recovery_1
+    params:
+      browser: chrome
+      url: https://calendar.google.com
+    reasoning: The extension.getEvents skill failed due to a Chrome extension disconnection.
+      Opening Google Calendar in the browser allows the user to manually check their
+      schedule.
+    result: "{\n  \"tabId\": 1302602152,\n  \"url\": \"https://calendar.google.com\"\
+      \n}"
+    skill: browser
+    started_at: '2026-05-06T22:05:09.363882'
+    status: done
+  - action: navigate
+    completed_at: '2026-05-06T22:05:11.409279'
+    description: Open Gmail
+    error: null
+    id: smd_03
+    params:
+      browser: chrome
+      url: https://mail.google.com
+    reasoning: This step was pending and is independent of the failed event fetching.
+      Proceeding as planned.
+    result: "{\n  \"tabId\": 1302602155,\n  \"url\": \"https://mail.google.com\"\n\
+      }"
+    skill: browser
+    started_at: '2026-05-06T22:05:10.380089'
+    status: done
+  - action: open_app
+    completed_at: '2026-05-06T22:05:13.445685'
+    description: Open VS Code with last project
+    error: null
+    id: smd_04
+    params:
+      name: visual studio code ~/projects
+    reasoning: This step was pending and is independent of the failed event fetching.
+      Assuming 'last_project' is available from the macro context.
+    result: Opened 'visual studio code with "~/projects"' successfully
+    skill: apps
+    started_at: '2026-05-06T22:05:11.410293'
+    status: done
+  - action: execute
+    completed_at: '2026-05-06T22:05:13.944141'
+    description: Morning briefing, adjusted to reflect the event fetching failure.
+    error: null
+    id: smd_05_modified
+    params:
+      command: 'echo ''Good morning, Ayush!
+
+        📅 2026-05-06
+
+        💻 Last project: ~/projects
+
+        (Note: Could not fetch today''''s events due to an extension error. Please
+        check Google Calendar manually.)'''
+    reasoning: The original briefing relied on 'todays_events' which failed. This
+      modified step provides the briefing without the unavailable event information
+      and informs the user about the issue, suggesting they check the calendar opened
+      in the previous step.
+    result: 'Good morning, Ayush!
+
+      ?? 2026-05-06
+
+      ?? Last project: $env:USERPROFILE\projects
+
+      (Note: Could not fetch today''s events due to an extension error. Please check
+      Google Calendar manually.)'
+    skill: terminal
+    started_at: '2026-05-06T22:05:13.446820'
+    status: done
+  - action: navigate
+    completed_at: '2026-05-06T22:05:14.969690'
+    description: Open Gmail
+    error: null
+    id: smd_03
+    params:
+      url: https://mail.google.com
+    reasoning: Structured SOUL.md macro step (open_browser)
+    result: "{\n  \"tabId\": 1302602158,\n  \"url\": \"https://mail.google.com\"\n\
+      }"
+    skill: browser
+    started_at: '2026-05-06T22:05:13.944811'
+    status: done
+  - action: open_app
+    completed_at: '2026-05-06T22:05:16.991054'
+    description: Open VS Code with last project
+    error: null
+    id: smd_04
+    params:
+      name: code ~/projects
+    reasoning: Structured SOUL.md macro step (open_editor)
+    result: Opened 'code with "~/projects"' successfully
+    skill: apps
+    started_at: '2026-05-06T22:05:14.969690'
+    status: done
+  - action: execute
+    completed_at: '2026-05-06T22:05:17.443063'
+    description: Morning briefing
+    error: null
+    id: smd_05
+    params:
+      command: 'echo ''Good morning, Ayush!
+
+        📅 2026-05-06
+
+        📋 Today''''s events: ${todays_events}
+
+        💻 Last project: ~/projects
+
+        '''
+    reasoning: Structured SOUL.md macro step (notify_user)
+    result: 'Good morning, Ayush!
+
+      ?? 2026-05-06
+
+      ?? Today''s events: ${todays_events}
+
+      ?? Last project: $env:USERPROFILE\projects
+
+      '
+    skill: terminal
+    started_at: '2026-05-06T22:05:16.992707'
+    status: done
+  summary: 'Macro: start my day'

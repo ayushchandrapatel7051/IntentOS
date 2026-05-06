@@ -210,48 +210,68 @@ class AppLauncher:
             arg_str = raw[len(matched_app_name):].strip()
             file_arg = _expand_ps_vars(arg_str) if arg_str else ""
         else:
-            # Fallback for unknown apps or fuzzy matches without spaces
             parts = raw.split(None, 1)
             exe_name = parts[0]
             file_arg = _expand_ps_vars(parts[1]) if len(parts) > 1 else ""
             entry = _find_app(raw, apps) or _find_app(exe_name, apps)
 
+        # VS Code QoL Fix: If opening a specific file or dir in VS Code, open its
+        # parent directory as the workspace so the explorer sidebar is populated.
+        is_vscode = (entry and "visual studio code" in entry.get("name", "").lower()) or \
+                    "code" in exe_name.lower()
+
+        if is_vscode and file_arg:
+            clean_path = file_arg.strip('"\'')
+            if os.path.isfile(clean_path):
+                # File exists → open parent dir + file so sidebar shows the project
+                dir_path = os.path.dirname(clean_path)
+                file_arg = f'"{dir_path}" "{clean_path}"'
+            elif not file_arg.startswith('"'):
+                file_arg = f'"{file_arg}"'
+
         launched = False
 
-        if entry:
-            # Known app — launch via AppID or shortcut, then pass file arg if present
-            if "app_id" in entry:
-                launched = await asyncio.to_thread(_launch_via_app_id, entry["app_id"])
-
-            if not launched and "shortcut" in entry:
-                if file_arg:
-                    try:
-                        subprocess.Popen([entry["shortcut"], file_arg], shell=False)
-                        launched = True
-                    except Exception:
-                        launched = await asyncio.to_thread(_launch_via_shortcut, entry["shortcut"])
-                else:
-                    launched = await asyncio.to_thread(_launch_via_shortcut, entry["shortcut"])
-        else:
-            # Unknown app — try launching directly as a system command.
-            # This handles: notepad, calc, mspaint, code, winword, excel, etc.
+        # VS Code SHORTCUT BYPASS: .lnk files on Windows silently ignore extra
+        # arguments — passing a path to a .lnk does nothing. We must use the
+        # `code` CLI executable on PATH directly when we have a file/dir to open.
+        if is_vscode and file_arg:
             try:
-                cmd = [exe_name]
-                if file_arg:
-                    cmd.append(file_arg)
-                subprocess.Popen(cmd, shell=False)
+                shell_cmd = f'code {file_arg}'
+                subprocess.Popen(shell_cmd, shell=True)
                 launched = True
-            except FileNotFoundError:
-                # Last resort: shell=True lets Windows find it via PATH
+                print(f"[AppLauncher] VS Code: {shell_cmd}")
+            except Exception as e:
+                print(f"[AppLauncher] VS Code CLI launch failed: {e}")
+
+        if not launched:
+            if entry:
+                # Known app — launch via AppID or shortcut
+                if "app_id" in entry:
+                    launched = await asyncio.to_thread(_launch_via_app_id, entry["app_id"])
+
+                if not launched and "shortcut" in entry:
+                    launched = await asyncio.to_thread(_launch_via_shortcut, entry["shortcut"])
+            else:
+                # Unknown app — try launching directly as a system command.
+                # This handles: notepad, calc, mspaint, winword, excel, etc.
                 try:
-                    shell_cmd = f'{exe_name} "{file_arg}"' if file_arg else exe_name
-                    subprocess.Popen(shell_cmd, shell=True)
+                    cmd = [exe_name]
+                    if file_arg:
+                        cmd.append(file_arg.strip('"\''))
+                    subprocess.Popen(cmd, shell=False)
                     launched = True
-                except Exception as e:
-                    raise ValueError(
-                        f"App '{name}' not found in apps.json and direct launch failed: {e}. "
-                        f"Run 'scan_apps' to refresh the registry, or check the app name."
-                    )
+                except FileNotFoundError:
+                    # Last resort: shell=True lets Windows find it via PATH
+                    try:
+                        shell_cmd = f'{exe_name} "{file_arg.strip(chr(34) + chr(39))}"' if file_arg else exe_name
+                        subprocess.Popen(shell_cmd, shell=True)
+                        launched = True
+                    except Exception as e:
+                        raise ValueError(
+                            f"App '{name}' not found in apps.json and direct launch failed: {e}. "
+                            f"Run 'scan_apps' to refresh the registry, or check the app name."
+                        )
+
 
         if not launched:
             raise RuntimeError(f"Failed to open '{name}' — no valid launch method.")

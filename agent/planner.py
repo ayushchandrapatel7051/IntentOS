@@ -147,10 +147,13 @@ RULES:
   - Use exact paths, URLs, and names from the intent
   - OS is Windows 11. Terminal = PowerShell syntax:
       * Use Move-Item, Copy-Item, Remove-Item, New-Item (NOT mv/cp/rm/mkdir)
-      * Paths use backslash: C:\\Users\\$env:USERNAME\\Downloads
-      * Expand ~ as $env:USERPROFILE in PowerShell commands
+      * Home dir is: {home_dir}  (use this exact path, NEVER $env:USERNAME or $env:USERPROFILE)
+      * Projects go in: {home_dir}\\projects\\<ProjectName>
       * Chain commands with ; not &&
       * Create dirs: New-Item -ItemType Directory -Force -Path <path>
+  - When the user asks to "open in VS Code" after creating a project:
+      * Use apps.open_app with name="code {home_dir}\\projects\\<ProjectName>"
+      * Pass the PROJECT DIRECTORY, not a single file, so the sidebar opens correctly
 
 EXTENSION SKILL RULES - MANDATORY (use extension, not browser, for these):
   The extension skill controls Chrome/Edge DOM directly — use it for any Google app action.
@@ -598,8 +601,14 @@ class Planner:
         return "\n".join(lines) if len(lines) > 1 else ""
 
     def _system_prompt(self) -> str:
+        import os as _os
         today = datetime.now().strftime("%Y-%m-%d")
-        return SYSTEM_PROMPT.format(dynamic=self._dynamic_section(), today=today)
+        home_dir = _os.environ.get("USERPROFILE", _os.path.expanduser("~"))
+        return SYSTEM_PROMPT.format(
+            dynamic=self._dynamic_section(),
+            today=today,
+            home_dir=home_dir,
+        )
 
     def _user_prompt(self, intent: str) -> str:
         return USER_PROMPT.format(intent=intent)

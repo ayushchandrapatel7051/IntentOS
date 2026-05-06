@@ -277,55 +277,74 @@ class Executor:
 
     def _resolve_soul_vars(self, params: dict) -> dict:
         """
-        Expand ${variable} tokens in step params using a simple runtime context.
+        Expand variable tokens in step params using a simple runtime context.
 
-        WHY THIS EXISTS:
-          SOUL.md macros use ${workspace}, ${today_date}, ${last_project} etc.
-          These need to be concrete values before the skill dispatch.
-          We use straightforward regex substitution — no DSL, no templating engine.
-
-        SUPPORTED VARIABLES:
-          ${today_date}       → YYYY-MM-DD
-          ${current_time}     → HH:MM
-          ${workspace}        → from soul preferences.directories.workspace
-          ${downloads}        → from soul preferences.directories.downloads
-          ${screenshots}      → from soul preferences.directories.screenshots
-          ${last_project}     → from soul memory (if tracked — stub for now)
-          ${user_name}        → from soul assistant_profile.user.name
-
-        WHAT IS NOT HERE:
-          Complex expression evaluation (${x != null ? a : b}), loop variables,
-          arbitrary memory queries — these are future roadmap.
+        SUPPORTED VARIABLE FORMATS:
+          ${today_date}         → YYYY-MM-DD  (SOUL.md macro vars)
+          ${workspace}          → from soul preferences.directories.workspace
+          ${downloads}          → etc.
+          $env:USERPROFILE      → Windows env vars (LLM generates these in paths)
+          $env:USERNAME
+          $env:APPDATA
+          ~                     → expanded to $env:USERPROFILE (home dir)
         """
-        if not self.soul_reader:
-            return params
+        import os as _os
 
-        # Build the context dict from live values
         now = datetime.now()
-        prefs = self.soul_reader.get_preferences()
-        dirs = prefs.get("directories", {}) if isinstance(prefs, dict) else {}
 
-        ctx = {
+        # ── Base env context ─────────────────────────────────────────────────────
+        userprofile = _os.environ.get("USERPROFILE", _os.path.expanduser("~"))
+        username = _os.environ.get("USERNAME", "User")
+
+        # ── SOUL.md preferences context ──────────────────────────────────────────
+        if self.soul_reader:
+            prefs = self.soul_reader.get_preferences()
+            dirs = prefs.get("directories", {}) if isinstance(prefs, dict) else {}
+            workspace = dirs.get("workspace", f"{userprofile}\\projects")
+            downloads = dirs.get("downloads", f"{userprofile}\\Downloads")
+            screenshots = dirs.get("screenshots", f"{userprofile}\\Pictures\\Screenshots")
+            documents = dirs.get("documents", f"{userprofile}\\Documents")
+            user_name = self.soul_reader.get_user_name()
+        else:
+            workspace = f"{userprofile}\\projects"
+            downloads = f"{userprofile}\\Downloads"
+            screenshots = f"{userprofile}\\Pictures\\Screenshots"
+            documents = f"{userprofile}\\Documents"
+            user_name = username
+
+        soul_ctx = {
             "today_date": now.strftime("%Y-%m-%d"),
             "current_time": now.strftime("%H:%M"),
-            "workspace": dirs.get("workspace", "~/projects"),
-            "downloads": dirs.get("downloads", "~/Downloads"),
-            "screenshots": dirs.get("screenshots", "~/Screenshots"),
-            "documents": dirs.get("documents", "~/Documents"),
-            "user_name": self.soul_reader.get_user_name(),
-            "last_project": dirs.get("workspace", "~/projects"),  # stub; future: memory query
+            "workspace": workspace,
+            "downloads": downloads,
+            "screenshots": screenshots,
+            "documents": documents,
+            "user_name": user_name,
+            "last_project": workspace,
         }
 
         def _expand(value: str) -> str:
-            def replacer(m):
-                var_name = m.group(1)
-                return ctx.get(var_name, m.group(0))  # leave unresolved vars as-is
-            return re.sub(r"\$\{([\w_]+)\}", replacer, value)
+            # 1. Expand SOUL.md ${var} tokens
+            def soul_replacer(m):
+                return soul_ctx.get(m.group(1), m.group(0))
+            value = re.sub(r"\$\{([\w_]+)\}", soul_replacer, value)
+
+            # 2. Expand Windows $env:VAR tokens that the LLM frequently generates
+            def env_replacer(m):
+                return _os.environ.get(m.group(1), m.group(0))
+            value = re.sub(r"\$env:(\w+)", env_replacer, value, flags=re.IGNORECASE)
+
+            # 3. Expand bare ~ to home directory
+            if value.startswith("~"):
+                value = userprofile + value[1:]
+
+            return value
 
         resolved = {}
         for k, v in params.items():
             resolved[k] = _expand(v) if isinstance(v, str) else v
         return resolved
+
 
     # ── SOUL.md: safety validation ────────────────────────────────────────────
 
