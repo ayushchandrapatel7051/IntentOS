@@ -250,8 +250,84 @@ async def main():
     # --- Interactive CLI Loop (runs alongside dashboard) ---
     async def cli_loop():
         """Simple CLI for text commands when dashboard isn't open."""
+        import json
+        import os
+        
         await asyncio.sleep(2)  # Let dashboard start first
         console.print("[dim]Type a command (or 'quit' to exit):[/]")
+
+        command_history = []
+        setups_file = "setups.json"
+        
+        if not os.path.exists(setups_file):
+            with open(setups_file, "w", encoding="utf-8") as f:
+                json.dump({}, f)
+
+        def load_setups():
+            with open(setups_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+
+        def save_setups(data):
+            with open(setups_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=4)
+
+        async def process_intent(cmd_text):
+            console.print("[cyan]Planning...[/]")
+            plan = await planner.create_plan(cmd_text)
+
+            console.print(f"[cyan]Plan:[/] {plan.summary}")
+            for step in plan.steps:
+                console.print(f"  [dim]{step.id}[/] [{step.skill}] {step.action}")
+
+            console.print(f"\n[cyan]Executing {len(plan.steps)} steps...[/]")
+            context = await executor.execute_plan(plan)
+
+            needs_confirm = []
+
+            for step in context.plan.steps:
+                icon = "[green]\u2713[/]" if step.status.value == "done" else "[red]\u2717[/]"
+                console.print(f"  {icon} [bold]{step.id}[/] [{step.skill}.{step.action}]")
+
+                if step.params:
+                    cmd = (step.params.get("command")
+                           or step.params.get("name")
+                           or str(step.params))
+                    console.print(f"      [dim]\u25b6 {cmd}[/]")
+
+                if step.result and "CONFIRM_REQUIRED" in step.result:
+                    console.print(f"      [yellow]\u26a0 {step.result}[/]")
+                    needs_confirm.append(step)
+                elif step.result and step.result.strip():
+                    for line in step.result.strip().splitlines()[:5]:
+                        console.print(f"      [dim]{line}[/]")
+
+                if step.error:
+                    console.print(f"      [red]Error: {step.error[:200]}[/]")
+
+            for step in needs_confirm:
+                raw_path  = step.params.get("path", "this action")
+                real_path = raw_path.replace("$env:USERPROFILE", str(__import__("pathlib").Path.home()))
+                answer = await asyncio.to_thread(
+                    input,
+                    f"\n  \u26a0  Confirm delete: {real_path}? [y/N] "
+                )
+                if answer.strip().lower() == "y":
+                    forced_params = {**step.params, "force": True}
+                    try:
+                        handler = executor.skills.get(step.skill)
+                        result  = await handler.execute(step.action, forced_params)
+                        console.print(f"      [green]\u2713 {result}[/]")
+                    except Exception as e:
+                        console.print(f"      [red]\u2717 {e}[/]")
+                else:
+                    console.print("      [dim]Skipped.[/]")
+
+            if context.plan.status == "completed":
+                console.print("[bold green]\u2713 Done![/]")
+            else:
+                console.print(f"[bold red]\u2717 Status: {context.plan.status}[/]")
+
+            store.save_workflow(cmd_text, plan.to_dict(), context.plan.status)
 
         while True:
             try:
@@ -264,66 +340,185 @@ async def main():
                     console.print("[yellow]Shutting down...[/]")
                     break
 
-                console.print("[cyan]Planning...[/]")
-                plan = await planner.create_plan(command)
-
-                console.print(f"[cyan]Plan:[/] {plan.summary}")
-                for step in plan.steps:
-                    console.print(f"  [dim]{step.id}[/] [{step.skill}] {step.action}")
-
-                console.print(f"\n[cyan]Executing {len(plan.steps)} steps...[/]")
-                context = await executor.execute_plan(plan)
-
-                # Show each step result with actual command and output
-                needs_confirm = []   # steps that need user confirmation
-
-                for step in context.plan.steps:
-                    icon = "[green]\u2713[/]" if step.status.value == "done" else "[red]\u2717[/]"
-                    console.print(f"  {icon} [bold]{step.id}[/] [{step.skill}.{step.action}]")
-
-                    # Show the actual command / params that ran
-                    if step.params:
-                        cmd = (step.params.get("command")
-                               or step.params.get("name")
-                               or str(step.params))
-                        console.print(f"      [dim]\u25b6 {cmd}[/]")
-
-                    # Detect confirmation gate
-                    if step.result and "CONFIRM_REQUIRED" in step.result:
-                        console.print(f"      [yellow]\u26a0 {step.result}[/]")
-                        needs_confirm.append(step)
-                    elif step.result and step.result.strip():
-                        for line in step.result.strip().splitlines()[:5]:
-                            console.print(f"      [dim]{line}[/]")
-
-                    if step.error:
-                        console.print(f"      [red]Error: {step.error[:200]}[/]")
-
-                # Interactive confirmation for delete / destructive steps
-                for step in needs_confirm:
-                    raw_path  = step.params.get("path", "this action")
-                    real_path = raw_path.replace("$env:USERPROFILE", str(__import__("pathlib").Path.home()))
-                    answer = await asyncio.to_thread(
-                        input,
-                        f"\n  \u26a0  Confirm delete: {real_path}? [y/N] "
-                    )
-                    if answer.strip().lower() == "y":
-                        forced_params = {**step.params, "force": True}
-                        try:
-                            handler = executor.skills.get(step.skill)
-                            result  = await handler.execute(step.action, forced_params)
-                            console.print(f"      [green]\u2713 {result}[/]")
-                        except Exception as e:
-                            console.print(f"      [red]\u2717 {e}[/]")
+                cmd_lower = command.lower()
+                
+                # --- History Commands ---
+                if cmd_lower == "history":
+                    if not command_history:
+                        console.print("📭 [yellow]History is empty.[/]")
                     else:
-                        console.print("      [dim]Skipped.[/]")
+                        console.print("📜 [bold]Command History:[/]")
+                        for i, past_cmd in enumerate(command_history, 1):
+                            console.print(f"  {i}. {past_cmd}")
+                    continue
+                    
+                is_repeat = False
+                if cmd_lower.startswith("repeat"):
+                    parts = cmd_lower.split()
+                    if len(parts) == 1:
+                        n = 1
+                    elif len(parts) == 2 and parts[1].isdigit():
+                        n = int(parts[1])
+                    else:
+                        console.print("❌ [red]Usage: repeat OR repeat <n>[/]")
+                        continue
+                        
+                    if not command_history:
+                        console.print("❌ [red]History is empty.[/]")
+                        continue
+                    if n < 1 or n > len(command_history):
+                        console.print(f"❌ [red]Invalid index. Must be between 1 and {len(command_history)}.[/]")
+                        continue
+                        
+                    command = command_history[-n]
+                    cmd_lower = command.lower()
+                    is_repeat = True
+                    console.print(f"🔄 [cyan]Repeating:[/] {command}")
 
-                if context.plan.status == "completed":
-                    console.print("[bold green]\u2713 Done![/]")
-                else:
-                    console.print(f"[bold red]\u2717 Status: {context.plan.status}[/]")
+                # --- Setup System Commands ---
+                if cmd_lower == "list setups":
+                    setups = load_setups()
+                    if not setups:
+                        console.print("📭 [yellow]No setups found.[/]")
+                    else:
+                        console.print("📜 [bold]Available Setups:[/]")
+                        for name, cmds in setups.items():
+                            console.print(f"  - {name} ({len(cmds)} commands)")
+                    continue
 
-                store.save_workflow(command, plan.to_dict(), context.plan.status)
+                if cmd_lower.startswith("create setup "):
+                    setup_name = cmd_lower.replace("create setup ", "", 1).strip()
+                    if not setup_name:
+                        console.print("❌ [red]Usage: create setup <name>[/]")
+                        continue
+                        
+                    setups = load_setups()
+                    if setup_name in setups:
+                        ans = await asyncio.to_thread(input, f"  ⚠️ Setup '{setup_name}' already exists. Overwrite? (y/n): ")
+                        if ans.strip().lower() != 'y':
+                            console.print("❌ [yellow]Cancelled.[/]")
+                            continue
+
+                    console.print(f"🛠️ [cyan]Creating setup: '{setup_name}'[/]")
+                    console.print("Enter commands one by one. Type 'done' when finished. (Max 10)")
+                    cmds = []
+                    while len(cmds) < 10:
+                        c = await asyncio.to_thread(input, f"  [{len(cmds)+1}/10] > ")
+                        c = c.strip()
+                        if c.lower() == "done":
+                            break
+                        if c:
+                            cmds.append(c)
+                            
+                    if not cmds:
+                        console.print("❌ [yellow]No commands added. Cancelled.[/]")
+                        continue
+                        
+                    setups[setup_name] = cmds
+                    save_setups(setups)
+                    print("Setup saved:", setup_name)
+                    console.print(f"✅ [green]Setup '{setup_name}' saved with {len(cmds)} commands![/]")
+                    continue
+
+                if cmd_lower.startswith("delete setup "):
+                    setup_name = cmd_lower.replace("delete setup ", "", 1).strip()
+                    if not setup_name:
+                        console.print("❌ [red]Usage: delete setup <name>[/]")
+                        continue
+                        
+                    setups = load_setups()
+                    if setup_name in setups:
+                        ans = await asyncio.to_thread(input, f"  ⚠️ Are you sure you want to delete setup '{setup_name}'? (y/n): ")
+                        if ans.strip().lower() == 'y':
+                            del setups[setup_name]
+                            save_setups(setups)
+                            console.print(f"🗑️ [green]Setup '{setup_name}' deleted.[/]")
+                        else:
+                            console.print("❌ [yellow]Cancelled.[/]")
+                    else:
+                        console.print(f"❌ [red]Setup '{setup_name}' not found.[/]")
+                    continue
+
+                if cmd_lower.startswith("edit setup "):
+                    setup_name = cmd_lower.replace("edit setup ", "", 1).strip()
+                    if not setup_name:
+                        console.print("❌ [red]Usage: edit setup <name>[/]")
+                        continue
+                        
+                    setups = load_setups()
+                    if setup_name not in setups:
+                        console.print(f"❌ [red]Setup '{setup_name}' not found. Use 'create setup {setup_name}' instead.[/]")
+                        continue
+                        
+                    cmds = setups[setup_name]
+                    console.print(f"🛠️ [cyan]Editing setup: '{setup_name}'[/]")
+                    while True:
+                        console.print("\n[bold]Current commands:[/]")
+                        if not cmds:
+                            console.print("  (Empty)")
+                        else:
+                            for idx, c in enumerate(cmds, 1):
+                                console.print(f"  {idx}. {c}")
+                        
+                        console.print("\n[dim]Options: type number to delete, 'clear' to empty, command text to add, or 'done'[/]")
+                        c = await asyncio.to_thread(input, "  > ")
+                        c = c.strip()
+                        if not c:
+                            continue
+                        if c.lower() == "done":
+                            break
+                        elif c.lower() == "clear":
+                            cmds.clear()
+                            console.print("🗑️ [yellow]Cleared all commands.[/]")
+                        elif c.isdigit():
+                            idx = int(c) - 1
+                            if 0 <= idx < len(cmds):
+                                removed = cmds.pop(idx)
+                                console.print(f"🗑️ [yellow]Removed: {removed}[/]")
+                            else:
+                                console.print("❌ [red]Invalid number.[/]")
+                        else:
+                            if len(cmds) >= 10:
+                                console.print("❌ [red]Max 10 commands reached.[/]")
+                            else:
+                                cmds.append(c)
+                                console.print(f"➕ [green]Added: {c}[/]")
+                                
+                    setups[setup_name] = cmds
+                    save_setups(setups)
+                    console.print(f"✅ [green]Setup '{setup_name}' updated with {len(cmds)} commands![/]")
+                    continue
+
+                # Run a Setup
+                is_setup_run = False
+                if cmd_lower.startswith("open "):
+                    target = cmd_lower[5:].strip()
+                    setups = load_setups()
+                    if target in setups:
+                        is_setup_run = True
+                        setup_cmds = setups[target]
+                        console.print(f"🚀 [cyan]Running setup: '{target}' ({len(setup_cmds)} commands)[/]")
+                        
+                        for i, setup_cmd in enumerate(setup_cmds, 1):
+                            console.print(f"\n[{i}/{len(setup_cmds)}] Executing: {setup_cmd}")
+                            await process_intent(setup_cmd)
+                            if i < len(setup_cmds):
+                                await asyncio.sleep(1)
+                                
+                if is_setup_run:
+                    if not is_repeat:
+                        command_history.append(command)
+                        if len(command_history) > 20:
+                            command_history.pop(0)
+                    continue
+
+                # Normal Command
+                if not is_repeat:
+                    command_history.append(command)
+                    if len(command_history) > 20:
+                        command_history.pop(0)
+
+                await process_intent(command)
 
             except (KeyboardInterrupt, EOFError):
                 break
