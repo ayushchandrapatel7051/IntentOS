@@ -16,13 +16,21 @@ Fixes in v3.1:
 """
 
 import asyncio
+import re
 import traceback
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional, Callable, Awaitable
 
 from agent.planner import ActionPlan, Step, StepStatus, Planner
 from agent.recovery import RecoveryManager
 from utils.date_utils import normalize_date
+
+# SoulReader for safety validation and variable resolution
+# Import lazily to avoid circular imports at module load time
+try:
+    from memory.soul_reader import SoulReader as _SoulReaderType
+except ImportError:
+    _SoulReaderType = None  # type: ignore
 
 # Import VerificationError so we can handle it specifically in _execute_step
 try:
@@ -174,6 +182,17 @@ class Executor:
 
     Dispatches each step to the appropriate skill, handles pausing/skipping/aborting,
     and broadcasts state changes to the dashboard via a callback.
+
+    SOUL.md integration (Phase 2):
+      - _validate_action_safety(): checks blocked_actions + require_confirmation
+        from soul_reader before every step. Blocked steps fail fast; steps that
+        need confirmation emit a WS event so the frontend can show a modal.
+      - _resolve_soul_vars(): expands ${today_date}, ${workspace}, ${last_project}
+        etc. in step params. Lightweight regex — NOT a full templating engine.
+
+    WHAT IS NOT HERE (future roadmap):
+      Formal confirmation FSM, plugin sandboxing, proactive behavior daemons,
+      multi-agent orchestration — all deferred per architecture analysis.
     """
 
     def __init__(
@@ -181,12 +200,16 @@ class Executor:
         planner: Planner,
         skill_registry: SkillRegistry,
         broadcast: Optional[BroadcastFn] = None,
+        soul_reader=None,
     ):
         self.planner = planner
         self.skills = skill_registry
         self.recovery = RecoveryManager(planner)
         self.broadcast = broadcast or self._noop_broadcast
         self.context: Optional[ExecutionContext] = None
+        # SoulReader reference — used for safety validation and var resolution
+        # We grab it from planner.soul_reader if not explicitly provided
+        self.soul_reader = soul_reader or getattr(planner, "soul_reader", None)
 
     async def _noop_broadcast(self, event: dict):
         pass
@@ -250,7 +273,140 @@ class Executor:
 
         return self.context
 
-    # ── Template variable resolution ──────────────────────────────────
+    # ── SOUL.md: variable resolution ─────────────────────────────────────────
+
+    def _resolve_soul_vars(self, params: dict) -> dict:
+        """
+        Expand ${variable} tokens in step params using a simple runtime context.
+
+        WHY THIS EXISTS:
+          SOUL.md macros use ${workspace}, ${today_date}, ${last_project} etc.
+          These need to be concrete values before the skill dispatch.
+          We use straightforward regex substitution — no DSL, no templating engine.
+
+        SUPPORTED VARIABLES:
+          ${today_date}       → YYYY-MM-DD
+          ${current_time}     → HH:MM
+          ${workspace}        → from soul preferences.directories.workspace
+          ${downloads}        → from soul preferences.directories.downloads
+          ${screenshots}      → from soul preferences.directories.screenshots
+          ${last_project}     → from soul memory (if tracked — stub for now)
+          ${user_name}        → from soul assistant_profile.user.name
+
+        WHAT IS NOT HERE:
+          Complex expression evaluation (${x != null ? a : b}), loop variables,
+          arbitrary memory queries — these are future roadmap.
+        """
+        if not self.soul_reader:
+            return params
+
+        # Build the context dict from live values
+        now = datetime.now()
+        prefs = self.soul_reader.get_preferences()
+        dirs = prefs.get("directories", {}) if isinstance(prefs, dict) else {}
+
+        ctx = {
+            "today_date": now.strftime("%Y-%m-%d"),
+            "current_time": now.strftime("%H:%M"),
+            "workspace": dirs.get("workspace", "~/projects"),
+            "downloads": dirs.get("downloads", "~/Downloads"),
+            "screenshots": dirs.get("screenshots", "~/Screenshots"),
+            "documents": dirs.get("documents", "~/Documents"),
+            "user_name": self.soul_reader.get_user_name(),
+            "last_project": dirs.get("workspace", "~/projects"),  # stub; future: memory query
+        }
+
+        def _expand(value: str) -> str:
+            def replacer(m):
+                var_name = m.group(1)
+                return ctx.get(var_name, m.group(0))  # leave unresolved vars as-is
+            return re.sub(r"\$\{([\w_]+)\}", replacer, value)
+
+        resolved = {}
+        for k, v in params.items():
+            resolved[k] = _expand(v) if isinstance(v, str) else v
+        return resolved
+
+    # ── SOUL.md: safety validation ────────────────────────────────────────────
+
+    async def _validate_action_safety(self, step: Step) -> bool:
+        """
+        Check step against SOUL.md safety_rules before execution.
+
+        WHY SIMPLE:
+          We deliberately avoid a formal policy engine or permission matrix.
+          A direct text-match against blocked_actions patterns is fast, readable,
+          and catches the genuinely dangerous cases (rm -rf /, format c:, etc.).
+          More nuanced policy is future roadmap.
+
+        RETURNS:
+          True  → safe to proceed
+          False → step is blocked (step already marked FAILED before return)
+
+        SIDE EFFECTS:
+          - Emits 'step_blocked' WS event when an action is hard-blocked.
+          - Emits 'confirm_required' WS event when confirmation is needed.
+            The confirm_required case still returns True — the executor continues
+            and the frontend is expected to show a modal. This is intentional:
+            for now we emit-and-proceed (Phase 2 stub). A future phase can add
+            an asyncio.Event that actually pauses execution until the user responds.
+        """
+        if not self.soul_reader:
+            return True
+
+        # Build a string representing the full command / action being attempted
+        # so we can match it against safety_rules patterns
+        command_text = (
+            step.params.get("command", "")
+            or step.params.get("path", "")
+            or f"{step.skill}.{step.action}"
+        ).lower()
+
+        # ── Hard block check ───────────────────────────────────────────────────
+        block_reason = self.soul_reader.is_action_blocked(command_text)
+        if block_reason:
+            step.status = StepStatus.FAILED
+            step.error = f"[SOUL SAFETY] Blocked: {block_reason}"
+            step.completed_at = datetime.now().isoformat()
+
+            await self._emit("step_blocked", {
+                "stepId": step.id,
+                "reason": block_reason,
+                "command": command_text,
+                "message": f"This action is blocked by your SOUL.md safety rules: {block_reason}",
+            })
+
+            if self.context:
+                self.context.add_log(
+                    "ERROR",
+                    f"[SOUL SAFETY] Step {step.id} blocked: {block_reason}",
+                    step.id,
+                )
+            print(f"  [Safety] ✗ {step.id} BLOCKED: {block_reason}")
+            return False
+
+        # ── Confirmation check ─────────────────────────────────────────────────
+        confirm_msg = self.soul_reader.requires_confirmation(step.action)
+        if confirm_msg:
+            # Emit a WS event so the frontend can surface a confirmation modal.
+            # Phase 2 stub: we emit and continue (non-blocking).
+            # Phase 3 (future): hold an asyncio.Event here until user responds.
+            await self._emit("confirm_required", {
+                "stepId": step.id,
+                "action": step.action,
+                "message": confirm_msg,
+                "params": step.params,
+            })
+            if self.context:
+                self.context.add_log(
+                    "WARN",
+                    f"[SOUL SAFETY] Confirmation required for {step.action}: {confirm_msg}",
+                    step.id,
+                )
+
+        return True
+
+    # ── Template variable resolution ({{steps.step_N.result}} system) ─────────
 
     def _resolve_params(self, params: dict) -> dict:
         import re as _re
@@ -348,7 +504,18 @@ class Executor:
 
     async def _execute_step(self, step: Step) -> bool:
         """Execute a single step by dispatching to the appropriate skill."""
-        
+
+        # \u2500\u2500 SOUL.md Phase 1: expand ${variable} tokens in params \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+        # Must run before any other guard so that path/command values are real strings.
+        step.params = self._resolve_soul_vars(step.params)
+
+        # \u2500\u2500 SOUL.md Phase 2: safety validation \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+        # Blocks hard-blocked commands (rm -rf /, format c: etc.).
+        # Emits confirm_required WS event for sensitive ops (non-blocking for now).
+        safe = await self._validate_action_safety(step)
+        if not safe:
+            return False  # step already marked FAILED by _validate_action_safety
+
         # --- Fallback safety guard ---
         if step.action in ["web_agent", "webagent"]:
             task = step.params.get("task", "").lower()

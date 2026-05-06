@@ -1,0 +1,31 @@
+created_at: '2026-05-06T20:13:08.823552'
+fingerprint: 4 can create dsa each have i map month road what with year you
+id: 20260506_201308_b81c6678
+intent: can you create a DSA road map for 4 year with each month what have I have
+  to do
+outcome: completed
+plan:
+  created_at: '2026-05-06T20:13:08.265084'
+  intent: can you create a DSA road map for 4 year with each month what have I have
+    to do
+  status: completed
+  steps:
+  - action: ask
+    completed_at: '2026-05-06T20:13:08.696922'
+    description: Generate a 4-year monthly DSA roadmap.
+    error: null
+    id: step_1
+    params:
+      prompt: Create a detailed 4-year Data Structures and Algorithms (DSA) roadmap,
+        broken down month-by-month. For each month, outline specific DSA topics to
+        learn, types of problems to practice (e.g., LeetCode easy/medium/hard), and
+        general activities or goals (e.g., review, participate in contests).
+    reasoning: The user requested a detailed 4-year DSA roadmap with monthly breakdowns,
+      which the AI can generate comprehensively.
+    result: 'Error from LLM: 429 RESOURCE_EXHAUSTED. {''error'': {''code'': 429, ''message'':
+      ''Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429
+      for more details.'', ''status'': ''RESOURCE_EXHAUSTED''}}'
+    skill: ai
+    started_at: '2026-05-06T20:13:08.331587'
+    status: done
+  summary: Generate a 4-year monthly DSA roadmap using AI.

@@ -1,0 +1,412 @@
+created_at: '2026-05-06T20:17:40.027357'
+fingerprint: 4 can create dsa each have i map month road what with year you
+id: 20260506_201740_b81c6678
+intent: can you create a DSA road map for 4 year with each month what have I have
+  to do
+outcome: completed
+plan:
+  created_at: '2026-05-06T20:16:46.775194'
+  intent: can you create a DSA road map for 4 year with each month what have I have
+    to do
+  status: completed
+  steps:
+  - action: ask
+    completed_at: '2026-05-06T20:17:39.872317'
+    description: Generate a 4-year monthly DSA roadmap.
+    error: null
+    id: step_1
+    params:
+      prompt: Create a detailed 4-year Data Structures and Algorithms (DSA) roadmap,
+        broken down month-by-month. For each month, outline specific DSA topics to
+        learn, types of problems to practice (e.g., LeetCode easy/medium/hard), and
+        general activities or goals (e.g., review, participate in contests).
+    reasoning: The user requested a detailed 4-year DSA roadmap with monthly breakdowns,
+      which the AI can generate comprehensively.
+    result: "This 4-year Data Structures and Algorithms (DSA) roadmap is designed\
+      \ for someone starting from scratch, aiming for a deep understanding and proficiency\
+      \ suitable for competitive programming, technical interviews, and real-world\
+      \ software development. It assumes a consistent effort of 5-10 hours per week,\
+      \ increasing towards interview prep periods.\n\n**General Guidelines for the\
+      \ Entire Roadmap:**\n*   **Consistency is Key:** Regular practice is more effective\
+      \ than sporadic intense sessions.\n*   **Understand, Don't Memorize:** Focus\
+      \ on the *why* and *how* of each algorithm, not just the code.\n*   **Use Multiple\
+      \ Resources:** Combine LeetCode, HackerRank, Codeforces, online courses (Coursera,\
+      \ Udemy, edX), textbooks (CLRS, Skiena), and YouTube tutorials.\n*   **Choose\
+      \ a Language:** Stick to one language (Python, Java, C++, JavaScript) for DSA.\
+      \ C++ and Java are often preferred for competitive programming due to performance,\
+      \ but Python is excellent for clarity and rapid prototyping.\n*   **Review Regularly:**\
+      \ Dedicate time each month to revisit older topics and problem types.\n*   **Practice\
+      \ Problem-Solving Steps:**\n    1.  Understand the problem.\n    2.  Break it\
+      \ down.\n    3.  Devise a plan (algorithm, data structure).\n    4.  Implement.\n\
+      \    5.  Test thoroughly (edge cases!).\n    6.  Analyze time/space complexity.\n\
+      \    7.  Optimize if possible.\n\n---\n\n## Year 1: Foundations & Core Data\
+      \ Structures\n\n**Goal:** Establish a strong understanding of fundamental programming\
+      \ concepts, time/space complexity, and basic data structures.\n\n---\n\n###\
+      \ Year 1, Semester 1 (Months 1-6)\n\n**Month 1: Introduction to Programming\
+      \ & Complexity Analysis**\n*   **DSA Topics:**\n    *   Introduction to programming\
+      \ language (variables, data types, control flow, functions).\n    *   **Time\
+      \ and Space Complexity (Big O Notation):** O(1), O(log n), O(n), O(n log n),\
+      \ O(n^2), O(2^n), O(n!). Crucial for evaluating algorithms.\n    *   Basic Array\
+      \ Operations: Traversal, Access, Insertion, Deletion.\n*   **Problem Types:**\n\
+      \    *   LeetCode Easy: Array manipulation, basic loops, conditional statements.\
+      \ Focus on understanding complexity.\n*   **Activities/Goals:**\n    *   Set\
+      \ up your coding environment.\n    *   Solve 10-15 easy problems to get comfortable\
+      \ with the platform.\n    *   Read articles/watch videos on Big O notation until\
+      \ it clicks.\n\n**Month 2: Arrays & Basic String Manipulation**\n*   **DSA Topics:**\n\
+      \    *   **Arrays:** Fixed-size arrays, dynamic arrays (lists in Python, ArrayList\
+      \ in Java, vectors in C++).\n    *   **Two Pointers:** A common technique for\
+      \ array and string problems.\n    *   **Strings:** Basic operations (concatenation,\
+      \ substring, length, char access), palindromes, anagrams.\n*   **Problem Types:**\n\
+      \    *   LeetCode Easy: Two-pointer problems, array rotation, finding duplicates,\
+      \ basic string processing.\n    *   LeetCode Medium: Simple two-pointer problems.\n\
+      *   **Activities/Goals:**\n    *   Understand the difference between static\
+      \ and dynamic arrays.\n    *   Solve 15-20 problems, aiming for 2-3 medium.\n\
+      \n**Month 3: Linked Lists**\n*   **DSA Topics:**\n    *   **Singly Linked Lists:**\
+      \ Creation, traversal, insertion (head, tail, middle), deletion, searching.\n\
+      \    *   **Doubly Linked Lists:** Advantages over singly linked lists.\n   \
+      \ *   **Circular Linked Lists:** Basic understanding.\n*   **Problem Types:**\n\
+      \    *   LeetCode Easy: Linked list reversal, merging two sorted lists, detecting\
+      \ cycles.\n    *   LeetCode Medium: Advanced linked list manipulation (e.g.,\
+      \ odd-even list, removing Nth node from end).\n*   **Activities/Goals:**\n \
+      \   *   Implement a linked list from scratch.\n    *   Draw diagrams to visualize\
+      \ linked list operations. Solve 10-15 problems.\n\n**Month 4: Stacks & Queues**\n\
+      *   **DSA Topics:**\n    *   **Stacks (LIFO):** Array-based vs. Linked List-based\
+      \ implementation. Push, Pop, Peek, isEmpty.\n    *   **Queues (FIFO):** Array-based\
+      \ vs. Linked List-based implementation. Enqueue, Dequeue, Peek, isEmpty.\n \
+      \   *   **Deque (Double-Ended Queue):** Basic understanding.\n*   **Problem\
+      \ Types:**\n    *   LeetCode Easy: Valid parentheses, stack-based calculations\
+      \ (e.g., RPN).\n    *   LeetCode Medium: Queue-based problems (e.g., recent\
+      \ calls counter), using stacks/queues to solve tree/graph problems (later).\n\
+      *   **Activities/Goals:**\n    *   Implement stack and queue using both arrays\
+      \ and linked lists.\n    *   Practice problems where these structures are implicitly\
+      \ used (e.g., undo/redo functionality). Solve 10-15 problems.\n\n**Month 5:\
+      \ Recursion & Backtracking (Introduction)**\n*   **DSA Topics:**\n    *   **Recursion:**\
+      \ Base cases, recursive calls, call stack.\n    *   **Backtracking (Basic):**\
+      \ Introduction to generating permutations/combinations, N-Queens problem idea.\n\
+      *   **Problem Types:**\n    *   LeetCode Easy: Factorial, Fibonacci, power,\
+      \ tower of Hanoi (conceptual).\n    *   LeetCode Medium: Basic permutations/combinations\
+      \ (without duplicates), simple grid traversal.\n*   **Activities/Goals:**\n\
+      \    *   Understand how the call stack works with recursion.\n    *   Trace\
+      \ recursive calls by hand. Solve 10-12 problems.\n\n**Month 6: Introduction\
+      \ to Sorting & Searching**\n*   **DSA Topics:**\n    *   **Searching:** Linear\
+      \ Search, **Binary Search** (crucial for sorted arrays).\n    *   **Sorting\
+      \ (Basic):** Bubble Sort, Selection Sort, Insertion Sort (understand their inefficiency).\n\
+      \    *   **Merge Sort:** Divide and Conquer paradigm, stability.\n    *   **Quick\
+      \ Sort:** Pivot selection, average case vs. worst case.\n*   **Problem Types:**\n\
+      \    *   LeetCode Easy: Implement binary search, search in rotated sorted array\
+      \ (easy version).\n    *   LeetCode Medium: Merge two sorted arrays/lists, applying\
+      \ sorting to optimize other problems.\n*   **Activities/Goals:**\n    *   Implement\
+      \ binary search carefully.\n    *   Understand the time complexity of different\
+      \ sorting algorithms.\n    *   Review all topics from Month 1-6. Solve 10-15\
+      \ problems.\n\n---\n\n### Year 1, Semester 2 (Months 7-12)\n\n**Month 7: Hash\
+      \ Maps & Hash Sets**\n*   **DSA Topics:**\n    *   **Hashing:** Hash function,\
+      \ collision resolution (chaining, open addressing).\n    *   **Hash Maps (Dictionaries/Objects):**\
+      \ Insertion, deletion, lookup.\n    *   **Hash Sets:** Storing unique elements.\n\
+      *   **Problem Types:**\n    *   LeetCode Easy/Medium: Two Sum, Contains Duplicate,\
+      \ frequency counting, finding unique elements.\n    *   Problems where hash\
+      \ maps optimize lookups from O(n) to O(1) on average.\n*   **Activities/Goals:**\n\
+      \    *   Understand the underlying mechanics of hashing.\n    *   Recognize\
+      \ when hash maps/sets are the optimal data structure. Solve 15-20 problems.\n\
+      \n**Month 8: Trees - Binary Trees**\n*   **DSA Topics:**\n    *   **Trees:**\
+      \ Terminology (root, node, leaf, parent, child, depth, height).\n    *   **Binary\
+      \ Trees:** Properties, full, complete, perfect trees.\n    *   **Tree Traversals:**\
+      \ Inorder, Preorder, Postorder (recursive and iterative).\n*   **Problem Types:**\n\
+      \    *   LeetCode Easy: Tree traversals, counting nodes, finding height/depth.\n\
+      \    *   LeetCode Medium: Symmetric tree, max depth, same tree.\n*   **Activities/Goals:**\n\
+      \    *   Draw tree structures and trace traversals.\n    *   Implement a basic\
+      \ binary tree. Solve 10-15 problems.\n\n**Month 9: Trees - Binary Search Trees\
+      \ (BSTs)**\n*   **DSA Topics:**\n    *   **Binary Search Trees:** Properties\
+      \ (left < root < right).\n    *   Operations: Insertion, Deletion, Search (min/max).\n\
+      \    *   Converting sorted array to BST, validating a BST.\n*   **Problem Types:**\n\
+      \    *   LeetCode Easy/Medium: Validate BST, search in BST, insert into BST,\
+      \ lowest common ancestor of a BST.\n*   **Activities/Goals:**\n    *   Understand\
+      \ why BSTs are useful for searching and ordering.\n    *   Implement BST operations.\
+      \ Solve 10-15 problems.\n\n**Month 10: Heaps & Priority Queues**\n*   **DSA\
+      \ Topics:**\n    *   **Heaps:** Min-Heap, Max-Heap. Properties, heapify, insert,\
+      \ extract min/max.\n    *   **Priority Queues:** Abstract Data Type, typically\
+      \ implemented using heaps.\n*   **Problem Types:**\n    *   LeetCode Medium:\
+      \ Kth largest/smallest element, merging K sorted lists/arrays, top K frequent\
+      \ elements.\n*   **Activities/Goals:**\n    *   Implement a heap from scratch\
+      \ (or understand how to use language's built-in priority queue).\n    *   Recognize\
+      \ problems where a priority queue is the key. Solve 10-12 problems.\n\n**Month\
+      \ 11: Graphs - Representation & Traversal**\n*   **DSA Topics:**\n    *   **Graphs:**\
+      \ Terminology (vertex, edge, directed/undirected, weighted/unweighted, cycle).\n\
+      \    *   **Representations:** Adjacency Matrix, Adjacency List (focus on Adjacency\
+      \ List).\n    *   **Graph Traversal:** Breadth-First Search (BFS), Depth-First\
+      \ Search (DFS).\n*   **Problem Types:**\n    *   LeetCode Easy/Medium: Connected\
+      \ components, cycle detection (undirected), finding paths, simple maze problems.\n\
+      *   **Activities/Goals:**\n    *   Draw various graph representations.\n   \
+      \ *   Trace BFS and DFS manually.\n    *   Implement BFS and DFS. Solve 10-15\
+      \ problems.\n\n**Month 12: Review & Contest Introduction**\n*   **DSA Topics:**\
+      \ Review all Year 1 topics.\n*   **Problem Types:**\n    *   LeetCode Easy/Medium:\
+      \ Random problems from all covered topics.\n*   **Activities/Goals:**\n    *\
+      \   **Review all core data structures:** Arrays, Linked Lists, Stacks, Queues,\
+      \ Hash Maps/Sets, Trees (BT, BST), Heaps, Graphs (Basic).\n    *   **Review\
+      \ core algorithms:** Sorting (Merge, Quick), Binary Search, BFS, DFS.\n    *\
+      \   **Participate in a beginner-friendly contest:** LeetCode Weekly Contest,\
+      \ HackerRank contest (focus on completion, not rank).\n    *   Solve 15-20 mixed\
+      \ problems.\n\n---\n\n## Year 2: Intermediate Algorithms & Problem-Solving Paradigms\n\
+      \n**Goal:** Master common algorithmic paradigms and apply them to a wider range\
+      \ of problems.\n\n---\n\n### Year 2, Semester 1 (Months 13-18)\n\n**Month 13:\
+      \ Advanced Graph Algorithms - Shortest Paths I**\n*   **DSA Topics:**\n    *\
+      \   **Dijkstra's Algorithm:** Single-source shortest path (non-negative weights).\n\
+      \    *   **Bellman-Ford Algorithm:** Single-source shortest path (handles negative\
+      \ weights, detects negative cycles).\n*   **Problem Types:**\n    *   LeetCode\
+      \ Medium: Network delay time, cheapest flights with K stops.\n    *   Problems\
+      \ involving finding the shortest path in various scenarios.\n*   **Activities/Goals:**\n\
+      \    *   Understand the greedy choice in Dijkstra's.\n    *   Implement both\
+      \ algorithms. Solve 8-12 problems.\n\n**Month 14: Advanced Graph Algorithms\
+      \ - Spanning Trees & Union-Find**\n*   **DSA Topics:**\n    *   **Minimum Spanning\
+      \ Tree (MST):** Prim's Algorithm, Kruskal's Algorithm.\n    *   **Disjoint Set\
+      \ Union (DSU / Union-Find):** Path compression, union by rank/size.\n*   **Problem\
+      \ Types:**\n    *   LeetCode Medium: Connecting cities with minimum cost, number\
+      \ of islands II (using DSU).\n*   **Activities/Goals:**\n    *   Implement DSU\
+      \ with optimizations.\n    *   Understand the applications of MST (e.g., network\
+      \ design). Solve 8-12 problems.\n\n**Month 15: Dynamic Programming (Introduction)**\n\
+      *   **DSA Topics:**\n    *   **Dynamic Programming:** Memoization (top-down),\
+      \ Tabulation (bottom-up).\n    *   Identifying overlapping subproblems and optimal\
+      \ substructure.\n    *   Basic DP patterns: Fibonacci, climbing stairs, house\
+      \ robber.\n*   **Problem Types:**\n    *   LeetCode Medium: Longest Common Subsequence\
+      \ (LCS), Knapsack (0/1), unique paths, coin change.\n*   **Activities/Goals:**\n\
+      \    *   Start with recursive solutions and then optimize with memoization/tabulation.\n\
+      \    *   Learn to recognize DP problems. Solve 10-15 problems.\n\n**Month 16:\
+      \ Dynamic Programming (Advanced Patterns)**\n*   **DSA Topics:**\n    *   DP\
+      \ on grids (e.g., unique paths with obstacles).\n    *   Interval DP.\n    *\
+      \   Digit DP (conceptual introduction).\n    *   **State Space Optimization:**\
+      \ Space complexity reduction (e.g., using only 2 rows for grid DP).\n*   **Problem\
+      \ Types:**\n    *   LeetCode Medium/Hard: Edit distance, palindrome partitioning,\
+      \ longest increasing subsequence.\n*   **Activities/Goals:**\n    *   Practice\
+      \ identifying DP states and transitions.\n    *   Try to solve problems with\
+      \ both memoization and tabulation. Solve 10-15 problems.\n\n**Month 17: Greedy\
+      \ Algorithms**\n*   **DSA Topics:**\n    *   **Greedy Approach:** When to use\
+      \ it, proving correctness (sometimes hard).\n    *   Comparison with DP.\n*\
+      \   **Problem Types:**\n    *   LeetCode Medium: Activity selection, maximum\
+      \ subarray, jump game, interval scheduling.\n*   **Activities/Goals:**\n   \
+      \ *   Understand the difference between greedy and DP.\n    *   Practice justifying\
+      \ why a greedy choice leads to an optimal solution. Solve 8-12 problems.\n\n\
+      **Month 18: Backtracking & Divide and Conquer**\n*   **DSA Topics:**\n    *\
+      \   **Backtracking (Deep Dive):** Generating combinations, permutations, subsets,\
+      \ N-Queens, Sudoku Solver.\n    *   **Divide and Conquer:** Master Theorem for\
+      \ complexity analysis (conceptual).\n*   **Problem Types:**\n    *   LeetCode\
+      \ Medium: Subsets, combinations, permutations (with/without duplicates), Word\
+      \ Search, N-Queens.\n*   **Activities/Goals:**\n    *   Master writing backtracking\
+      \ templates.\n    *   Understand the recursive structure of D&C algorithms.\n\
+      \    *   Review all Year 2 Semester 1 topics. Solve 10-15 problems.\n\n---\n\
+      \n### Year 2, Semester 2 (Months 19-24)\n\n**Month 19: Advanced Trees - Tries\
+      \ (Prefix Trees)**\n*   **DSA Topics:**\n    *   **Tries:** Implementation,\
+      \ insertion, search, prefix search.\n    *   Applications: Autocomplete, spell\
+      \ checker.\n*   **Problem Types:**\n    *   LeetCode Medium: Implement Trie,\
+      \ map sum pairs, word search II (using Trie for optimization).\n*   **Activities/Goals:**\n\
+      \    *   Implement a Trie from scratch.\n    *   Understand its time complexity\
+      \ benefits for string-related operations. Solve 8-10 problems.\n\n**Month 20:\
+      \ Advanced Trees - Segment Trees & Fenwick Trees (BIT)**\n*   **DSA Topics:**\n\
+      \    *   **Segment Trees:** Range queries (sum, min, max), range updates.\n\
+      \    *   **Fenwick Trees (Binary Indexed Trees - BIT):** Prefix sums, point\
+      \ updates.\n*   **Problem Types:**\n    *   LeetCode Hard: Range sum query,\
+      \ range minimum query (often using these for optimization).\n*   **Activities/Goals:**\n\
+      \    *   These are more advanced; focus on understanding the concept and typical\
+      \ applications first.\n    *   Implement a basic Segment Tree. Solve 5-8 challenging\
+      \ problems.\n\n**Month 21: Sliding Window & Monotonic Stack/Queue**\n*   **DSA\
+      \ Topics:**\n    *   **Sliding Window:** Fixed-size and variable-size window\
+      \ problems.\n    *   **Monotonic Stack/Queue:** Finding next greater/smaller\
+      \ element, maximum in sliding window.\n*   **Problem Types:**\n    *   LeetCode\
+      \ Medium/Hard: Longest substring without repeating characters, minimum window\
+      \ substring, largest rectangle in histogram.\n*   **Activities/Goals:**\n  \
+      \  *   Recognize patterns where sliding window or monotonic structures are applicable.\n\
+      \    *   Practice implementing these techniques efficiently. Solve 10-12 problems.\n\
+      \n**Month 22: String Algorithms - KMP & Rabin-Karp (Conceptual)**\n*   **DSA\
+      \ Topics:**\n    *   **Knuth-Morris-Pratt (KMP) Algorithm:** Efficient string\
+      \ searching. Focus on understanding the \"LPS array\" (longest proper prefix\
+      \ which is also a suffix).\n    *   **Rabin-Karp Algorithm:** String searching\
+      \ using hashing.\n*   **Problem Types:**\n    *   LeetCode Hard: Implement KMP,\
+      \ find repeated DNA sequences. (These are less common in general interviews\
+      \ but good for CP).\n*   **Activities/Goals:**\n    *   Understand the intuition\
+      \ behind KMP's optimization.\n    *   Implement KMP (challenging but rewarding).\
+      \ Solve 5-8 hard problems.\n\n**Month 23: Bit Manipulation**\n*   **DSA Topics:**\n\
+      \    *   Bitwise operators (`&`, `|`, `^`, `~`, `<<`, `>>`).\n    *   Common\
+      \ patterns: checking/setting/clearing bits, counting set bits, powers of 2.\n\
+      \    *   XOR properties.\n*   **Problem Types:**\n    *   LeetCode Easy/Medium:\
+      \ Single number, power of two, counting bits, manipulating bits for optimization.\n\
+      *   **Activities/Goals:**\n    *   Master bitwise operations.\n    *   Recognize\
+      \ problems that can be elegantly solved or optimized with bit manipulation.\
+      \ Solve 10-12 problems.\n\n**Month 24: Review & Competitive Programming Focus**\n\
+      *   **DSA Topics:** Review all Year 2 topics.\n*   **Problem Types:**\n    *\
+      \   LeetCode Medium/Hard: Mixed problems across all paradigms.\n*   **Activities/Goals:**\n\
+      \    *   **Consolidate knowledge:** Make sure you can implement all major algorithms\
+      \ and data structures.\n    *   **Consistent Contest Participation:** Aim for\
+      \ 1-2 contests per month (LeetCode, Codeforces, AtCoder). Focus on solving 2-3\
+      \ problems quickly.\n    *   Start looking at editorial solutions for problems\
+      \ you couldn't solve during contests. Solve 15-20 problems.\n\n---\n\n## Year\
+      \ 3: Advanced Topics & Competitive Programming Mastery\n\n**Goal:** Tackle more\
+      \ complex problems, optimize solutions, and gain experience in competitive programming\
+      \ and advanced interview concepts.\n\n---\n\n### Year 3, Semester 1 (Months\
+      \ 25-30)\n\n**Month 25: Advanced Graph Algorithms - Flow Networks**\n*   **DSA\
+      \ Topics:**\n    *   **Max Flow Min Cut Theorem:** Ford-Fulkerson (Edmonds-Karp),\
+      \ Dinic's Algorithm (conceptual understanding initially).\n    *   Applications:\
+      \ Bipartite matching, project selection.\n*   **Problem Types:**\n    *   LeetCode\
+      \ Hard: Problems reducible to max flow (e.g., maximum bipartite matching, some\
+      \ resource allocation).\n*   **Activities/Goals:**\n    *   Understand the core\
+      \ idea of flow networks.\n    *   Focus on recognizing when a problem can be\
+      \ modeled as a flow problem. Solve 3-5 hard problems.\n\n**Month 26: Number\
+      \ Theory (for Competitive Programming)**\n*   **DSA Topics:**\n    *   Prime\
+      \ numbers, Sieve of Eratosthenes.\n    *   GCD, LCM, Euclidean algorithm.\n\
+      \    *   Modular arithmetic, modular exponentiation.\n*   **Problem Types:**\n\
+      \    *   Codeforces/AtCoder problems involving large numbers, primality tests,\
+      \ modular inverse.\n*   **Activities/Goals:**\n    *   Understand the fundamental\
+      \ number theory concepts used in competitive programming.\n    *   Implement\
+      \ efficient modular arithmetic functions. Solve 8-10 problems.\n\n**Month 27:\
+      \ Game Theory (Basic) & Mathematical Algorithms**\n*   **DSA Topics:**\n   \
+      \ *   **Game Theory (Combinatorial Games):** Nim game, Sprague-Grundy theorem\
+      \ (conceptual).\n    *   **Matrix Exponentiation:** For solving linear recurrences\
+      \ quickly.\n*   **Problem Types:**\n    *   Competitive programming problems\
+      \ involving games or large N recurrences.\n*   **Activities/Goals:**\n    *\
+      \   Understand the concept of winning/losing positions.\n    *   Implement matrix\
+      \ multiplication and exponentiation. Solve 5-8 problems.\n\n**Month 28: Geometric\
+      \ Algorithms (Basic)**\n*   **DSA Topics:**\n    *   Basic primitives: Points,\
+      \ lines, segments, polygons.\n    *   Convex Hull (Jarvis March, Graham Scan\
+      \ - conceptual).\n    *   Line intersection, point in polygon test.\n*   **Problem\
+      \ Types:**\n    *   Competitive programming problems involving geometric shapes\
+      \ or calculations.\n*   **Activities/Goals:**\n    *   Familiarize yourself\
+      \ with cross product and dot product for geometric calculations.\n    *   Implement\
+      \ basic geometric primitives. Solve 5-8 problems.\n\n**Month 29: Advanced Data\
+      \ Structures - Treaps, Splay Trees (Conceptual)**\n*   **DSA Topics:**\n   \
+      \ *   **Self-Balancing BSTs:** AVL Trees, Red-Black Trees (understand their\
+      \ purpose, not necessarily implement from scratch).\n    *   **Treaps/Splay\
+      \ Trees:** More niche but appear in competitive programming for dynamic range\
+      \ queries.\n*   **Problem Types:**\n    *   Problems that require very efficient\
+      \ balanced BST operations, dynamic order statistics.\n*   **Activities/Goals:**\n\
+      \    *   Understand the guarantees these structures provide (logarithmic time\
+      \ for operations).\n    *   Know when to use a `TreeMap` or `TreeSet` (Java)\
+      \ / `std::map` or `std::set` (C++). Solve 5-8 hard problems, mainly focusing\
+      \ on problem identification.\n\n**Month 30: Persistent Data Structures & Mo's\
+      \ Algorithm (Conceptual)**\n*   **DSA Topics:**\n    *   **Persistent Data Structures:**\
+      \ Making previous versions of a data structure accessible after modification\
+      \ (e.g., persistent segment tree).\n    *   **Mo's Algorithm:** Offline query\
+      \ processing for range queries.\n*   **Problem Types:**\n    *   Highly specialized\
+      \ competitive programming problems.\n*   **Activities/Goals:**\n    *   These\
+      \ are very advanced. Focus on understanding the concepts and the types of problems\
+      \ they solve.\n    *   Attempt to read an implementation or solve a simpler\
+      \ problem using these concepts. Solve 3-5 very hard problems.\n\n---\n\n###\
+      \ Year 3, Semester 2 (Months 31-36)\n\n**Month 31: System Design Interview Prep\
+      \ - Scalability & Trade-offs (Intro)**\n*   **DSA Topics:** How DSA choices\
+      \ impact system performance.\n    *   Hashing for distributed systems (consistent\
+      \ hashing).\n    *   Trees for indexing (B-trees, B+ trees).\n    *   Graphs\
+      \ for social networks.\n*   **Problem Types:** No direct LeetCode problems,\
+      \ but discussions around data structures for real-world systems.\n*   **Activities/Goals:**\n\
+      \    *   Start reading about system design principles.\n    *   Understand the\
+      \ practical implications of different DSA choices in large-scale systems.\n\
+      \    *   Watch introductory system design videos.\n\n**Month 32: System Design\
+      \ Interview Prep - Databases & Caching**\n*   **DSA Topics:**\n    *   **Databases:**\
+      \ Indexing, query optimization (B-trees/B+ trees).\n    *   **Caching:** LRU\
+      \ Cache (often solved with a Doubly Linked List + Hash Map).\n*   **Problem\
+      \ Types:**\n    *   LeetCode Medium/Hard: Design an LRU Cache, LFU Cache.\n\
+      *   **Activities/Goals:**\n    *   Implement LRU Cache from scratch.\n    *\
+      \   Understand database indexing fundamentals.\n\n**Month 33: System Design\
+      \ Interview Prep - Concurrency & Distributed Systems**\n*   **DSA Topics:**\n\
+      \    *   Thread safety of data structures.\n    *   Distributed data structures\
+      \ (e.g., distributed hash tables).\n    *   Consistency models.\n*   **Problem\
+      \ Types:** Less about coding, more about theoretical understanding.\n*   **Activities/Goals:**\n\
+      \    *   Read about concurrency primitives (locks, semaphores, mutexes).\n \
+      \   *   Understand the CAP theorem.\n\n**Month 34: General Interview Prep -\
+      \ Mock Interviews & Resume Building**\n*   **DSA Topics:** Review all medium-difficulty\
+      \ problems from Year 1-2.\n*   **Problem Types:**\n    *   LeetCode Medium:\
+      \ Random mix to simulate interview conditions.\n*   **Activities/Goals:**\n\
+      \    *   Start building/refining your resume.\n    *   Practice explaining your\
+      \ thought process verbally.\n    *   Do 1-2 mock interviews with peers or platforms\
+      \ like Pramp.\n\n**Month 35: General Interview Prep - Behavioral & Soft Skills**\n\
+      *   **DSA Topics:** Keep practicing 1-2 medium problems daily.\n*   **Problem\
+      \ Types:** N/A for this month's focus, but continue LeetCode Medium.\n*   **Activities/Goals:**\n\
+      \    *   Prepare answers for common behavioral questions (\"Tell me about yourself,\"\
+      \ \"Why this company?\").\n    *   Practice STAR method for answering experience-based\
+      \ questions.\n    *   Refine communication skills.\n\n**Month 36: Review & Finalize\
+      \ Competitive Programming Strategy**\n*   **DSA Topics:** Comprehensive review\
+      \ of all topics, focusing on areas of weakness.\n*   **Problem Types:**\n  \
+      \  *   LeetCode Hard: Tackle problems that combine multiple concepts.\n    *\
+      \   Competitive Programming: Participate in regular contests, analyze solutions,\
+      \ identify patterns.\n*   **Activities/Goals:**\n    *   **Consolidate everything:**\
+      \ Aim for full mastery of the core 70-80% of DSA.\n    *   **Competitive Programming:**\
+      \ Achieve a consistent rating if interested.\n    *   **Networking:** Connect\
+      \ with people in your target industry. Solve 15-20 problems, including 5-7 hard.\n\
+      \n---\n\n## Year 4: Mastery, Advanced Application & Career Focus\n\n**Goal:**\
+      \ Solidify DSA knowledge, prepare for specific career paths (e.g., FAANG, specialized\
+      \ roles), and contribute to the community.\n\n---\n\n### Year 4, Semester 1\
+      \ (Months 37-42)\n\n**Month 37: Advanced DP & Optimization Techniques**\n* \
+      \  **DSA Topics:**\n    *   **DP with Data Structures:** DP + Segment Trees/BIT\
+      \ for range queries.\n    *   **Convex Hull Trick:** Optimizing certain types\
+      \ of DP recurrences.\n    *   **Meet-in-the-Middle:** For problems with large\
+      \ input sizes, often combined with DP or search.\n*   **Problem Types:**\n \
+      \   *   LeetCode Hard, Codeforces Div1 problems.\n*   **Activities/Goals:**\n\
+      \    *   Master advanced DP techniques.\n    *   Recognize complex problems\
+      \ where these optimizations are needed. Solve 5-8 very hard problems.\n\n**Month\
+      \ 38: Graph Algorithms (Advanced) - Strongest/Weakest Components**\n*   **DSA\
+      \ Topics:**\n    *   **Strongly Connected Components (SCC):** Tarjan's or Kosaraju's\
+      \ algorithm.\n    *   **Bridges and Articulation Points:** Detecting critical\
+      \ components in a graph.\n    *   **2-SAT Problem:** Reducing boolean satisfiability\
+      \ to SCC.\n*   **Problem Types:**\n    *   LeetCode Hard, Competitive Programming\
+      \ problems involving graph connectivity analysis.\n*   **Activities/Goals:**\n\
+      \    *   Understand applications of SCCs (e.g., task scheduling with dependencies).\n\
+      \    *   Implement SCC (challenging). Solve 5-8 hard problems.\n\n**Month 39:\
+      \ Randomized Algorithms & Probabilistic Data Structures**\n*   **DSA Topics:**\n\
+      \    *   **Randomized Algorithms:** Quicksort (random pivot), Karger's algorithm\
+      \ (conceptual for min-cut).\n    *   **Probabilistic Data Structures:** Skip\
+      \ Lists (alternative to balanced BSTs), Bloom Filters (space-efficient set membership\
+      \ testing).\n*   **Problem Types:**\n    *   LeetCode Medium/Hard: Problems\
+      \ where randomization can simplify or speed up solutions. Design problems for\
+      \ Bloom Filters.\n*   **Activities/Goals:**\n    *   Understand the trade-off\
+      \ between determinism and average-case performance.\n    *   Implement a Bloom\
+      \ Filter. Solve 5-8 hard problems.\n\n**Month 40: Review & Specialization (e.g.,\
+      \ ML, Security, Gaming)**\n*   **DSA Topics:** Targeted review based on career\
+      \ interests. E.g., for ML: advanced linear algebra basics, graph algorithms\
+      \ for neural networks. For Security: cryptography basics, number theory.\n*\
+      \   **Problem Types:**\n    *   LeetCode Medium/Hard: Problems relevant to your\
+      \ chosen specialization.\n*   **Activities/Goals:**\n    *   Deep dive into\
+      \ a specific area where DSA applies heavily (e.g., GIS data structures, computational\
+      \ geometry for graphics).\n    *   Potentially work on a personal project that\
+      \ utilizes advanced DSA. Solve 10-15 mixed problems.\n\n**Month 41: Advanced\
+      \ Interview Prep - System Design Case Studies**\n*   **DSA Topics:** Review\
+      \ how core DSA apply to complex system design scenarios.\n*   **Problem Types:**\n\
+      \    *   Work through mock system design interviews (e.g., design Twitter, Uber,\
+      \ Netflix).\n*   **Activities/Goals:**\n    *   Read \"Designing Data-Intensive\
+      \ Applications\" or similar resources.\n    *   Participate in several mock\
+      \ system design interviews.\n    *   Understand different system architectures\
+      \ (monolith, microservices).\n\n**Month 42: Advanced Interview Prep - Behavioral\
+      \ & Leadership**\n*   **DSA Topics:** Continue 1-2 hard LeetCode problems daily\
+      \ to maintain sharpness.\n*   **Problem Types:** N/A.\n*   **Activities/Goals:**\n\
+      \    *   Prepare for leadership-focused questions (if applicable).\n    *  \
+      \ Develop a strong \"story\" about your career aspirations and achievements.\n\
+      \    *   Practice communication, negotiation, and conflict resolution scenarios.\n\
+      \n---\n\n### Year 4, Semester 2 (Months 43-48)\n\n**Month 43: Full-Scale Interview\
+      \ Simulation**\n*   **DSA Topics:** All topics are fair game.\n*   **Problem\
+      \ Types:**\n    *   LeetCode Medium/Hard: Focus on timed practice, simulating\
+      \ real interview conditions.\n    *   Mix of coding, system design, and behavioral\
+      \ questions.\n*   **Activities/Goals:**\n    *   Perform multiple full-length\
+      \ mock interviews (coding + system design + behavioral).\n    *   Get feedback\
+      \ and iterate rapidly.\n    *   Identify and fix any remaining weaknesses. Solve\
+      \ 20+ problems.\n\n**Month 44: Job Applications & Refinement**\n*   **DSA Topics:**\
+      \ Consistent daily practice to stay sharp (1-2 LeetCode Medium/Hard).\n*   **Problem\
+      \ Types:** Random mix.\n*   **Activities/Goals:**\n    *   Actively apply for\
+      \ jobs.\n    *   Tailor resume and cover letters for each application.\n   \
+      \ *   Network with recruiters and employees.\n    *   Stay informed about company-specific\
+      \ interview patterns.\n\n**Month 45: Advanced Competitive Programming / Open\
+      \ Source Contribution**\n*   **DSA Topics:** Focus on specialized areas you\
+      \ enjoy or want to master.\n*   **Problem Types:** Codeforces Div1, TopCoder\
+      \ SRMs, or contributing to an open-source project.\n*   **Activities/Goals:**\n\
+      \    *   If interested in competitive programming, aim for higher ratings.\n\
+      \    *   If interested in software engineering, contribute to an open-source\
+      \ project to see DSA applied in real codebases.\n    *   Continue interview\
+      \ prep if actively interviewing.\n\n**Month 46-48: Continued Learning & Mentorship**\n\
+      *   **DSA Topics:** Ongoing learning, exploring new research papers, or deeper\
+      \ dives into niche areas.\n*   **Problem Types:** As relevant to new learning\
+      \ or job requirements.\n*   **Activities/Goals:**\n    *   **Mentorship:** Offer\
+      \ to mentor newer students. Teaching reinforces your own understanding.\n  \
+      \  *   **Blog/Write:** Document your learning, share insights.\n    *   **Stay\
+      \ Updated:** Follow trends in algorithms and data structures (e.g., new approximate\
+      \ algorithms, machine learning-driven optimizations).\n    *   **Lifelong Learning:**\
+      \ DSA is a constantly evolving field. Continue exploring and applying.\n\n---\n\
+      \nThis roadmap is ambitious but achievable with dedication. Remember to adjust\
+      \ it based on your learning speed, career goals, and personal interests. Good\
+      \ luck on your DSA journey!"
+    skill: ai
+    started_at: '2026-05-06T20:16:46.840612'
+    status: done
+  summary: Generate a detailed 4-year monthly DSA roadmap using AI.

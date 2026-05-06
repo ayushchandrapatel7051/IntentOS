@@ -373,26 +373,64 @@ class Planner:
     # ------------------------------------------------------------------
 
     def _dynamic_section(self) -> str:
+        """
+        Build the dynamic section appended to every Gemini system prompt.
+
+        WHY THIS ORDER:
+          1. SOUL persona block first — shapes the LLM's voice and values.
+          2. Preferences — gives the LLM concrete defaults (apps, paths).
+          3. Planner hints — high-priority planning directives.
+          4. Safety rules — hard constraints the LLM must respect.
+          5. Macros — named workflows the LLM can reference.
+          6. Installed apps — so open_app() params are correct.
+
+        WHAT IS NOT INJECTED:
+          plugin_architecture, runtime_event_system, telemetry — these are
+          future roadmap items and would bloat the prompt without benefit.
+        """
         parts = []
+
         if self.soul_reader:
+            # ── 1. SOUL Identity & Persona ─────────────────────────────────
+            soul_persona = self._build_soul_persona_block()
+            if soul_persona:
+                parts.append(soul_persona)
+
+            # ── 2. Preferences (editor, browser, directories) ──────────────
+            prefs_block = self._build_preferences_block()
+            if prefs_block:
+                parts.append(prefs_block)
+
+            # ── 3. Planner hints (directive list) ──────────────────────────
+            hints_block = self._build_planner_hints_block()
+            if hints_block:
+                parts.append(hints_block)
+
+            # ── 4. Safety rules summary ────────────────────────────────────
+            safety_block = self._build_safety_block()
+            if safety_block:
+                parts.append(safety_block)
+
+            # ── 5. Legacy rules & macros ───────────────────────────────────
             rules = self.soul_reader.get_rules()
             if rules:
                 parts.append("CUSTOM RULES:\n" + "\n".join(f"- {r}" for r in rules))
+
             macros = self.soul_reader.get_macros()
             if macros:
-                lines = ["MACROS:"]
-                for name, steps in macros.items():
-                    lines.append(f"  {name}: " + " | ".join(steps))
+                lines = ["NAMED MACROS (user can trigger these by name):"]
+                for name, steps in list(macros.items())[:20]:  # cap at 20 to keep prompt lean
+                    step_summary = " | ".join(steps[:4])  # first 4 steps
+                    lines.append(f"  '{name}': {step_summary}")
                 parts.append("\n".join(lines))
 
-        # Inject top installed app names so the LLM knows what's available
+        # ── 6. Installed apps ──────────────────────────────────────────────
         try:
             apps_json = Path(__file__).parent.parent / "apps.json"
             if apps_json.exists():
                 import json as _json
                 with open(apps_json, "r", encoding="utf-8") as f:
                     app_names = list(_json.load(f).keys())
-                # Include a subset of the most relevant apps (keep prompt lean)
                 relevant = [n for n in app_names if any(kw in n for kw in [
                     "code", "notepad", "terminal", "powershell", "excel", "word",
                     "chrome", "edge", "firefox", "explorer", "calculator", "paint",
@@ -408,6 +446,156 @@ class Planner:
             pass
 
         return ("\n" + "\n".join(parts) + "\n") if parts else "\n"
+
+    # ── Soul context builders ──────────────────────────────────────────────
+
+    def _build_soul_persona_block(self) -> str:
+        """
+        Build the persona/identity block from SOUL.md identity + communication_style.
+        Injected as the first item in the system prompt so it shapes everything else.
+        """
+        sr = self.soul_reader
+        identity = sr.get_identity()
+        comm = sr.get_communication_style()
+        user_name = sr.get_user_name()
+
+        if not identity and not comm:
+            return ""
+
+        lines = ["ASSISTANT PERSONA & BEHAVIOR:"]
+
+        # Identity
+        name = identity.get("name", "OpenClaw")
+        tagline = identity.get("tagline", "")
+        if name:
+            lines.append(f"  Name: {name}")
+        if tagline:
+            lines.append(f"  Role: {tagline}")
+        if user_name and user_name != "User":
+            lines.append(f"  You are speaking with: {user_name}")
+
+        # Personality traits
+        personality = comm.get("personality", {})
+        if personality:
+            primary = personality.get("primary", "")
+            secondary = personality.get("secondary", "")
+            if primary:
+                lines.append(f"  Personality: {primary}, {secondary}".rstrip(", "))
+
+        traits = comm.get("traits", [])
+        if traits:
+            lines.append("  Traits:")
+            for t in traits[:5]:  # cap at 5 to keep prompt concise
+                lines.append(f"    - {t}")
+
+        # Response format
+        fmt = comm.get("response_format", {})
+        if fmt:
+            length = fmt.get("default_length", "medium")
+            emoji = fmt.get("use_emoji", "sparingly")
+            lines.append(f"  Response style: {length} length, emoji {emoji}")
+
+        # Active mode override (e.g. coding_mode → technical and focused)
+        mode_override = sr.get_mode_style_override()
+        if mode_override:
+            tone = mode_override.get("tone", "")
+            if tone:
+                lines.append(f"  Current mode tone: {tone}")
+
+        # Custom persona from assistant_customization
+        customization = sr.get_assistant_customization()
+        persona_cfg = customization.get("assistant_personality", {})
+        persona_text = persona_cfg.get("persona", "")
+        if persona_text and len(persona_text) < 400:
+            lines.append(f"  Persona: {persona_text.strip()}")
+
+        return "\n".join(lines)
+
+    def _build_preferences_block(self) -> str:
+        """
+        Build preferences block from SOUL.md preferences section.
+        Gives the LLM concrete defaults so it stops hallucinating app names/paths.
+        """
+        prefs = self.soul_reader.get_preferences()
+        if not prefs or not isinstance(prefs, dict):
+            return ""
+
+        lines = ["USER PREFERENCES:"]
+        editor = prefs.get("editor", {})
+        browser_prefs = prefs.get("browser", {})
+        terminal_prefs = prefs.get("terminal", {})
+        dirs = prefs.get("directories", {})
+        messaging_prefs = prefs.get("messaging", {})
+
+        if editor.get("primary"):
+            lines.append(f"  Editor: {editor['primary']}")
+        if browser_prefs.get("primary"):
+            lines.append(f"  Browser: {browser_prefs['primary']}")
+        if terminal_prefs.get("primary"):
+            lines.append(f"  Terminal: {terminal_prefs['primary']}")
+        if messaging_prefs.get("personal_contacts"):
+            lines.append(f"  Personal messaging: {messaging_prefs['personal_contacts']}")
+        if messaging_prefs.get("work_contacts"):
+            lines.append(f"  Work messaging: {messaging_prefs['work_contacts']}")
+        if dirs.get("workspace"):
+            lines.append(f"  Workspace: {dirs['workspace']}")
+        if dirs.get("downloads"):
+            lines.append(f"  Downloads: {dirs['downloads']}")
+        if dirs.get("screenshots"):
+            lines.append(f"  Screenshots: {dirs['screenshots']}")
+
+        return "\n".join(lines) if len(lines) > 1 else ""
+
+    def _build_planner_hints_block(self) -> str:
+        """
+        Build planner directives block from SOUL.md planner_hints section.
+        These become high-priority instructions for intent resolution and
+        execution philosophy. They reduce LLM hallucination of actions.
+        """
+        hints = self.soul_reader.get_planner_hints()
+        if not hints or not isinstance(hints, dict):
+            return ""
+
+        lines = ["PLANNING DIRECTIVES (follow these strictly):"]
+
+        # Intent resolution rules
+        for rule in hints.get("intent_resolution", [])[:4]:
+            lines.append(f"  - {rule}")
+
+        # Execution philosophy (most important 3)
+        for rule in hints.get("execution_philosophy", [])[:3]:
+            lines.append(f"  - {rule}")
+
+        return "\n".join(lines) if len(lines) > 1 else ""
+
+    def _build_safety_block(self) -> str:
+        """
+        Build a concise safety rules summary from SOUL.md safety_rules section.
+        The executor enforces these programmatically — this injection reminds
+        the LLM not to generate plans that violate them in the first place.
+        """
+        safety = self.soul_reader.get_safety_rules()
+        if not safety or not isinstance(safety, dict):
+            return ""
+
+        lines = ["SAFETY CONSTRAINTS (non-negotiable):"]
+
+        blocked = safety.get("blocked_actions", [])
+        for rule in blocked[:6]:  # top 6 to keep prompt lean
+            if isinstance(rule, dict):
+                pattern = rule.get("pattern", "")
+                reason = rule.get("reason", "")
+                lines.append(f"  - NEVER execute '{pattern}' — {reason}")
+
+        confirm_items = safety.get("require_confirmation", [])
+        always_confirm = [
+            item.get("action", "") for item in confirm_items
+            if isinstance(item, dict)
+        ]
+        if always_confirm:
+            lines.append(f"  - Always ask user before: {', '.join(always_confirm[:5])}")
+
+        return "\n".join(lines) if len(lines) > 1 else ""
 
     def _system_prompt(self) -> str:
         today = datetime.now().strftime("%Y-%m-%d")
@@ -547,19 +735,73 @@ class Planner:
         # Normalize relative dates ("tomorrow", "next Monday") → ISO dates
         intent = normalize_dates_in_text(intent)
 
-        # Macro short-circuit
+        # Macro short-circuit (Phase 3: Structured Macros)
+        # Bypasses the LLM entirely. Maps SOUL.md YAML steps directly to Executor skills.
         if self.soul_reader:
             macro_steps = self.soul_reader.expand_macro(intent.lower().strip())
             if macro_steps:
                 plan = ActionPlan(intent=intent, summary=f"Macro: {intent}")
-                for i, text in enumerate(macro_steps, 1):
+                for i, step_def in enumerate(macro_steps, 1):
+                    # step_def is now a full dict from YAML
+                    action_type = step_def.get("action", "execute").lower()
+                    label = step_def.get("label") or step_def.get("description") or f"Macro step {i}"
+                    
+                    # ── Map YAML structural actions to Executor skills ──
+                    skill = "terminal"
+                    action_name = "execute"
+                    params = {}
+
+                    if action_type == "open_browser":
+                        skill = "browser"
+                        action_name = "navigate"
+                        params = {"url": step_def.get("target", "https://google.com")}
+                    elif action_type == "open_editor":
+                        skill = "apps"
+                        action_name = "open_app"
+                        target = step_def.get("target", "vscode")
+                        if target.lower() == "vscode":
+                            target = "code"
+                        project = step_def.get("project", "")
+                        params = {"name": f"{target} {project}".strip()}
+                    elif action_type == "read_calendar":
+                        skill = "extension"
+                        action_name = "get_events"
+                        params = {"date": step_def.get("range", "today")}
+                    elif action_type == "notify_user":
+                        skill = "terminal"
+                        action_name = "execute"
+                        # Simple echo for now; dashboard reads stdout
+                        # PowerShell requires single quotes to be escaped as ''
+                        msg = step_def.get("message", "Notification").replace("'", "''")
+                        params = {"command": f"echo '{msg}'"}
+                    elif action_type == "legacy_text":
+                        # Fallback for old markdown strings
+                        skill = "auto"
+                        action_name = "execute"
+                        params = {"instruction": step_def.get("params", {}).get("instruction", "")}
+                    else:
+                        # Fallback: assume terminal command if no mapping
+                        skill = "terminal"
+                        action_name = "execute"
+                        params = {"command": step_def.get("command", "")}
+
                     plan.steps.append(Step(
-                        id=f"macro_{i}", skill="auto", action="execute",
-                        params={"instruction": text}, description=text,
-                        reasoning=f"Macro step {i}",
+                        id=step_def.get("id", f"macro_{i}"),
+                        skill=skill,
+                        action=action_name,
+                        params=params,
+                        description=label,
+                        reasoning=f"Structured SOUL.md macro step ({action_type})",
                     ))
-                if self.client:
+
+                # BYPASS LLM entirely for pure YAML macros!
+                # If we have legacy text steps, we still have to refine them.
+                has_legacy = any(s.skill == "auto" for s in plan.steps)
+                if has_legacy and self.client:
+                    print(f"[Planner] Refining legacy text macro: {intent}")
                     return await self._refine(plan)
+                
+                print(f"[Planner] Bypassing LLM for structured macro: {intent}")
                 return plan
 
         if not self.client:

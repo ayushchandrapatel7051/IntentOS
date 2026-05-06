@@ -155,11 +155,86 @@ def create_router() -> APIRouter:
 
     @router.get("/soul")
     async def get_soul(request: Request):
-        """Get SOUL.md configuration summary."""
+        """
+        Get SOUL.md configuration summary.
+
+        Returns enough data for the frontend to render:
+          - Active mode badge
+          - Available profiles/modes (for mode-switch buttons)
+          - Macro list (trigger phrases, labels, icons)
+          - Identity (assistant name, tagline)
+          - YAML parse status
+        """
         planner = request.app.state.planner
-        if planner and planner.soul_reader:
-            return planner.soul_reader.get_summary()
-        return {"error": "SOUL.md not loaded"}
+        if not planner or not planner.soul_reader:
+            return {"error": "SOUL.md not loaded"}
+
+        sr = planner.soul_reader
+        summary = sr.get_summary()
+
+        # Enrich with profile details for UI rendering
+        profiles_raw = sr.get_profiles()
+        profiles_list = []
+        if isinstance(profiles_raw, dict):
+            for profile_id, data in profiles_raw.items():
+                if isinstance(data, dict):
+                    profiles_list.append({
+                        "id": profile_id,
+                        "label": data.get("label", profile_id),
+                        "icon": data.get("icon", ""),
+                        "description": data.get("description", ""),
+                        "trigger_phrases": data.get("trigger_phrases", []),
+                        "active": profile_id == sr.get_active_mode(),
+                    })
+
+        return {
+            **summary,
+            "profiles_detail": profiles_list,
+        }
+
+    @router.post("/soul/reload")
+    async def reload_soul(request: Request):
+        """Hot-reload SOUL.md from disk without restarting the backend."""
+        planner = request.app.state.planner
+        if not planner or not planner.soul_reader:
+            return {"success": False, "error": "SOUL.md not loaded"}
+        try:
+            planner.soul_reader.reload()
+            summary = planner.soul_reader.get_summary()
+            return {
+                "success": True,
+                "message": f"SOUL.md reloaded: {summary['macros_count']} macros, {summary['profiles_count']} profiles",
+                **summary,
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    @router.post("/soul/mode/{mode_name}")
+    async def set_active_mode(mode_name: str, request: Request):
+        """
+        Activate a named profile/mode from SOUL.md.
+
+        This updates the planner's persona block for the next planning call
+        (e.g. coding_mode makes responses technical and focused).
+        The frontend should call this when the user taps a mode badge.
+        """
+        planner = request.app.state.planner
+        if not planner or not planner.soul_reader:
+            return {"success": False, "error": "SOUL.md not loaded"}
+
+        sr = planner.soul_reader
+        profiles = sr.get_profiles()
+        if mode_name not in profiles and mode_name != "default":
+            return {"success": False, "error": f"Unknown mode: {mode_name}. Available: {list(profiles.keys())}"}
+
+        sr.set_active_mode(mode_name)
+        profile_data = profiles.get(mode_name, {})
+        return {
+            "success": True,
+            "active_mode": mode_name,
+            "label": profile_data.get("label", mode_name),
+            "message": f"Mode switched to: {profile_data.get('label', mode_name)}",
+        }
 
     @router.get("/skills")
     async def get_skills(request: Request):

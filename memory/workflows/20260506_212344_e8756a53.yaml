@@ -1,0 +1,110 @@
+created_at: '2026-05-06T21:23:44.766341'
+fingerprint: day start
+id: 20260506_212344_e8756a53
+intent: start my day
+outcome: completed
+plan:
+  created_at: '2026-05-06T21:23:26.606496'
+  intent: start my day
+  status: completed
+  steps:
+  - action: navigate
+    completed_at: '2026-05-06T21:23:27.722078'
+    description: Check today's calendar
+    error: null
+    id: smd_01
+    params:
+      url: https://calendar.google.com
+    reasoning: Structured SOUL.md macro step (open_browser)
+    result: "{\n  \"tabId\": 1302602106,\n  \"url\": \"https://calendar.google.com\"\
+      \n}"
+    skill: browser
+    started_at: '2026-05-06T21:23:26.692838'
+    status: done
+  - action: get_events
+    completed_at: '2026-05-06T21:23:27.730188'
+    description: Fetch today's events
+    error: null
+    id: smd_02
+    params:
+      date: '2026-05-06'
+    reasoning: Structured SOUL.md macro step (read_calendar)
+    result: "{\n  \"verified\": true,\n  \"events\": [\n    \"3pm to 4pm, Google Meet,\
+      \ Jaidev Narayan Singh, No location, 6 May 2026Google Meet3 \\u2013 4pm\",\n\
+      \    \"\",\n    \"3pm to 4pm, Google Meet, Jaidev Narayan Singh, No location,\
+      \ 6 May 2026Google Meet3 \\u2013 4pm\",\n    \"\",\n    \"5pm to 6pm, Google\
+      \ Meet, Jaidev Narayan Singh, No location, 6 May 2026Google Meet5 \\u2013 6pm\"\
+      ,\n    \"\"\n  ],\n  \"date\": \"2026-05-06\"\n}"
+    skill: extension
+    started_at: '2026-05-06T21:23:27.723591'
+    status: done
+  - action: navigate
+    completed_at: '2026-05-06T21:23:28.747490'
+    description: Open Gmail
+    error: null
+    id: smd_03
+    params:
+      url: https://mail.google.com
+    reasoning: Structured SOUL.md macro step (open_browser)
+    result: "{\n  \"tabId\": 1302602113,\n  \"url\": \"https://mail.google.com\"\n\
+      }"
+    skill: browser
+    started_at: '2026-05-06T21:23:27.730188'
+    status: done
+  - action: open_app
+    completed_at: '2026-05-06T21:23:30.777610'
+    description: Open VS Code with last project
+    error: null
+    id: smd_04
+    params:
+      name: vscode ~/projects
+    reasoning: Structured SOUL.md macro step (open_editor)
+    result: Opened 'vscode with ~/projects' successfully
+    skill: apps
+    started_at: '2026-05-06T21:23:28.748022'
+    status: done
+  - action: execute
+    completed_at: '2026-05-06T21:23:31.100230'
+    description: Morning briefing
+    error: "Command failed (exit 1): The string is missing the terminator: '.\n  \
+      \  + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException\n\
+      \    + FullyQualifiedErrorId : TerminatorExpectedAtEndOfString\n"
+    id: smd_05
+    params:
+      command: 'echo ''Good morning, Ayush!
+
+        📅 2026-05-06
+
+        📋 Today\''s events: ${todays_events}
+
+        💻 Last project: ~/projects
+
+        '''
+    reasoning: Structured SOUL.md macro step (notify_user)
+    result: null
+    skill: terminal
+    started_at: '2026-05-06T21:23:30.778623'
+    status: failed
+  - action: execute
+    completed_at: '2026-05-06T21:23:44.654720'
+    description: Morning briefing
+    error: null
+    id: smd_05
+    params:
+      command: 'echo "Good morning, Ayush!`n`📅 2026-05-06`n`📋 Today''s events: ${todays_events}`n`💼
+        Last project: ~/projects"'
+    reasoning: The previous command failed due to incorrect PowerShell string termination
+      and newline handling. This revised command uses double quotes for the string,
+      which allows for variable expansion and PowerShell's `n` (backtick n) escape
+      sequence for newlines, resolving the parsing error.
+    result: 'Good morning, Ayush!
+
+      ?? 2026-05-06
+
+      ?? Today''s events:
+
+      ?? Last project: C:\Users\Jaidev Narayan Singh\projects'
+    skill: terminal
+    started_at: '2026-05-06T21:23:44.298544'
+    status: done
+  summary: 'Macro: start my day'
