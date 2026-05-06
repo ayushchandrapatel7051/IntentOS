@@ -24,7 +24,7 @@ IntentOS is an AI agent that lets you control your entire computer — browser, 
 🤖 IntentOS > open youtube, search python programming and play first video
 🤖 IntentOS > find all Python files in my project and list the largest ones
 🤖 IntentOS > create a Google Meet for tomorrow at 3pm and send the link to the team
-🤖 IntentOS > open Wikipedia page for Virat Kohli and save it to a file
+🤖 IntentOS > Clone into <github_repo_url> and open it in VS Code
 ```
 
 IntentOS decomposes your intent into a sequence of atomic steps using **Gemini 2.5 Flash**, executes them using a rich skill library, and learns from past runs using **ChromaDB neural memory**.
