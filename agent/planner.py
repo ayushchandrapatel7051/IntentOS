@@ -280,6 +280,25 @@ PARAM VALUE RULES - MANDATORY:
   - NEVER use single-brace templates - always double-brace: {{steps.step_N.result}}
   - To send a Google Meet link: text="Here is the link: {{steps.step_1.result.meet_link}}"
   - To save web content: content="{{steps.step_2.result}}"
+
+BROWSER.EVALUATE RULE — CRITICAL (NEVER use browser.evaluate):
+  - NEVER use browser.evaluate(code="window.location.href") or any browser.evaluate action.
+  - browser.evaluate runs in a SEPARATE Playwright browser window, NOT in the Chrome tab.
+  - It will return a WRONG URL (from a different browser entirely).
+  - To get the current YouTube video URL: reference {{steps.step_N.result.video_url}}
+    (the executor auto-captures the video URL after YouTube actions).
+  - To get YouTube video info: use extension.getVideoInfo()
+  - To get the current page URL: use extension.getTabs() and look at tab URLs.
+  - NEVER use browser.evaluate for ANY purpose when the extension is available.
+
+YOUTUBE + MESSAGING RULE — MANDATORY:
+  - After a YouTube search/play step, the video URL is automatically captured in the step result.
+  - To send the YouTube video link: text="Here is the YouTube video: {{steps.step_N.result.video_url}}"
+  - Example for "search python on YouTube, play the first video, send its link to X on WhatsApp":
+      step_1: browser.navigate(url="https://www.youtube.com", browser="chrome")
+      step_2: extension.web_agent(url="", task="Search for 'python' and play the first video result")
+      step_3: messaging.send_message(app="whatsapp", contact="X", text="Here is the YouTube video: {{steps.step_2.result.video_url}}")
+  - DO NOT add a separate step to get the URL — it is captured automatically.
 {dynamic}"""
 
 

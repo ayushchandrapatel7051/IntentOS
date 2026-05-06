@@ -358,6 +358,42 @@ class Executor:
                 step.params = {
                     "selector": "#mw-content-text"
                 }
+
+        # --- getPageText tab_id resolution guard ---
+        # If the step is getPageText and tab_id looks invalid, resolve it early
+        if _action_key(step.action) in ("getpagetext", "pagetext", "extracttext", "getpagetext"):
+            raw_tab = step.params.get("tab_id") or step.params.get("tabId")
+            tab_invalid = (
+                raw_tab is None
+                or str(raw_tab).strip() == ""
+                or str(raw_tab) == "None"
+                or "{{" in str(raw_tab)
+                or "{steps." in str(raw_tab)
+            )
+            if not tab_invalid:
+                try:
+                    int(raw_tab)
+                except (TypeError, ValueError):
+                    tab_invalid = True
+
+            if tab_invalid and self.context:
+                shared_tid = self.context.shared.get("last_tab_id")
+                if shared_tid:
+                    step.params["tab_id"] = shared_tid
+                    self.context.add_log(
+                        "INFO",
+                        f"[Executor] Resolved invalid tab_id for getPageText → {shared_tid} from shared context",
+                        step.id,
+                    )
+                else:
+                    # Remove invalid tab_id so extension falls back to active tab
+                    step.params.pop("tab_id", None)
+                    step.params.pop("tabId", None)
+                    self.context.add_log(
+                        "INFO",
+                        f"[Executor] Removed invalid tab_id for getPageText — will use active tab",
+                        step.id,
+                    )
         # -----------------------------
         step.status = StepStatus.RUNNING
         step.started_at = datetime.now().isoformat()
@@ -550,6 +586,80 @@ class Executor:
                 "status": "done",
                 "result": step.result,
             })
+
+            # ── Auto-capture YouTube URL for downstream steps ─────────
+            # If this was a YouTube action, enrich the result with the actual video URL
+            # so messaging steps don't send the wrong link.
+            _YOUTUBE_ACTIONS = {
+                "searchyoutube", "playyoutube", "nextvideo",
+                "youtubesearch",
+            }
+            # Detect YouTube context from multiple signals
+            _is_youtube = action_key in _YOUTUBE_ACTIONS
+            if not _is_youtube and action_key in ("webagent", "webinteract"):
+                # Check task/url params
+                _combined = (step.params.get("task", "") + step.params.get("url", "")).lower()
+                if "youtube" in _combined:
+                    _is_youtube = True
+                # Check if the step RESULT contains YouTube markers
+                elif step.result and ("[YouTube]" in step.result or "youtube.com" in step.result.lower()):
+                    _is_youtube = True
+                # Check if a prior step navigated to YouTube
+                elif any(
+                    "youtube.com" in s.params.get("url", "").lower()
+                    for s in self.context.plan.steps
+                    if s.status == StepStatus.DONE
+                    and s.action in ("navigate",)
+                ):
+                    _is_youtube = True
+            # Also trigger for navigate actions that land on YouTube
+            if not _is_youtube and action_key == "navigate":
+                _nav_url = step.params.get("url", "").lower()
+                if "youtube.com" in _nav_url:
+                    _is_youtube = True
+
+            if _is_youtube:
+                try:
+                    ext = self.skills.get("extension")
+                    if ext and getattr(ext, "is_connected", False):
+                        await asyncio.sleep(3)  # Wait for YouTube to settle on the watch page
+                        tabs_data = await ext._send("getTabs", {}, timeout=5)
+                        tabs = tabs_data.get("tabs", [])
+                        yt_tab = None
+                        # Prefer tabs with /watch?v= (actual video), then any youtube.com
+                        for tab in reversed(tabs):
+                            tab_url = tab.get("url", "")
+                            if "/watch?v=" in tab_url:
+                                yt_tab = tab
+                                break
+                        if not yt_tab:
+                            for tab in reversed(tabs):
+                                tab_url = tab.get("url", "")
+                                if "youtube.com" in tab_url:
+                                    yt_tab = tab
+                                    break
+                        if yt_tab:
+                            video_url = yt_tab.get("url", "")
+                            video_title = yt_tab.get("title", "")
+                            # Append the actual URL to the step result
+                            step.result = (
+                                f"{step.result}\n"
+                                f"video_url={video_url}\n"
+                                f"video_title={video_title}"
+                            )
+                            self.context.shared["last_youtube_url"] = video_url
+                            self.context.shared["last_tab_id"] = yt_tab.get("id")
+                            self.context.add_log(
+                                "INFO",
+                                f"[Executor] Captured YouTube URL: {video_url}",
+                                step.id,
+                            )
+                except Exception as e:
+                    self.context.add_log(
+                        "WARN",
+                        f"[Executor] Could not auto-capture YouTube URL: {e}",
+                        step.id,
+                    )
 
             self.context.add_log("INFO", f"Completed: {step.result}", step.id)
             return True

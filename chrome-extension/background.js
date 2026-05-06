@@ -99,31 +99,50 @@ async function getActiveTab() {
 }
 
 async function resolveTabId(tabId) {
-  if (tabId) return tabId;
+  // Validate tabId is a positive integer — reject null, undefined, NaN, 0, strings, etc.
+  if (tabId != null && Number.isInteger(tabId) && tabId > 0) {
+    // Verify the tab actually exists before returning
+    try {
+      await chrome.tabs.get(tabId);
+      return tabId;
+    } catch (_) {
+      // Tab doesn't exist anymore — fall through to getActiveTab()
+    }
+  }
   const tab = await getActiveTab();
   return tab.id;
 }
 
-function waitForTabLoad(tabId, timeoutMs = 15000) {
-  return new Promise((resolve, reject) => {
-    chrome.tabs.get(tabId, (tab) => {
-      if (chrome.runtime.lastError) return reject(new Error(chrome.runtime.lastError.message));
-      if (tab.status === 'complete') return resolve();
+async function waitForTabLoad(tabId, timeoutMs = 15000) {
+  // Guard: if tabId is not a valid positive integer, resolve immediately
+  if (tabId == null || !Number.isInteger(tabId) || tabId <= 0) {
+    return;
+  }
 
-      const timer = setTimeout(() => {
+  try {
+    // MV3: chrome.tabs.get() returns a Promise — do NOT use callback style
+    const tab = await chrome.tabs.get(tabId);
+    if (tab.status === 'complete') return;
+  } catch (err) {
+    // Tab doesn't exist or was closed — nothing to wait for
+    return;
+  }
+
+  // Wait for the tab to finish loading
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      chrome.tabs.onUpdated.removeListener(listener);
+      resolve();
+    }, timeoutMs);
+
+    function listener(updatedTabId, changeInfo) {
+      if (updatedTabId === tabId && changeInfo.status === 'complete') {
+        clearTimeout(timer);
         chrome.tabs.onUpdated.removeListener(listener);
         resolve();
-      }, timeoutMs);
-
-      function listener(updatedTabId, changeInfo) {
-        if (updatedTabId === tabId && changeInfo.status === 'complete') {
-          clearTimeout(timer);
-          chrome.tabs.onUpdated.removeListener(listener);
-          resolve();
-        }
       }
-      chrome.tabs.onUpdated.addListener(listener);
-    });
+    }
+    chrome.tabs.onUpdated.addListener(listener);
   });
 }
 
@@ -276,7 +295,10 @@ async function getDomContent(tabId, selector = 'body') {
  */
 async function getPageText(tabId, selector = 'body') {
   tabId = await resolveTabId(tabId);
-  await waitForTabLoad(tabId);
+  // Extra wait to let page content fully render (Wikipedia, articles, etc.)
+  await waitForTabLoad(tabId, 20000);
+  await new Promise(r => setTimeout(r, 2000));
+
   const results = await chrome.scripting.executeScript({
     target: { tabId },
     func: (sel) => {

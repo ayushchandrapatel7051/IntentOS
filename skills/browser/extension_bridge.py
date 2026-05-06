@@ -535,12 +535,22 @@ def _remap_params(command: str, params: dict) -> dict:
         out[mapped_key] = v
 
     if "tabId" in out:
-        try:
-            tid = int(out["tabId"])
-            if tid <= 0:
-                del out["tabId"]
-        except (TypeError, ValueError):
+        raw = out["tabId"]
+        # Strip tab IDs that are None, empty, or unresolved template placeholders
+        if raw is None or raw == "" or raw == "None":
             del out["tabId"]
+        elif isinstance(raw, str) and ("{{" in raw or "{steps." in raw):
+            # Template wasn't resolved — discard so extension falls back to active tab
+            del out["tabId"]
+        else:
+            try:
+                tid = int(raw)
+                if tid <= 0:
+                    del out["tabId"]
+                else:
+                    out["tabId"] = tid  # Ensure it's always an integer, not string
+            except (TypeError, ValueError):
+                del out["tabId"]
     return out
 
 
