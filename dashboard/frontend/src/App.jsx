@@ -104,10 +104,10 @@ const CSS = `
   .topbar-stat span { color: var(--accent); }
 
   /* ── Main layout ── */
-  .layout { display: grid; grid-template-columns: 210px 1fr 255px; flex: 1; min-height: 0; overflow: hidden; }
+  .layout { display: grid; grid-template-columns: 240px 1fr; flex: 1; min-height: 0; overflow: hidden; background: #050505; }
 
   /* ── Left panel ── */
-  .left-panel { background: var(--surface); border-right: 0.5px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; padding-bottom: 12px; }
+  .left-panel { background: #0a0a0a; border-right: 0.5px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; overflow-y: auto; padding-bottom: 12px; }
   .sec-label { font-size: 9px; font-family: var(--mono); color: var(--muted); letter-spacing: 1.5px; padding: 12px 14px 5px; text-transform: uppercase; }
   .nav-item  {
     display: flex; align-items: center; gap: 8px; padding: 7px 14px;
@@ -121,7 +121,7 @@ const CSS = `
   .hist-title { font-size: 11px; color: var(--text); }
   .hist-meta  { font-size: 9px; color: var(--muted); font-family: var(--mono); }
   .spacer { flex: 1; }
-  .mem-chip { margin: 10px; background: var(--surface2); border: 0.5px solid var(--border); border-radius: 8px; padding: 10px; }
+  .mem-chip { margin: 10px; background: rgba(255,255,255,0.02); border: 0.5px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; }
   .mem-label { font-size: 9px; font-family: var(--mono); color: var(--muted); letter-spacing: 1px; margin-bottom: 7px; }
   .mem-row { margin-bottom: 6px; }
   .bar-wrap { background: rgba(255,255,255,.05); border-radius: 2px; height: 3px; margin-bottom: 3px; overflow: hidden; }
@@ -130,18 +130,18 @@ const CSS = `
   .bar-meta span:last-child { color: var(--accent); }
 
   /* ── Center panel ── */
-  .center { display: flex; flex-direction: column; background: var(--bg); overflow: hidden; }
-  .tab-bar { display: flex; padding: 0 16px; background: var(--surface); border-bottom: 0.5px solid var(--border); flex-shrink: 0; }
+  .center { display: flex; flex-direction: column; background: #050505; overflow: hidden; }
+  .tab-bar { display: flex; padding: 0 16px; background: #0a0a0a; border-bottom: 0.5px solid rgba(255,255,255,0.06); flex-shrink: 0; }
   .tab { font-size: 10px; font-family: var(--mono); color: var(--muted); padding: 8px 12px; cursor: pointer; border-bottom: 1.5px solid transparent; transition: all .15s; letter-spacing: .5px; white-space: nowrap; }
   .tab:hover { color: var(--text); }
   .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
   /* ── Intent input ── */
-  .intent-area { padding: 14px 16px; border-bottom: 0.5px solid var(--border); flex-shrink: 0; }
+  .intent-area { padding: 14px 16px; border-bottom: 0.5px solid rgba(255,255,255,0.06); flex-shrink: 0; background: #0a0a0a; }
   .field-label { font-size: 9px; font-family: var(--mono); color: var(--muted); letter-spacing: 1.5px; margin-bottom: 7px; }
   .input-wrap {
     display: flex; align-items: center; gap: 10px;
-    background: var(--surface); border: 0.5px solid var(--border2);
+    background: #111111; border: 0.5px solid rgba(255,255,255,0.1);
     border-radius: 8px; padding: 9px 13px; transition: border-color .2s;
   }
   .input-wrap:focus-within { border-color: var(--accent); }
@@ -175,55 +175,109 @@ const CSS = `
   }
   .pill:hover { color: var(--accent); border-color: rgba(0,212,170,.3); background: rgba(0,212,170,.05); }
 
-  /* ── Execution area ── */
-  .exec-area { flex: 1; overflow-y: auto; padding: 14px 16px; }
-  .exec-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  .exec-title { font-size: 9px; font-family: var(--mono); color: var(--muted); letter-spacing: 1.5px; }
-  .status-badge {
-    font-size: 9px; font-family: var(--mono); padding: 2px 8px; border-radius: 3px;
+  /* ── AI Execution Area ── */
+  .exec-area { flex: 1; overflow-y: auto; padding: 40px 48px; display: flex; flex-direction: column; max-width: 900px; margin: 0 auto; width: 100%; }
+  
+  .ai-progress-section {
+    display: flex; flex-direction: column; gap: 8px; margin-top: 24px;
+    transition: opacity 0.5s ease, max-height 0.5s ease;
+    max-height: 1000px; opacity: 1; overflow: hidden;
   }
-  .badge-running { background: rgba(245,158,11,.1); color: var(--warn); border: 0.5px solid rgba(245,158,11,.3); }
-  .badge-done    { background: rgba(16,185,129,.1); color: var(--success); border: 0.5px solid rgba(16,185,129,.3); }
-  .badge-failed  { background: rgba(239,68,68,.1); color: var(--danger); border: 0.5px solid rgba(239,68,68,.3); }
-  .badge-aborted { background: rgba(107,114,128,.1); color: var(--muted); border: 0.5px solid rgba(107,114,128,.3); }
-  .badge-idle    { background: rgba(255,255,255,.04); color: var(--muted); border: 0.5px solid var(--border); }
+  .ai-progress-section.collapsed {
+    max-height: 0; opacity: 0; margin-top: 0; pointer-events: none; margin-bottom: 0; padding: 0;
+  }
+  
+  .ai-step {
+    display: flex; align-items: center; gap: 14px; padding: 14px 20px;
+    border-radius: 12px; font-size: 14px; color: var(--muted);
+    background: transparent; transition: all 0.3s ease;
+  }
+  .ai-step-icon {
+    width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .ai-step.active {
+    color: var(--text); background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08); 
+    box-shadow: 0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  .ai-step.done {
+    color: var(--text);
+  }
+  
+  .shimmer-text {
+    background: linear-gradient(90deg, var(--text) 0%, #6b7280 50%, var(--text) 100%);
+    background-size: 200% auto;
+    color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: shimmer 2.5s linear infinite;
+    font-weight: 500; letter-spacing: 0.2px;
+  }
+  @keyframes shimmer { to { background-position: 200% center; } }
+  
+  .glow-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #fff;
+    box-shadow: 0 0 10px rgba(255,255,255,0.8);
+    animation: pulse-glow 1.5s infinite alternate;
+  }
+  @keyframes pulse-glow { 0% {opacity:0.4; transform:scale(0.8);} 100% {opacity:1; transform:scale(1.1);} }
 
-  /* ── Intent summary card ── */
-  .intent-card { background: var(--surface); border: 0.5px solid var(--border2); border-radius: 8px; padding: 11px 13px; margin-bottom: 12px; }
-  .ic-header { display: flex; align-items: flex-start; gap: 9px; }
-  .ic-icon { width: 26px; height: 26px; border-radius: 5px; background: rgba(0,212,170,.1); border: 0.5px solid rgba(0,212,170,.2); display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
-  .ic-title { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4; word-break: break-word; }
-  .ic-meta  { font-size: 9px; color: var(--muted); font-family: var(--mono); margin-top: 3px; }
+  .check-icon { color: var(--success); font-weight: bold; font-size: 16px; animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+  @keyframes pop-in { 0% {transform:scale(0);} 100% {transform:scale(1);} }
+  
+  /* ── Premium Final Card ── */
+  .premium-card {
+    background: linear-gradient(145deg, rgba(30,30,30,0.6) 0%, rgba(15,15,15,0.8) 100%);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px; padding: 28px 36px;
+    margin-top: 12px; animation: slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+    position: relative; overflow: hidden;
+  }
+  .premium-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  }
+  @keyframes slide-up { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+  
+  .pc-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .pc-icon { 
+    width: 36px; height: 36px; border-radius: 50%; background: rgba(48,209,88,0.15); 
+    color: var(--success); display: flex; align-items: center; justify-content: center; 
+    font-size: 18px; border: 1px solid rgba(48,209,88,0.3); box-shadow: 0 0 20px rgba(48,209,88,0.15); 
+  }
+  .pc-title { font-size: 20px; font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
+  
+  .pc-content { 
+    font-size: 14px; color: #e5e7eb; line-height: 1.6; background: rgba(0,0,0,0.4); 
+    padding: 16px 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.04); 
+    font-family: var(--mono); word-break: break-word; white-space: pre-wrap;
+  }
+  
+  .pc-actions { display: flex; gap: 12px; margin-top: 24px; }
+  .btn-action { 
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); 
+    color: var(--text); padding: 10px 18px; border-radius: 8px; font-size: 13px; 
+    font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; 
+  }
+  .btn-action:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
 
-  /* ── Step chain ── */
-  .step-chain { display: flex; flex-direction: column; }
-  .step-row { display: flex; align-items: flex-start; gap: 10px; animation: step-in .35s ease forwards; opacity: 0; }
-  @keyframes step-in { to { opacity:1; transform: translateY(0); } from { opacity:0; transform: translateY(5px); } }
-  .step-left { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; padding-top: 4px; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; position: relative; border: 1.5px solid; }
-  .dot-pending { border-color: rgba(255,255,255,.18); background: transparent; }
-  .dot-running { border-color: var(--warn); background: transparent; }
-  .dot-running::after { content:''; position:absolute; inset:-3px; border-radius:50%; border:1px solid var(--warn); opacity:.5; animation: ring 1s ease-out infinite; }
-  @keyframes ring { 0%{transform:scale(1);opacity:.5} 100%{transform:scale(1.9);opacity:0} }
-  .dot-done    { background: var(--success); border-color: var(--success); }
-  .dot-failed  { background: var(--danger);  border-color: var(--danger); }
-  .dot-skipped { background: var(--muted);   border-color: var(--muted); }
-  .step-line { width: 1px; flex: 1; min-height: 14px; background: var(--border); margin: 2px 0; }
-  .step-content { flex: 1; padding-bottom: 13px; min-width: 0; }
-  .step-name   { font-size: 11px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
-  .step-name.muted { color: var(--muted); }
-  .step-desc   { font-size: 10px; color: var(--muted); font-family: var(--mono); word-break: break-word; }
-  .step-code   { font-size: 9px; font-family: var(--mono); background: var(--surface2); border: 0.5px solid var(--border); border-radius: 4px; padding: 4px 8px; margin-top: 4px; display: inline-block; color: var(--accent2); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .step-result { font-size: 10px; color: var(--success); font-family: var(--mono); margin-top: 3px; word-break: break-word; }
-  .step-error  { font-size: 10px; color: var(--danger); font-family: var(--mono); margin-top: 3px; word-break: break-word; }
-  .step-time   { font-size: 9px; font-family: var(--mono); color: var(--muted); margin-top: 2px; }
-
-  /* ── Output card ── */
-  .output-card { background: var(--surface2); border: 0.5px solid rgba(16,185,129,.22); border-radius: 8px; padding: 10px 12px; margin-top: 8px; animation: step-in .4s ease forwards; }
-  .output-label { font-size: 9px; font-family: var(--mono); color: var(--success); letter-spacing: 1px; margin-bottom: 6px; }
-  .output-text  { font-size: 12px; color: var(--text); line-height: 1.6; word-break: break-word; }
+  /* ── View Details ── */
+  .details-wrap { margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 20px; }
+  .details-summary { 
+    font-size: 12px; color: var(--muted); cursor: pointer; 
+    display: inline-flex; align-items: center; gap: 6px; transition: color 0.2s; user-select: none;
+  }
+  .details-summary:hover { color: var(--text); }
+  .details-content { 
+    margin-top: 16px; padding: 16px; background: rgba(0,0,0,0.5); 
+    border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; font-family: var(--mono); 
+    font-size: 11px; max-height: 400px; overflow-y: auto; color: var(--muted);
+  }
 
   /* ── Error card ── */
+
   .error-card { background: rgba(239,68,68,.06); border: 0.5px solid rgba(239,68,68,.22); border-radius: 8px; padding: 10px 12px; margin-top: 8px; animation: step-in .3s ease forwards; }
   .error-label { font-size: 9px; font-family: var(--mono); color: var(--danger); letter-spacing: 1px; margin-bottom: 4px; }
   .error-text  { font-size: 11px; color: rgba(239,68,68,.85); font-family: var(--mono); word-break: break-word; }
@@ -287,7 +341,121 @@ const CSS = `
   .hist-status-done    { color: var(--success); }
   .hist-status-failed  { color: var(--danger); }
   .hist-status-aborted { color: var(--muted); }
+
+  /* ── Toasts ── */
+  .toast-container {
+    position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column-reverse; gap: 12px; z-index: 9999; pointer-events: none;
+  }
+  .toast {
+    pointer-events: auto;
+    background: rgba(15, 15, 15, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px;
+    padding: 16px 20px; width: 340px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    animation: toast-slide-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    position: relative; overflow: hidden;
+  }
+  .toast.closing {
+    animation: toast-fade-out 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes toast-slide-in {
+    from { opacity: 0; transform: translateX(50px) scale(0.95); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
+  }
+  @keyframes toast-fade-out {
+    to { opacity: 0; transform: scale(0.95); margin-top: -100px; }
+  }
+  .toast-header { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+  .toast-icon { font-size: 24px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); }
+  .toast-body { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+  .toast-title { font-size: 14px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .toast-subtitle { font-size: 12px; color: var(--success); font-family: var(--ui); display: flex; align-items: center; gap: 4px; }
+  .toast-path { font-size: 10px; color: var(--muted); font-family: var(--mono); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left; }
+  .toast-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .toast-btn {
+    background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text); padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; flex: 1; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .toast-btn:hover { background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.2); transform: translateY(-1px); }
+  .toast-close { position: absolute; top: 12px; right: 12px; background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 16px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: all 0.2s; }
+  .toast-close:hover { color: var(--text); background: rgba(255,255,255,0.1); }
+  .toast-progress { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--success); animation: toast-timer linear forwards; border-top-right-radius: 3px; border-bottom-right-radius: 3px; }
+  @keyframes toast-timer { from { width: 100%; } to { width: 0%; } }
 `;
+
+function getFriendlyStepMessage(step) {
+  if (step.description && !step.description.match(/^[a-z_]+\.[a-z_]+$/i)) {
+    return step.description; // use natural description if available
+  }
+  const s = step.skill, a = step.action;
+  if (s === "ai" && a === "ask") return "Thinking and reasoning...";
+  if (s === "files" && a === "write_file") return "Saving file...";
+  if (s === "files" && a === "read_file") return "Reading file contents...";
+  if (s === "apps" && a === "open_app") return "Opening application...";
+  if (s === "browser") return "Browsing the web...";
+  if (s === "os" && a === "run_command") return "Executing command...";
+  if (s === "python") return "Running Python code...";
+  return "Processing step...";
+}
+
+function Toast({ toast, onRemove, onDirectCommand }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  useEffect(() => {
+    if (isHovered) return;
+    const timer = setTimeout(() => { close(); }, 6000);
+    return () => clearTimeout(timer);
+  }, [isHovered]);
+
+  const close = () => {
+    setIsClosing(true);
+    setTimeout(() => onRemove(toast.id), 400);
+  };
+
+  const openFile = () => {
+    if (!toast.path) return;
+    // Invoke-Item opens the file in its default application with the exact path
+    onDirectCommand(`Invoke-Item "${toast.path}"`);
+  };
+
+  const showInFolder = () => {
+    if (!toast.path) return;
+    // explorer.exe /select highlights the file in its parent folder
+    onDirectCommand(`explorer.exe /select,"${toast.path}"`);
+  };
+
+  const getIcon = (filename) => {
+    if (!filename) return "📄";
+    const ext = filename.split('.').pop().toLowerCase();
+    const icons = {
+      txt: "📝", pdf: "📕", png: "🖼️", jpg: "🖼️", jpeg: "🖼️", gif: "🖼️",
+      json: "👨‍💻", js: "👨‍💻", py: "👨‍💻", html: "🌐", css: "🎨", csv: "📊",
+      xlsx: "📊", docx: "📘", md: "📝"
+    };
+    return icons[ext] || "📄";
+  };
+
+  return (
+    <div className={`toast ${isClosing ? 'closing' : ''}`} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
+      <button className="toast-close" onClick={close}>×</button>
+      <div className="toast-header">
+        <div className="toast-icon">{getIcon(toast.filename)}</div>
+        <div className="toast-body">
+          <div className="toast-title" title={toast.filename}>{toast.filename || "File"}</div>
+          <div className="toast-subtitle"><span className="check-icon" style={{fontSize: 10}}>✓</span> {toast.message || "Saved successfully"}</div>
+        </div>
+      </div>
+      {toast.path && <div className="toast-path" title={toast.path}>&lrm;{toast.path}&lrm;</div>}
+      <div className="toast-actions">
+        <button className="toast-btn" onClick={openFile}><span>📂</span> Open</button>
+        <button className="toast-btn" onClick={showInFolder}><span>📁</span> Show Folder</button>
+      </div>
+      {!isHovered && <div className="toast-progress" style={{ animationDuration: '6s' }} />}
+    </div>
+  );
+}
 
 // ─── Component ─────────────────────────────────────────────────────────────
 export default function App() {
@@ -308,6 +476,54 @@ export default function App() {
   // History & skills (side data)
   const [history, setHistory] = useState([]);
   const [skills,  setSkills]  = useState([]);
+
+  // Toasts
+  const [toasts, setToasts] = useState([]);
+
+  const removeToast = useCallback((id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const checkAndTriggerToast = useCallback((skill, action, result) => {
+    if (!result || typeof result !== 'string') return;
+
+    let fullPath = null;
+
+    // Priority 1: IntentOS backend write_file format: "Written {path} (XX chars)"
+    const writeMatch = result.match(/(?:Written|Appended to) (.+?) \(\d+ chars\)/i);
+    if (writeMatch) {
+      fullPath = writeMatch[1].trim();
+    }
+
+    // Priority 2: Explicit file skill
+    if (!fullPath && skill === 'files' && ['write_file', 'download', 'export', 'save'].includes(action)) {
+      // Try absolute Windows path
+      const winPath = result.match(/([A-Za-z]:\\[^\n"'<>|*?]+)/); 
+      if (winPath) fullPath = winPath[1].trim().replace(/[.,;]+$/, '');
+      if (!fullPath) {
+        // Try any filename.ext in the result
+        const extMatch = result.match(/([\w\-. ]+\.(?:txt|pdf|png|jpg|jpeg|md|json|js|py|csv|xlsx|docx|html|yaml))/i);
+        if (extMatch) fullPath = extMatch[1].trim();
+      }
+    }
+
+    // Priority 3: Broad fallback — any result mentioning a saved filename
+    if (!fullPath) {
+      const extMatch = result.match(/([\w\-. ]+\.(?:txt|pdf|png|jpg|jpeg|md|json|js|py|csv|xlsx|docx|html|yaml))/i);
+      if (extMatch && (result.toLowerCase().includes('written') || result.toLowerCase().includes('saved') || result.toLowerCase().includes('created'))) {
+        fullPath = extMatch[1].trim();
+      }
+    }
+
+    if (fullPath) {
+      fullPath = fullPath.replace(/[.,;:]+$/, '').trim();
+      const filename = fullPath.split(/[\\/]/).pop();
+      if (filename && filename.includes('.') && filename.length < 200) {
+        const id = Date.now() + Math.random();
+        setToasts(prev => [...prev, { id, path: fullPath, filename, message: "Saved successfully" }]);
+      }
+    }
+  }, []);
 
   // Voice recording
   const [recording, setRecording]     = useState(false);
@@ -378,6 +594,12 @@ export default function App() {
     }
 
     if (type === "step_completed") {
+      // Use skill/action from the WS event directly — more reliable than stepsRef lookup
+      checkAndTriggerToast(
+        event.skill || '',
+        event.action || '',
+        event.result || ''
+      );
       setSteps((prev) =>
         prev.map((s) =>
           s.id === event.stepId
@@ -783,93 +1005,105 @@ export default function App() {
             {activeTab === "execution" && (
               <>
                 <div className="exec-area">
-                  <div className="exec-header">
-                    <span className="exec-title">EXECUTION TRACE</span>
-                    <span className={badgeClass}>{badgeLabel}</span>
+                  <div style={{ marginBottom: 24 }}>
+                    {planStatus === "idle" && !loading ? (
+                      <div className="empty-state" style={{ marginTop: '10vh' }}>
+                        <div className="empty-icon" style={{ opacity: 0.8, filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.2))' }}>✨</div>
+                        <div className="empty-text" style={{ fontSize: 16, color: 'var(--text)', marginTop: 16 }}>
+                          How can I help you today?
+                        </div>
+                        <div className="empty-text" style={{ marginTop: 8 }}>
+                          Type a request below to get started.
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ fontSize: 24, fontWeight: 500, color: 'var(--text)', letterSpacing: '-0.5px' }}>
+                          {planSummary || "Processing Request..."}
+                        </div>
+                        <span className={badgeClass}>{badgeLabel}</span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* No data yet */}
-                  {planStatus === "idle" && !loading && (
-                    <div className="empty-state">
-                      <div className="empty-icon">⚡</div>
-                      <div className="empty-text">
-                        Type an intent above and press RUN<br />
-                        Execution steps will appear here in real time
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Intent summary */}
-                  {planSummary && (
-                    <div className="intent-card">
-                      <div className="ic-header">
-                        <div className="ic-icon">⚡</div>
-                        <div>
-                          <div className="ic-title">{planSummary}</div>
-                          <div className="ic-meta">
-                            {steps.length > 0 && `${steps.length} step${steps.length !== 1 ? "s" : ""} · `}
-                            {planStatus}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Steps */}
+                  {/* Animated Progress Section */}
                   {steps.length > 0 && (
-                    <div className="step-chain">
-                      {steps.map((step, i) => (
-                        <div className="step-row" key={step.id} style={{ animationDelay: `${i * 0.08}s` }}>
-                          <div className="step-left">
-                            <div className={`dot ${stepStatusClass(step.status)}`} />
-                            {i < steps.length - 1 && <div className="step-line" />}
-                          </div>
-                          <div className="step-content">
-                            <div className={`step-name ${step.status === "pending" ? "muted" : ""}`}>
-                              {step.skill && step.action
-                                ? `${step.skill}.${step.action}`
-                                : step.description || step.id}
+                    <div className={`ai-progress-section ${planStatus === "completed" ? "collapsed" : ""}`}>
+                      {steps.map((step, i) => {
+                        const isActive = step.status === "running";
+                        const isDone = step.status === "done";
+                        const isFailed = step.status === "failed";
+                        const msg = getFriendlyStepMessage(step);
+                        
+                        return (
+                          <div className={`ai-step ${isActive ? "active" : ""} ${isDone ? "done" : ""}`} key={step.id} style={{ animationDelay: `${i * 0.1}s` }}>
+                            <div className="ai-step-icon">
+                              {isDone ? <span className="check-icon">✓</span> : isActive ? <div className="glow-dot" /> : <span style={{ opacity: 0.3 }}>○</span>}
                             </div>
-                            {step.description && step.description !== `${step.skill}.${step.action}` && (
-                              <div className="step-desc">{step.description}</div>
-                            )}
-                            {step.reasoning && (
-                              <div className="step-code" title={step.reasoning}>{step.reasoning}</div>
-                            )}
-                            {step.status === "done" && step.result && (
-                              <div className="step-result">
-                                ✓ {step.result.length > 120 ? step.result.slice(0, 120) + "…" : step.result}
-                              </div>
-                            )}
-                            {step.status === "failed" && step.error && (
-                              <div className="step-error">✗ {step.error.slice(0, 160)}</div>
-                            )}
-                            {(step.started_at || step.completed_at) && (
-                              <div className="step-time">
-                                {step.started_at && fmtTime(step.started_at)}
-                                {step.started_at && step.completed_at && " → "}
-                                {step.completed_at && fmtTime(step.completed_at)}
-                              </div>
-                            )}
+                            <div className={isActive ? "shimmer-text" : ""} style={{ flex: 1 }}>
+                              {msg}
+                            </div>
                           </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Polished Output Card */}
+                  {planStatus === "completed" && (
+                    <div className="premium-card">
+                      <div className="pc-header">
+                        <div className="pc-icon">✓</div>
+                        <div className="pc-title">Task Completed Successfully</div>
+                      </div>
+                      {lastResult && (
+                        <div className="pc-content">
+                          {lastResult}
                         </div>
-                      ))}
+                      )}
+                      <div className="pc-actions">
+                        <button className="btn-action" onClick={() => navigator.clipboard.writeText(lastResult)}>
+                          <span>📋</span> Copy Output
+                        </button>
+                      </div>
                     </div>
                   )}
 
-                  {/* Output card — only when plan completed */}
-                  {planStatus === "completed" && lastResult && (
-                    <div className="output-card">
-                      <div className="output-label">OUTPUT</div>
-                      <div className="output-text">{lastResult}</div>
+                  {/* Error Card */}
+                  {planFailed && (
+                    <div className="premium-card" style={{ background: 'linear-gradient(145deg, rgba(60,20,20,0.6) 0%, rgba(20,10,10,0.8) 100%)', borderColor: 'rgba(239,68,68,0.2)' }}>
+                      <div className="pc-header">
+                        <div className="pc-icon" style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--danger)', borderColor: 'rgba(239,68,68,0.3)', boxShadow: '0 0 20px rgba(239,68,68,0.15)' }}>✗</div>
+                        <div className="pc-title">Task Failed</div>
+                      </div>
+                      <div className="pc-content" style={{ color: 'rgba(239,68,68,0.9)' }}>
+                        {commandError || "An unexpected error occurred during execution."}
+                      </div>
+                      <div className="pc-actions">
+                        <button className="btn-action" onClick={() => submitCommand(commandInput)}>
+                          <span>🔄</span> Retry Task
+                        </button>
+                      </div>
                     </div>
                   )}
 
-                  {/* Error card */}
-                  {commandError && (
-                    <div className="error-card">
-                      <div className="error-label">ERROR</div>
-                      <div className="error-text">{commandError}</div>
+                  {/* Advanced Logs (Expandable) */}
+                  {(steps.length > 0 || logs.length > 0) && (
+                    <div className="details-wrap">
+                      <details>
+                        <summary className="details-summary">
+                          <span>⚙️</span> View Technical Trace
+                        </summary>
+                        <div className="details-content">
+                          {logs.map((log, i) => (
+                            <div key={i} style={{ marginBottom: 4, display: 'flex', gap: 8 }}>
+                              <span style={{ color: 'var(--muted)', flexShrink: 0 }}>[{fmtTime(log.timestamp)}]</span>
+                              <span style={{ color: log.level === "ERROR" ? 'var(--danger)' : log.level === "WARN" ? 'var(--warn)' : 'var(--accent)', flexShrink: 0 }}>[{log.level}]</span>
+                              <span>{log.message}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </details>
                     </div>
                   )}
                 </div>
@@ -912,78 +1146,16 @@ export default function App() {
               </div>
             )}
           </div>
-
-          {/* ── Right Panel ── */}
-          <div className="right-panel">
-            {/* Connection status */}
-            <div className="rp-sec">
-              <div className="rp-title">System Status</div>
-              <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.8 }}>
-                <div>
-                  <span className={`conn-dot ${wsConnected ? "conn-ok" : "conn-err"}`} />
-                  WebSocket: {wsConnected ? <span style={{ color: "var(--success)" }}>connected</span> : <span style={{ color: "var(--danger)" }}>disconnected</span>}
-                </div>
-                <div>
-                  <span className="conn-dot conn-ok" />
-                  API: {API_BASE}
-                </div>
-                {steps.length > 0 && (
-                  <div style={{ marginTop: 6, fontFamily: "var(--mono)", fontSize: 10, color: "var(--muted)" }}>
-                    {steps.filter(s => s.status === "done").length} done ·{" "}
-                    {steps.filter(s => s.status === "failed").length} failed ·{" "}
-                    {steps.filter(s => s.status === "pending").length} pending
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Step detail — current running step */}
-            {steps.find(s => s.status === "running") && (() => {
-              const running = steps.find(s => s.status === "running");
-              return (
-                <div className="rp-sec">
-                  <div className="rp-title">Current Step</div>
-                  <div style={{ fontSize: 11, color: "var(--text)", fontWeight: 500, marginBottom: 4 }}>
-                    {running.skill}.{running.action}
-                  </div>
-                  {running.description && (
-                    <div style={{ fontSize: 10, color: "var(--muted)", fontFamily: "var(--mono)", marginBottom: 4, wordBreak: "break-word" }}>
-                      {running.description}
-                    </div>
-                  )}
-                  {running.reasoning && (
-                    <div style={{ fontSize: 9, color: "var(--accent2)", fontFamily: "var(--mono)", wordBreak: "break-word" }}>
-                      {running.reasoning}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* Logs — from backend ExecutionContext.logs */}
-            <div className="rp-sec" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
-              <div className="rp-title">
-                Execution Logs
-                {logs.length > 0 && (
-                  <span style={{ marginLeft: 6, color: "var(--muted)", fontWeight: 400 }}>
-                    ({logs.length})
-                  </span>
-                )}
-              </div>
-              {logs.length === 0
-                ? <div style={{ fontSize: 10, color: "var(--muted)", fontFamily: "var(--mono)" }}>Waiting for logs…</div>
-                : [...logs].reverse().slice(0, 40).map((log, i) => (
-                  <div className="log-item" key={i}>
-                    <span className="log-time">{fmtTime(log.timestamp)}</span>
-                    <span className="log-msg">{log.message?.slice(0, 180)}</span>
-                    <span className={`log-tag ${log.level === "ERROR" ? "tag-error" : log.level === "WARN" ? "tag-warn" : "tag-info"}`}>
-                      {log.level}
-                    </span>
-                  </div>
-                ))
-              }
-            </div>
-          </div>
+        </div>
+        <div className="toast-container">
+          {toasts.map(t => (
+            <Toast
+              key={t.id}
+              toast={t}
+              onRemove={removeToast}
+              onDirectCommand={(cmd) => api.post('/api/command', { command: cmd, voice: false })}
+            />
+          ))}
         </div>
       </div>
     </>

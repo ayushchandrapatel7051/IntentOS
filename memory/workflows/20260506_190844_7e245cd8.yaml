@@ -1,0 +1,578 @@
+created_at: '2026-05-06T19:08:44.070951'
+fingerprint: become beginner create dsa dsa_mode expert, file have java language leetcode
+  like list me playlist questions referred roadmap should tutorial video which
+id: 20260506_190844_7e245cd8
+intent: create a dsa_mode file which should have a roadmap for a beginner like me
+  to become an expert, it should have leetcode questions list and dsa video tutorial
+  playlist and my referred language is java
+outcome: completed
+plan:
+  created_at: '2026-05-06T19:07:52.797171'
+  intent: create a dsa_mode file which should have a roadmap for a beginner like me
+    to become an expert, it should have leetcode questions list and dsa video tutorial
+    playlist and my referred language is java
+  status: completed
+  steps:
+  - action: ask
+    completed_at: '2026-05-06T19:08:43.892861'
+    description: Generate the DSA roadmap content using AI, focusing on Java and beginner-to-expert
+      progression.
+    error: null
+    id: step_1
+    params:
+      prompt: Create a comprehensive DSA (Data Structures and Algorithms) roadmap
+        for a beginner to become an expert, specifically tailored for Java. Include
+        a detailed roadmap, a list of essential LeetCode questions categorized by
+        topic, and links to helpful YouTube video tutorial playlists for learning
+        DSA in Java. Format it clearly for a text file.
+    reasoning: The user requested a DSA roadmap with specific content (beginner to
+      expert, LeetCode, video playlists, Java), which AI can generate effectively.
+    result: "This comprehensive DSA roadmap is designed for a beginner in Java to\
+      \ systematically work towards expertise. It includes phases, essential topics,\
+      \ specific LeetCode questions categorized by topic, and highly recommended YouTube\
+      \ playlists.\n\n---\n\n# **Java DSA Roadmap: Beginner to Expert**\n\n## **Phase\
+      \ 0: Prerequisites & Foundations (Before DSA)**\n\n*   **Goal:** Solidify Java\
+      \ fundamentals and understand basic computational concepts.\n*   **Duration:**\
+      \ 2-4 weeks (depending on prior programming experience)\n\n### **Topics:**\n\
+      \n1.  **Java Basics:**\n    *   Syntax, variables, data types (primitive and\
+      \ reference).\n    *   Operators, control flow (if-else, switch, loops - for,\
+      \ while, do-while).\n    *   Methods (functions), method overloading.\n    *\
+      \   Basic I/O (Scanner, System.out.println).\n2.  **Object-Oriented Programming\
+      \ (OOP) in Java:**\n    *   Classes, Objects, Constructors.\n    *   Encapsulation\
+      \ (getters, setters).\n    *   Inheritance (`extends`, `super`).\n    *   Polymorphism\
+      \ (method overriding, runtime polymorphism).\n    *   Abstraction (abstract\
+      \ classes, interfaces).\n    *   `final` keyword, `static` keyword.\n3.  **Core\
+      \ Java Concepts:**\n    *   Exception Handling (`try-catch-finally`, `throws`).\n\
+      \    *   Generics (understanding `<T>`, type parameters).\n    *   **Java Collections\
+      \ Framework Overview:** Get familiar with the interfaces (List, Set, Map, Queue)\
+      \ and their basic implementations (ArrayList, LinkedList, HashSet, HashMap,\
+      \ PriorityQueue). *You'll dive deeper into their internal workings later.*\n\
+      \    *   `hashCode()` and `equals()` contract for custom objects.\n    *   `Comparable`\
+      \ and `Comparator` interfaces for sorting custom objects.\n4.  **Time and Space\
+      \ Complexity (Big O Notation):**\n    *   **ABSOLUTELY CRUCIAL.** Understand\
+      \ how to analyze the efficiency of algorithms (O(1), O(log n), O(n), O(n log\
+      \ n), O(n^2), O(2^n), O(n!)).\n    *   Learn to identify best, average, and\
+      \ worst-case scenarios.\n\n---\n\n## **Phase 1: Fundamentals of Data Structures\
+      \ & Algorithms (Beginner)**\n\n*   **Goal:** Understand core data structures\
+      \ and basic algorithms, and implement them from scratch.\n*   **Duration:**\
+      \ 6-8 weeks\n\n### **Topics:**\n\n1.  **Arrays:**\n    *   Declaration, initialization,\
+      \ accessing elements.\n    *   1D and 2D arrays.\n    *   Basic operations:\
+      \ traversal, insertion, deletion, searching.\n    *   Prefix Sum, Sliding Window\
+      \ (initial exposure).\n    *   **Java specifics:** `Arrays` utility class (sort,\
+      \ fill, copy).\n2.  **Strings:**\n    *   String immutability in Java.\n   \
+      \ *   String vs. `StringBuilder`/`StringBuffer`.\n    *   Common string operations:\
+      \ concatenation, substring, charAt, indexOf.\n    *   Palindrome checks, anagrams.\n\
+      3.  **Linked Lists:**\n    *   Singly Linked List: Node structure, traversal,\
+      \ insertion (head, tail, middle), deletion, reversal.\n    *   Doubly Linked\
+      \ List: Advantages over singly.\n    *   Circular Linked List (briefly).\n \
+      \   *   **Java specifics:** Understand `java.util.LinkedList` (doubly linked\
+      \ list implementation).\n4.  **Stacks:**\n    *   LIFO (Last-In, First-Out)\
+      \ principle.\n    *   Implementation using arrays or linked lists.\n    *  \
+      \ Common applications: expression evaluation, parentheses balancing, function\
+      \ call stack.\n    *   **Java specifics:** `java.util.Stack` (legacy, extends\
+      \ `Vector`) or `java.util.Deque` (prefer `ArrayDeque` or `LinkedList` as a stack).\n\
+      5.  **Queues:**\n    *   FIFO (First-In, First-Out) principle.\n    *   Implementation\
+      \ using arrays or linked lists.\n    *   Common applications: BFS, task scheduling.\n\
+      \    *   **Java specifics:** `java.util.Queue` interface (implemented by `LinkedList`\
+      \ and `ArrayDeque`).\n6.  **Hash Maps & Hash Sets:**\n    *   Hashing concept,\
+      \ hash function, collision resolution (chaining, open addressing).\n    *  \
+      \ `HashMap`, `HashSet` in Java.\n    *   `TreeMap`, `TreeSet` (ordered versions,\
+      \ based on Red-Black Trees - cover concept).\n    *   Applications: frequency\
+      \ counting, checking for duplicates, caching.\n7.  **Sorting Algorithms:**\n\
+      \    *   Bubble Sort, Selection Sort, Insertion Sort (understand for basics,\
+      \ not for practical use).\n    *   Merge Sort: Divide and Conquer, stability,\
+      \ O(N log N) time.\n    *   Quick Sort: Divide and Conquer, pivot, average O(N\
+      \ log N) time, worst O(N^2).\n    *   **Java specifics:** `Arrays.sort()` and\
+      \ `Collections.sort()` implementations (typically Timsort or Quicksort/MergeSort\
+      \ hybrids).\n8.  **Searching Algorithms:**\n    *   Linear Search.\n    *  \
+      \ Binary Search (on sorted arrays/lists).\n9.  **Recursion:**\n    *   Understanding\
+      \ base cases and recursive steps.\n    *   Pros and Cons (stack overflow, memory).\n\
+      \    *   Examples: factorial, Fibonacci, tower of Hanoi.\n\n---\n\n## **Phase\
+      \ 2: Intermediate Data Structures & Algorithms (Intermediate)**\n\n*   **Goal:**\
+      \ Master tree and graph fundamentals, introduce more advanced algorithmic paradigms.\n\
+      *   **Duration:** 8-10 weeks\n\n### **Topics:**\n\n1.  **Trees:**\n    *   **Binary\
+      \ Trees:** Node structure, terminologies (root, leaf, parent, child, depth,\
+      \ height).\n    *   Tree Traversals: Inorder, Preorder, Postorder (recursive\
+      \ and iterative).\n    *   Level Order Traversal (BFS for trees).\n    *   **Binary\
+      \ Search Trees (BST):** Properties, insertion, deletion, searching, validation.\n\
+      2.  **Heaps / Priority Queues:**\n    *   Min-Heap and Max-Heap properties.\n\
+      \    *   Heap operations: `insert`, `extractMin`/`extractMax`, `heapify`.\n\
+      \    *   Heap Sort (conceptual understanding).\n    *   **Java specifics:**\
+      \ `java.util.PriorityQueue` (min-heap by default).\n3.  **Graphs:**\n    * \
+      \  Graph representations: Adjacency Matrix, Adjacency List (prefer `ArrayList<ArrayList<Integer>>`\
+      \ or `HashMap<Integer, List<Integer>>` in Java).\n    *   Graph traversals:\n\
+      \        *   **Breadth-First Search (BFS):** Applications (shortest path on\
+      \ unweighted graph, connected components).\n        *   **Depth-First Search\
+      \ (DFS):** Applications (cycle detection, topological sort, connected components).\n\
+      \    *   Directed vs. Undirected Graphs.\n    *   Weighted Graphs.\n4.  **Algorithmic\
+      \ Paradigms:**\n    *   **Divide and Conquer:** Revisited (Merge Sort, Quick\
+      \ Sort, Binary Search).\n    *   **Backtracking:** Exploration of all potential\
+      \ candidates. Problems like permutations, combinations, N-Queens, Sudoku Solver.\n\
+      \    *   **Greedy Algorithms:** Making locally optimal choices with the hope\
+      \ of finding a global optimum. Examples: Activity Selection, Fractional Knapsack.\n\
+      5.  **Two Pointers Technique:**\n    *   Solving problems involving sorted arrays/lists,\
+      \ or arrays where two ends interact.\n    *   Examples: finding pairs with a\
+      \ sum, reversing an array, removing duplicates.\n6.  **Sliding Window Technique:**\n\
+      \    *   Solving problems on arrays/strings involving a contiguous sub-sequence\
+      \ of variable or fixed size.\n    *   Examples: maximum sum subarray, longest\
+      \ substring without repeating characters.\n\n---\n\n## **Phase 3: Advanced Data\
+      \ Structures & Algorithms (Expert)**\n\n*   **Goal:** Master complex algorithms,\
+      \ advanced data structures, and dynamic programming.\n*   **Duration:** 10-12\
+      \ weeks + continuous practice\n\n### **Topics:**\n\n1.  **Dynamic Programming\
+      \ (DP):**\n    *   Understanding overlapping subproblems and optimal substructure.\n\
+      \    *   Memoization (Top-down DP) vs. Tabulation (Bottom-up DP).\n    *   Classic\
+      \ DP problems: Fibonacci (revisited), Climbing Stairs, Knapsack (0/1), Longest\
+      \ Common Subsequence (LCS), Longest Increasing Subsequence (LIS), Coin Change,\
+      \ Grid Unique Paths.\n    *   Introduction to state representation and transitions.\n\
+      2.  **Advanced Graphs:**\n    *   **Shortest Path Algorithms:**\n        * \
+      \  Dijkstra's Algorithm (Single Source Shortest Path for non-negative weights).\n\
+      \        *   Bellman-Ford Algorithm (Single Source Shortest Path for negative\
+      \ weights, detects negative cycles).\n        *   Floyd-Warshall Algorithm (All\
+      \ Pairs Shortest Path).\n    *   **Minimum Spanning Tree (MST):**\n        *\
+      \   Prim's Algorithm.\n        *   Kruskal's Algorithm.\n    *   Topological\
+      \ Sort (for Directed Acyclic Graphs - DAGs).\n    *   Strongly Connected Components\
+      \ (SCC - Kosaraju's, Tarjan's).\n3.  **Advanced Trees:**\n    *   **Tries (Prefix\
+      \ Trees):** For efficient string search, autocomplete.\n    *   **Segment Trees\
+      \ / Fenwick Trees (BIT):** For efficient range queries and updates (sum, min,\
+      \ max) on arrays.\n    *   AVL Trees / Red-Black Trees: Self-balancing BSTs\
+      \ (understand the concept and why they are used, not necessarily implement from\
+      \ scratch).\n4.  **Disjoint Set Union (DSU) / Union-Find:**\n    *   Representing\
+      \ and manipulating partitions of a set into disjoint subsets.\n    *   Operations:\
+      \ `union`, `find`. Optimizations: path compression, union by rank/size.\n  \
+      \  *   Applications: Kruskal's MST algorithm, cycle detection in undirected\
+      \ graphs.\n5.  **Bit Manipulation:**\n    *   Bitwise operators (`&`, `|`, `^`,\
+      \ `~`, `<<`, `>>`, `>>>`).\n    *   Checking/setting/clearing bits, counting\
+      \ set bits, powers of 2.\n    *   Optimization for certain problems.\n6.  **Mathematical\
+      \ Algorithms / Number Theory:**\n    *   Prime numbers (Sieve of Eratosthenes).\n\
+      \    *   GCD (Greatest Common Divisor), LCM (Least Common Multiple).\n    *\
+      \   Modular Arithmetic (power, inverse).\n    *   Combinatorics (permutations,\
+      \ combinations).\n\n---\n\n## **Phase 4: Practice & Mastery**\n\n*   **Goal:**\
+      \ Consistently solve LeetCode problems, participate in contests, and prepare\
+      \ for interviews.\n*   **Duration:** Ongoing\n\n### **Key Activities:**\n\n\
+      1.  **Consistent LeetCode Practice:** Solve 3-5 problems daily/weekly.\n   \
+      \ *   Focus on problems tagged with concepts you've learned.\n    *   Try to\
+      \ solve Easy problems quickly, dedicate more time to Medium, and attempt Hard\
+      \ problems.\n    *   Review solutions of problems you couldn't solve. Understand\
+      \ *why* a particular approach works.\n2.  **Mock Interviews:** Practice explaining\
+      \ your thought process, writing clean code, and handling edge cases under pressure.\n\
+      3.  **Participate in Contests:** Weekly LeetCode contests, Codeforces, AtCoder.\
+      \ This helps with speed, accuracy, and problem-solving under time constraints.\n\
+      4.  **Review and Reflect:** Keep a log of challenging problems and your approaches.\
+      \ Revisit them later.\n5.  **Read and Learn from Others:** Look at highly upvoted\
+      \ solutions on LeetCode discussions, especially in Java.\n\n---\n\n## **Essential\
+      \ LeetCode Questions (Categorized for Java)**\n\n*   **Note:** These are starting\
+      \ points. The key is to solve similar problems within each category. Prioritize\
+      \ understanding the underlying data structure or algorithm.\n\n### **Phase 1:\
+      \ Fundamentals**\n\n#### **Arrays & Strings**\n*   **Easy:**\n    *   [1. Two\
+      \ Sum](https://leetcode.com/problems/two-sum/)\n    *   [26. Remove Duplicates\
+      \ from Sorted Array](https://leetcode.com/problems/remove-duplicates-from-sorted-array/)\n\
+      \    *   [121. Best Time to Buy and Sell Stock](https://leetcode.com/problems/best-time-to-buy-and-sell-stock/)\n\
+      *   **Medium:**\n    *   [53. Maximum Subarray](https://leetcode.com/problems/maximum-subarray/)\n\
+      \    *   [189. Rotate Array](https://leetcode.com/problems/rotate-array/)\n\
+      \    *   [49. Group Anagrams](https://leetcode.com/problems/group-anagrams/)\
+      \ (Uses HashMap)\n\n#### **Linked Lists**\n*   **Easy:**\n    *   [206. Reverse\
+      \ Linked List](https://leetcode.com/problems/reverse-linked-list/)\n    *  \
+      \ [21. Merge Two Sorted Lists](https://leetcode.com/problems/merge-two-sorted-lists/)\n\
+      \    *   [83. Remove Duplicates from Sorted List](https://leetcode.com/problems/remove-duplicates-from-sorted-list/)\n\
+      *   **Medium:**\n    *   [19. Remove Nth Node From End of List](https://leetcode.com/problems/remove-nth-node-from-end-of-list/)\n\
+      \    *   [141. Linked List Cycle](https://leetcode.com/problems/linked-list-cycle/)\
+      \ (Floyd's Cycle Finding)\n\n#### **Stacks & Queues**\n*   **Easy:**\n    *\
+      \   [20. Valid Parentheses](https://leetcode.com/problems/valid-parentheses/)\n\
+      \    *   [232. Implement Queue using Stacks](https://leetcode.com/problems/implement-queue-using-stacks/)\n\
+      *   **Medium:**\n    *   [155. Min Stack](https://leetcode.com/problems/min-stack/)\n\
+      \    *   [739. Daily Temperatures](https://leetcode.com/problems/daily-temperatures/)\
+      \ (Monotonic Stack)\n\n#### **Hash Maps & Sets**\n*   **Easy:**\n    *   [1.\
+      \ Two Sum](https://leetcode.com/problems/two-sum/) (Revisit with HashMap)\n\
+      \    *   [217. Contains Duplicate](https://leetcode.com/problems/contains-duplicate/)\n\
+      *   **Medium:**\n    *   [49. Group Anagrams](https://leetcode.com/problems/group-anagrams/)\
+      \ (Revisit with HashMap approach)\n    *   [128. Longest Consecutive Sequence](https://leetcode.com/problems/longest-consecutive-sequence/)\n\
+      \n#### **Sorting & Searching**\n*   **Easy:**\n    *   [704. Binary Search](https://leetcode.com/problems/binary-search/)\n\
+      \    *   [278. First Bad Version](https://leetcode.com/problems/first-bad-version/)\
+      \ (Binary Search application)\n*   **Medium:**\n    *   [912. Sort an Array](https://leetcode.com/problems/sort-an-array/)\
+      \ (Implement Merge Sort or Quick Sort)\n\n#### **Recursion**\n*   **Easy:**\n\
+      \    *   [70. Climbing Stairs](https://leetcode.com/problems/climbing-stairs/)\
+      \ (Can be done iteratively too, but useful for recursion intro)\n    *   [509.\
+      \ Fibonacci Number](https://leetcode.com/problems/fibonacci-number/)\n\n###\
+      \ **Phase 2: Intermediate**\n\n#### **Trees & BSTs**\n*   **Easy:**\n    * \
+      \  [94. Binary Tree Inorder Traversal](https://leetcode.com/problems/binary-tree-inorder-traversal/)\n\
+      \    *   [102. Binary Tree Level Order Traversal](https://leetcode.com/problems/binary-tree-level-order-traversal/)\n\
+      \    *   [104. Maximum Depth of Binary Tree](https://leetcode.com/problems/maximum-depth-of-binary-tree/)\n\
+      *   **Medium:**\n    *   [98. Validate Binary Search Tree](https://leetcode.com/problems/validate-binary-search-tree/)\n\
+      \    *   [236. Lowest Common Ancestor of a Binary Tree](https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-tree/)\n\
+      \    *   [105. Construct Binary Tree from Preorder and Inorder Traversal](https://leetcode.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal/)\n\
+      \n#### **Heaps / Priority Queues**\n*   **Medium:**\n    *   [215. Kth Largest\
+      \ Element in an Array](https://leetcode.com/problems/kth-largest-element-in-an-array/)\n\
+      \    *   [347. Top K Frequent Elements](https://leetcode.com/problems/top-k-frequent-elements/)\n\
+      \    *   [703. Kth Largest Element in a Stream](https://leetcode.com/problems/kth-largest-element-in-a-stream/)\n\
+      \n#### **Graphs (BFS/DFS)**\n*   **Medium:**\n    *   [200. Number of Islands](https://leetcode.com/problems/number-of-islands/)\n\
+      \    *   [695. Max Area of Island](https://leetcode.com/problems/max-area-of-island/)\n\
+      \    *   [133. Clone Graph](https://leetcode.com/problems/clone-graph/)\n  \
+      \  *   [797. All Paths From Source to Target](https://leetcode.com/problems/all-paths-from-source-to-target/)\n\
+      \    *   [207. Course Schedule](https://leetcode.com/problems/course-schedule/)\
+      \ (DFS for cycle detection / Topological Sort)\n\n#### **Backtracking**\n* \
+      \  **Medium:**\n    *   [78. Subsets](https://leetcode.com/problems/subsets/)\n\
+      \    *   [46. Permutations](https://leetcode.com/problems/permutations/)\n \
+      \   *   [39. Combination Sum](https://leetcode.com/problems/combination-sum/)\n\
+      \    *   [51. N-Queens](https://leetcode.com/problems/n-queens/)\n\n#### **Two\
+      \ Pointers & Sliding Window**\n*   **Medium:**\n    *   [11. Container With\
+      \ Most Water](https://leetcode.com/problems/container-with-most-water/) (Two\
+      \ Pointers)\n    *   [3. Longest Substring Without Repeating Characters](https://leetcode.com/problems/longest-substring-without-repeating-characters/)\
+      \ (Sliding Window)\n    *   [76. Minimum Window Substring](https://leetcode.com/problems/minimum-window-substring/)\
+      \ (Hard, but classic Sliding Window)\n\n### **Phase 3: Advanced**\n\n#### **Dynamic\
+      \ Programming**\n*   **Easy:**\n    *   [70. Climbing Stairs](https://leetcode.com/problems/climbing-stairs/)\
+      \ (DP approach)\n    *   [198. House Robber](https://leetcode.com/problems/house-robber/)\n\
+      *   **Medium:**\n    *   [5. Longest Palindromic Substring](https://leetcode.com/problems/longest-palindromic-substring/)\n\
+      \    *   [300. Longest Increasing Subsequence](https://leetcode.com/problems/longest-increasing-subsequence/)\n\
+      \    *   [64. Minimum Path Sum](https://leetcode.com/problems/minimum-path-sum/)\n\
+      \    *   [322. Coin Change](https://leetcode.com/problems/coin-change/)\n* \
+      \  **Hard:**\n    *   [416. Partition Equal Subset Sum](https://leetcode.com/problems/partition-equal-subset-sum/)\
+      \ (0/1 Knapsack variant)\n    *   [72. Edit Distance](https://leetcode.com/problems/edit-distance/)\n\
+      \n#### **Advanced Graphs**\n*   **Medium:**\n    *   [743. Network Delay Time](https://leetcode.com/problems/network-delay-time/)\
+      \ (Dijkstra)\n    *   [1584. Min Cost to Connect All Points](https://leetcode.com/problems/min-cost-to-connect-all-points/)\
+      \ (Prim's or Kruskal's)\n*   **Hard:**\n    *   [1192. Critical Connections\
+      \ in a Network](https://leetcode.com/problems/critical-connections-in-a-network/)\
+      \ (Tarjan's/Bridge Finding)\n    *   [787. Cheapest Flights Within K Stops](https://leetcode.com/problems/cheapest-flights-within-k-stops/)\
+      \ (Bellman-Ford variant / BFS)\n\n#### **Tries / Segment Trees / DSU / Bit Manipulation**\n\
+      *   **Medium:**\n    *   [208. Implement Trie (Prefix Tree)](https://leetcode.com/problems/implement-trie-prefix-tree/)\n\
+      \    *   [211. Design Add and Search Words Data Structure](https://leetcode.com/problems/design-add-and-search-words-data-structure/)\
+      \ (Trie variant)\n    *   [307. Range Sum Query - Mutable](https://leetcode.com/problems/range-sum-query-mutable/)\
+      \ (Segment Tree / Fenwick Tree)\n    *   [547. Number of Provinces](https://leetcode.com/problems/number-of-provinces/)\
+      \ (DSU / BFS/DFS)\n    *   [191. Number of 1 Bits](https://leetcode.com/problems/number-of-1-bits/)\
+      \ (Bit Manipulation)\n    *   [201. Bitwise AND of Numbers Range](https://leetcode.com/problems/bitwise-and-of-numbers-range/)\
+      \ (Bit Manipulation)\n\n---\n\n## **Helpful YouTube Video Tutorial Playlists\
+      \ for Learning DSA in Java**\n\nThese playlists offer clear explanations and\
+      \ often include code implementations in Java.\n\n1.  **Kunal Kushwaha - DSA\
+      \ Playlist (Java Focused):**\n    *   **Link:** [https://www.youtube.com/playlist?list=PL9gnSGHSqcnD3A9rk6PMYJHfgzN4A51Vd](https://www.youtube.com/playlist?list=PL9gnSGHSqcnD3A9rk6PMYJHfgzN4A51Vd)\n\
+      \    *   **Description:** Very popular, covers a wide range of DSA topics with\
+      \ a focus on implementation details in Java. Excellent for beginners and intermediate\
+      \ learners.\n\n2.  **FreeCodeCamp.org - Data Structures & Algorithms in Java\
+      \ (full course):**\n    *   **Link:** [https://www.youtube.com/watch?v=S0uOwhj_e_E](https://www.youtube.com/watch?v=S0uOwhj_e_E)\n\
+      \    *   **Description:** A comprehensive single video course (over 10 hours)\
+      \ that covers many essential DSA topics. Good for a structured, in-depth dive.\n\
+      \n3.  **MyCodeSchool (General DSA - apply to Java):**\n    *   **Data Structures\
+      \ Link:** [https://www.youtube.com/playlist?list=PL2_aWCzGzpIMWMjYjFzGTZ440JoS-vdQY](https://www.youtube.com/playlist?list=PL2_aWCzGzpIMWMjYjFzGTZ440JoS-vdQY)\n\
+      \    *   **Algorithms Link:** [https://www.youtube.com/playlist?list=PL2_aWCzGzpIM5dQj8Uj_WCQPRYMWZz_Wh](https://www.youtube.com/playlist?list=PL2_aWCzGzpIM5dQj8Uj_WCQPRYMWZz_Wh)\n\
+      \    *   **Description:** While not exclusively Java, the explanations of data\
+      \ structures and algorithms are incredibly clear and visual. You can translate\
+      \ the concepts easily to Java. Highly recommended for conceptual understanding.\n\
+      \n4.  **Abdul Bari (General Algorithms - apply to Java):**\n    *   **Link:**\
+      \ Search \"Abdul Bari Algorithms\" on YouTube.\n    *   **Description:** Similar\
+      \ to MyCodeSchool, his explanations of algorithms (especially DP, Graphs) are\
+      \ top-notch and highly conceptual. You'll need to implement them in Java yourself.\n\
+      \n5.  **Nick White (LeetCode Solutions in Java):**\n    *   **Link:** Search\
+      \ \"Nick White LeetCode Java\"\n    *   **Description:** Provides explanations\
+      \ and live coding solutions for many LeetCode problems specifically in Java.\
+      \ Useful for seeing how to apply concepts to real problems. He has many individual\
+      \ solution videos, less of a structured playlist for *learning* DSA, but great\
+      \ for *practicing*.\n\n6.  **takeUforward (Striver's SDE Sheet Playlist - Java/C++\
+      \ focused):**\n    *   **Link:** [https://www.youtube.com/playlist?list=PLgUwDviBIf0rPG3IgmYgtntNWM8SbuLd](https://www.youtube.com/playlist?list=PLgUwDviBIf0rPG3IgmYgtntNWM8SbuLd)\
+      \ (Check for specific Java solutions)\n    *   **Description:** While often\
+      \ C++ focused, the logic and approach are language-agnostic, and many videos\
+      \ include Java implementations or it's easy to follow along. This playlist is\
+      \ geared towards an \"SDE Sheet\" to cover most interview topics.\n\n---\n\n\
+      ## **Important Tips for Success:**\n\n*   **Consistency is Key:** Dedicate regular\
+      \ time each day/week. Even 30-60 minutes daily is better than a 5-hour marathon\
+      \ once a week.\n*   **Understand, Don't Memorize:** Focus on *why* an algorithm\
+      \ works, its time/space complexity, and when to apply it, rather than just memorizing\
+      \ code.\n*   **Implement from Scratch:** For core data structures (Linked List,\
+      \ Stack, Queue, Hash Map, basic Trees), try to implement them yourself before\
+      \ relying on Java's built-in Collections. This deepens understanding.\n*   **Use\
+      \ a Debugger:** Learn to step through your code to understand execution flow\
+      \ and debug issues.\n*   **Whiteboard Practice:** Practice solving problems\
+      \ on a whiteboard or notepad. This simulates interview conditions and helps\
+      \ structure your thoughts.\n*   **Explain Your Solutions:** Try to explain your\
+      \ approach to a rubber duck, a friend, or even yourself. Verbalizing helps solidify\
+      \ understanding.\n*   **Read Solutions:** After attempting a problem, always\
+      \ look at other solutions (especially optimal ones). You can learn different\
+      \ approaches, edge cases, and optimizations.\n*   **Don't Get Stuck for Too\
+      \ Long:** If you're genuinely stuck on a LeetCode problem for more than 30-60\
+      \ minutes, it's okay to look at a hint or solution. The goal is to learn, not\
+      \ just to solve it independently on the first try.\n*   **Stay Motivated:**\
+      \ DSA can be challenging. Celebrate small victories and remind yourself of your\
+      \ long-term goals.\n\nGood luck on your journey to becoming a DSA expert in\
+      \ Java!"
+    skill: ai
+    started_at: '2026-05-06T19:07:52.910015'
+    status: done
+  - action: write_file
+    completed_at: '2026-05-06T19:08:43.901298'
+    description: Write the generated DSA roadmap content to a file named 'dsa_mode'.
+    error: null
+    id: step_2
+    params:
+      content: "This comprehensive DSA roadmap is designed for a beginner in Java\
+        \ to systematically work towards expertise. It includes phases, essential\
+        \ topics, specific LeetCode questions categorized by topic, and highly recommended\
+        \ YouTube playlists.\n\n---\n\n# **Java DSA Roadmap: Beginner to Expert**\n\
+        \n## **Phase 0: Prerequisites & Foundations (Before DSA)**\n\n*   **Goal:**\
+        \ Solidify Java fundamentals and understand basic computational concepts.\n\
+        *   **Duration:** 2-4 weeks (depending on prior programming experience)\n\n\
+        ### **Topics:**\n\n1.  **Java Basics:**\n    *   Syntax, variables, data types\
+        \ (primitive and reference).\n    *   Operators, control flow (if-else, switch,\
+        \ loops - for, while, do-while).\n    *   Methods (functions), method overloading.\n\
+        \    *   Basic I/O (Scanner, System.out.println).\n2.  **Object-Oriented Programming\
+        \ (OOP) in Java:**\n    *   Classes, Objects, Constructors.\n    *   Encapsulation\
+        \ (getters, setters).\n    *   Inheritance (`extends`, `super`).\n    *  \
+        \ Polymorphism (method overriding, runtime polymorphism).\n    *   Abstraction\
+        \ (abstract classes, interfaces).\n    *   `final` keyword, `static` keyword.\n\
+        3.  **Core Java Concepts:**\n    *   Exception Handling (`try-catch-finally`,\
+        \ `throws`).\n    *   Generics (understanding `<T>`, type parameters).\n \
+        \   *   **Java Collections Framework Overview:** Get familiar with the interfaces\
+        \ (List, Set, Map, Queue) and their basic implementations (ArrayList, LinkedList,\
+        \ HashSet, HashMap, PriorityQueue). *You'll dive deeper into their internal\
+        \ workings later.*\n    *   `hashCode()` and `equals()` contract for custom\
+        \ objects.\n    *   `Comparable` and `Comparator` interfaces for sorting custom\
+        \ objects.\n4.  **Time and Space Complexity (Big O Notation):**\n    *   **ABSOLUTELY\
+        \ CRUCIAL.** Understand how to analyze the efficiency of algorithms (O(1),\
+        \ O(log n), O(n), O(n log n), O(n^2), O(2^n), O(n!)).\n    *   Learn to identify\
+        \ best, average, and worst-case scenarios.\n\n---\n\n## **Phase 1: Fundamentals\
+        \ of Data Structures & Algorithms (Beginner)**\n\n*   **Goal:** Understand\
+        \ core data structures and basic algorithms, and implement them from scratch.\n\
+        *   **Duration:** 6-8 weeks\n\n### **Topics:**\n\n1.  **Arrays:**\n    * \
+        \  Declaration, initialization, accessing elements.\n    *   1D and 2D arrays.\n\
+        \    *   Basic operations: traversal, insertion, deletion, searching.\n  \
+        \  *   Prefix Sum, Sliding Window (initial exposure).\n    *   **Java specifics:**\
+        \ `Arrays` utility class (sort, fill, copy).\n2.  **Strings:**\n    *   String\
+        \ immutability in Java.\n    *   String vs. `StringBuilder`/`StringBuffer`.\n\
+        \    *   Common string operations: concatenation, substring, charAt, indexOf.\n\
+        \    *   Palindrome checks, anagrams.\n3.  **Linked Lists:**\n    *   Singly\
+        \ Linked List: Node structure, traversal, insertion (head, tail, middle),\
+        \ deletion, reversal.\n    *   Doubly Linked List: Advantages over singly.\n\
+        \    *   Circular Linked List (briefly).\n    *   **Java specifics:** Understand\
+        \ `java.util.LinkedList` (doubly linked list implementation).\n4.  **Stacks:**\n\
+        \    *   LIFO (Last-In, First-Out) principle.\n    *   Implementation using\
+        \ arrays or linked lists.\n    *   Common applications: expression evaluation,\
+        \ parentheses balancing, function call stack.\n    *   **Java specifics:**\
+        \ `java.util.Stack` (legacy, extends `Vector`) or `java.util.Deque` (prefer\
+        \ `ArrayDeque` or `LinkedList` as a stack).\n5.  **Queues:**\n    *   FIFO\
+        \ (First-In, First-Out) principle.\n    *   Implementation using arrays or\
+        \ linked lists.\n    *   Common applications: BFS, task scheduling.\n    *\
+        \   **Java specifics:** `java.util.Queue` interface (implemented by `LinkedList`\
+        \ and `ArrayDeque`).\n6.  **Hash Maps & Hash Sets:**\n    *   Hashing concept,\
+        \ hash function, collision resolution (chaining, open addressing).\n    *\
+        \   `HashMap`, `HashSet` in Java.\n    *   `TreeMap`, `TreeSet` (ordered versions,\
+        \ based on Red-Black Trees - cover concept).\n    *   Applications: frequency\
+        \ counting, checking for duplicates, caching.\n7.  **Sorting Algorithms:**\n\
+        \    *   Bubble Sort, Selection Sort, Insertion Sort (understand for basics,\
+        \ not for practical use).\n    *   Merge Sort: Divide and Conquer, stability,\
+        \ O(N log N) time.\n    *   Quick Sort: Divide and Conquer, pivot, average\
+        \ O(N log N) time, worst O(N^2).\n    *   **Java specifics:** `Arrays.sort()`\
+        \ and `Collections.sort()` implementations (typically Timsort or Quicksort/MergeSort\
+        \ hybrids).\n8.  **Searching Algorithms:**\n    *   Linear Search.\n    *\
+        \   Binary Search (on sorted arrays/lists).\n9.  **Recursion:**\n    *   Understanding\
+        \ base cases and recursive steps.\n    *   Pros and Cons (stack overflow,\
+        \ memory).\n    *   Examples: factorial, Fibonacci, tower of Hanoi.\n\n---\n\
+        \n## **Phase 2: Intermediate Data Structures & Algorithms (Intermediate)**\n\
+        \n*   **Goal:** Master tree and graph fundamentals, introduce more advanced\
+        \ algorithmic paradigms.\n*   **Duration:** 8-10 weeks\n\n### **Topics:**\n\
+        \n1.  **Trees:**\n    *   **Binary Trees:** Node structure, terminologies\
+        \ (root, leaf, parent, child, depth, height).\n    *   Tree Traversals: Inorder,\
+        \ Preorder, Postorder (recursive and iterative).\n    *   Level Order Traversal\
+        \ (BFS for trees).\n    *   **Binary Search Trees (BST):** Properties, insertion,\
+        \ deletion, searching, validation.\n2.  **Heaps / Priority Queues:**\n   \
+        \ *   Min-Heap and Max-Heap properties.\n    *   Heap operations: `insert`,\
+        \ `extractMin`/`extractMax`, `heapify`.\n    *   Heap Sort (conceptual understanding).\n\
+        \    *   **Java specifics:** `java.util.PriorityQueue` (min-heap by default).\n\
+        3.  **Graphs:**\n    *   Graph representations: Adjacency Matrix, Adjacency\
+        \ List (prefer `ArrayList<ArrayList<Integer>>` or `HashMap<Integer, List<Integer>>`\
+        \ in Java).\n    *   Graph traversals:\n        *   **Breadth-First Search\
+        \ (BFS):** Applications (shortest path on unweighted graph, connected components).\n\
+        \        *   **Depth-First Search (DFS):** Applications (cycle detection,\
+        \ topological sort, connected components).\n    *   Directed vs. Undirected\
+        \ Graphs.\n    *   Weighted Graphs.\n4.  **Algorithmic Paradigms:**\n    *\
+        \   **Divide and Conquer:** Revisited (Merge Sort, Quick Sort, Binary Search).\n\
+        \    *   **Backtracking:** Exploration of all potential candidates. Problems\
+        \ like permutations, combinations, N-Queens, Sudoku Solver.\n    *   **Greedy\
+        \ Algorithms:** Making locally optimal choices with the hope of finding a\
+        \ global optimum. Examples: Activity Selection, Fractional Knapsack.\n5. \
+        \ **Two Pointers Technique:**\n    *   Solving problems involving sorted arrays/lists,\
+        \ or arrays where two ends interact.\n    *   Examples: finding pairs with\
+        \ a sum, reversing an array, removing duplicates.\n6.  **Sliding Window Technique:**\n\
+        \    *   Solving problems on arrays/strings involving a contiguous sub-sequence\
+        \ of variable or fixed size.\n    *   Examples: maximum sum subarray, longest\
+        \ substring without repeating characters.\n\n---\n\n## **Phase 3: Advanced\
+        \ Data Structures & Algorithms (Expert)**\n\n*   **Goal:** Master complex\
+        \ algorithms, advanced data structures, and dynamic programming.\n*   **Duration:**\
+        \ 10-12 weeks + continuous practice\n\n### **Topics:**\n\n1.  **Dynamic Programming\
+        \ (DP):**\n    *   Understanding overlapping subproblems and optimal substructure.\n\
+        \    *   Memoization (Top-down DP) vs. Tabulation (Bottom-up DP).\n    * \
+        \  Classic DP problems: Fibonacci (revisited), Climbing Stairs, Knapsack (0/1),\
+        \ Longest Common Subsequence (LCS), Longest Increasing Subsequence (LIS),\
+        \ Coin Change, Grid Unique Paths.\n    *   Introduction to state representation\
+        \ and transitions.\n2.  **Advanced Graphs:**\n    *   **Shortest Path Algorithms:**\n\
+        \        *   Dijkstra's Algorithm (Single Source Shortest Path for non-negative\
+        \ weights).\n        *   Bellman-Ford Algorithm (Single Source Shortest Path\
+        \ for negative weights, detects negative cycles).\n        *   Floyd-Warshall\
+        \ Algorithm (All Pairs Shortest Path).\n    *   **Minimum Spanning Tree (MST):**\n\
+        \        *   Prim's Algorithm.\n        *   Kruskal's Algorithm.\n    *  \
+        \ Topological Sort (for Directed Acyclic Graphs - DAGs).\n    *   Strongly\
+        \ Connected Components (SCC - Kosaraju's, Tarjan's).\n3.  **Advanced Trees:**\n\
+        \    *   **Tries (Prefix Trees):** For efficient string search, autocomplete.\n\
+        \    *   **Segment Trees / Fenwick Trees (BIT):** For efficient range queries\
+        \ and updates (sum, min, max) on arrays.\n    *   AVL Trees / Red-Black Trees:\
+        \ Self-balancing BSTs (understand the concept and why they are used, not necessarily\
+        \ implement from scratch).\n4.  **Disjoint Set Union (DSU) / Union-Find:**\n\
+        \    *   Representing and manipulating partitions of a set into disjoint subsets.\n\
+        \    *   Operations: `union`, `find`. Optimizations: path compression, union\
+        \ by rank/size.\n    *   Applications: Kruskal's MST algorithm, cycle detection\
+        \ in undirected graphs.\n5.  **Bit Manipulation:**\n    *   Bitwise operators\
+        \ (`&`, `|`, `^`, `~`, `<<`, `>>`, `>>>`).\n    *   Checking/setting/clearing\
+        \ bits, counting set bits, powers of 2.\n    *   Optimization for certain\
+        \ problems.\n6.  **Mathematical Algorithms / Number Theory:**\n    *   Prime\
+        \ numbers (Sieve of Eratosthenes).\n    *   GCD (Greatest Common Divisor),\
+        \ LCM (Least Common Multiple).\n    *   Modular Arithmetic (power, inverse).\n\
+        \    *   Combinatorics (permutations, combinations).\n\n---\n\n## **Phase\
+        \ 4: Practice & Mastery**\n\n*   **Goal:** Consistently solve LeetCode problems,\
+        \ participate in contests, and prepare for interviews.\n*   **Duration:**\
+        \ Ongoing\n\n### **Key Activities:**\n\n1.  **Consistent LeetCode Practice:**\
+        \ Solve 3-5 problems daily/weekly.\n    *   Focus on problems tagged with\
+        \ concepts you've learned.\n    *   Try to solve Easy problems quickly, dedicate\
+        \ more time to Medium, and attempt Hard problems.\n    *   Review solutions\
+        \ of problems you couldn't solve. Understand *why* a particular approach works.\n\
+        2.  **Mock Interviews:** Practice explaining your thought process, writing\
+        \ clean code, and handling edge cases under pressure.\n3.  **Participate in\
+        \ Contests:** Weekly LeetCode contests, Codeforces, AtCoder. This helps with\
+        \ speed, accuracy, and problem-solving under time constraints.\n4.  **Review\
+        \ and Reflect:** Keep a log of challenging problems and your approaches. Revisit\
+        \ them later.\n5.  **Read and Learn from Others:** Look at highly upvoted\
+        \ solutions on LeetCode discussions, especially in Java.\n\n---\n\n## **Essential\
+        \ LeetCode Questions (Categorized for Java)**\n\n*   **Note:** These are starting\
+        \ points. The key is to solve similar problems within each category. Prioritize\
+        \ understanding the underlying data structure or algorithm.\n\n### **Phase\
+        \ 1: Fundamentals**\n\n#### **Arrays & Strings**\n*   **Easy:**\n    *   [1.\
+        \ Two Sum](https://leetcode.com/problems/two-sum/)\n    *   [26. Remove Duplicates\
+        \ from Sorted Array](https://leetcode.com/problems/remove-duplicates-from-sorted-array/)\n\
+        \    *   [121. Best Time to Buy and Sell Stock](https://leetcode.com/problems/best-time-to-buy-and-sell-stock/)\n\
+        *   **Medium:**\n    *   [53. Maximum Subarray](https://leetcode.com/problems/maximum-subarray/)\n\
+        \    *   [189. Rotate Array](https://leetcode.com/problems/rotate-array/)\n\
+        \    *   [49. Group Anagrams](https://leetcode.com/problems/group-anagrams/)\
+        \ (Uses HashMap)\n\n#### **Linked Lists**\n*   **Easy:**\n    *   [206. Reverse\
+        \ Linked List](https://leetcode.com/problems/reverse-linked-list/)\n    *\
+        \   [21. Merge Two Sorted Lists](https://leetcode.com/problems/merge-two-sorted-lists/)\n\
+        \    *   [83. Remove Duplicates from Sorted List](https://leetcode.com/problems/remove-duplicates-from-sorted-list/)\n\
+        *   **Medium:**\n    *   [19. Remove Nth Node From End of List](https://leetcode.com/problems/remove-nth-node-from-end-of-list/)\n\
+        \    *   [141. Linked List Cycle](https://leetcode.com/problems/linked-list-cycle/)\
+        \ (Floyd's Cycle Finding)\n\n#### **Stacks & Queues**\n*   **Easy:**\n   \
+        \ *   [20. Valid Parentheses](https://leetcode.com/problems/valid-parentheses/)\n\
+        \    *   [232. Implement Queue using Stacks](https://leetcode.com/problems/implement-queue-using-stacks/)\n\
+        *   **Medium:**\n    *   [155. Min Stack](https://leetcode.com/problems/min-stack/)\n\
+        \    *   [739. Daily Temperatures](https://leetcode.com/problems/daily-temperatures/)\
+        \ (Monotonic Stack)\n\n#### **Hash Maps & Sets**\n*   **Easy:**\n    *   [1.\
+        \ Two Sum](https://leetcode.com/problems/two-sum/) (Revisit with HashMap)\n\
+        \    *   [217. Contains Duplicate](https://leetcode.com/problems/contains-duplicate/)\n\
+        *   **Medium:**\n    *   [49. Group Anagrams](https://leetcode.com/problems/group-anagrams/)\
+        \ (Revisit with HashMap approach)\n    *   [128. Longest Consecutive Sequence](https://leetcode.com/problems/longest-consecutive-sequence/)\n\
+        \n#### **Sorting & Searching**\n*   **Easy:**\n    *   [704. Binary Search](https://leetcode.com/problems/binary-search/)\n\
+        \    *   [278. First Bad Version](https://leetcode.com/problems/first-bad-version/)\
+        \ (Binary Search application)\n*   **Medium:**\n    *   [912. Sort an Array](https://leetcode.com/problems/sort-an-array/)\
+        \ (Implement Merge Sort or Quick Sort)\n\n#### **Recursion**\n*   **Easy:**\n\
+        \    *   [70. Climbing Stairs](https://leetcode.com/problems/climbing-stairs/)\
+        \ (Can be done iteratively too, but useful for recursion intro)\n    *   [509.\
+        \ Fibonacci Number](https://leetcode.com/problems/fibonacci-number/)\n\n###\
+        \ **Phase 2: Intermediate**\n\n#### **Trees & BSTs**\n*   **Easy:**\n    *\
+        \   [94. Binary Tree Inorder Traversal](https://leetcode.com/problems/binary-tree-inorder-traversal/)\n\
+        \    *   [102. Binary Tree Level Order Traversal](https://leetcode.com/problems/binary-tree-level-order-traversal/)\n\
+        \    *   [104. Maximum Depth of Binary Tree](https://leetcode.com/problems/maximum-depth-of-binary-tree/)\n\
+        *   **Medium:**\n    *   [98. Validate Binary Search Tree](https://leetcode.com/problems/validate-binary-search-tree/)\n\
+        \    *   [236. Lowest Common Ancestor of a Binary Tree](https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-tree/)\n\
+        \    *   [105. Construct Binary Tree from Preorder and Inorder Traversal](https://leetcode.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal/)\n\
+        \n#### **Heaps / Priority Queues**\n*   **Medium:**\n    *   [215. Kth Largest\
+        \ Element in an Array](https://leetcode.com/problems/kth-largest-element-in-an-array/)\n\
+        \    *   [347. Top K Frequent Elements](https://leetcode.com/problems/top-k-frequent-elements/)\n\
+        \    *   [703. Kth Largest Element in a Stream](https://leetcode.com/problems/kth-largest-element-in-a-stream/)\n\
+        \n#### **Graphs (BFS/DFS)**\n*   **Medium:**\n    *   [200. Number of Islands](https://leetcode.com/problems/number-of-islands/)\n\
+        \    *   [695. Max Area of Island](https://leetcode.com/problems/max-area-of-island/)\n\
+        \    *   [133. Clone Graph](https://leetcode.com/problems/clone-graph/)\n\
+        \    *   [797. All Paths From Source to Target](https://leetcode.com/problems/all-paths-from-source-to-target/)\n\
+        \    *   [207. Course Schedule](https://leetcode.com/problems/course-schedule/)\
+        \ (DFS for cycle detection / Topological Sort)\n\n#### **Backtracking**\n\
+        *   **Medium:**\n    *   [78. Subsets](https://leetcode.com/problems/subsets/)\n\
+        \    *   [46. Permutations](https://leetcode.com/problems/permutations/)\n\
+        \    *   [39. Combination Sum](https://leetcode.com/problems/combination-sum/)\n\
+        \    *   [51. N-Queens](https://leetcode.com/problems/n-queens/)\n\n#### **Two\
+        \ Pointers & Sliding Window**\n*   **Medium:**\n    *   [11. Container With\
+        \ Most Water](https://leetcode.com/problems/container-with-most-water/) (Two\
+        \ Pointers)\n    *   [3. Longest Substring Without Repeating Characters](https://leetcode.com/problems/longest-substring-without-repeating-characters/)\
+        \ (Sliding Window)\n    *   [76. Minimum Window Substring](https://leetcode.com/problems/minimum-window-substring/)\
+        \ (Hard, but classic Sliding Window)\n\n### **Phase 3: Advanced**\n\n####\
+        \ **Dynamic Programming**\n*   **Easy:**\n    *   [70. Climbing Stairs](https://leetcode.com/problems/climbing-stairs/)\
+        \ (DP approach)\n    *   [198. House Robber](https://leetcode.com/problems/house-robber/)\n\
+        *   **Medium:**\n    *   [5. Longest Palindromic Substring](https://leetcode.com/problems/longest-palindromic-substring/)\n\
+        \    *   [300. Longest Increasing Subsequence](https://leetcode.com/problems/longest-increasing-subsequence/)\n\
+        \    *   [64. Minimum Path Sum](https://leetcode.com/problems/minimum-path-sum/)\n\
+        \    *   [322. Coin Change](https://leetcode.com/problems/coin-change/)\n\
+        *   **Hard:**\n    *   [416. Partition Equal Subset Sum](https://leetcode.com/problems/partition-equal-subset-sum/)\
+        \ (0/1 Knapsack variant)\n    *   [72. Edit Distance](https://leetcode.com/problems/edit-distance/)\n\
+        \n#### **Advanced Graphs**\n*   **Medium:**\n    *   [743. Network Delay Time](https://leetcode.com/problems/network-delay-time/)\
+        \ (Dijkstra)\n    *   [1584. Min Cost to Connect All Points](https://leetcode.com/problems/min-cost-to-connect-all-points/)\
+        \ (Prim's or Kruskal's)\n*   **Hard:**\n    *   [1192. Critical Connections\
+        \ in a Network](https://leetcode.com/problems/critical-connections-in-a-network/)\
+        \ (Tarjan's/Bridge Finding)\n    *   [787. Cheapest Flights Within K Stops](https://leetcode.com/problems/cheapest-flights-within-k-stops/)\
+        \ (Bellman-Ford variant / BFS)\n\n#### **Tries / Segment Trees / DSU / Bit\
+        \ Manipulation**\n*   **Medium:**\n    *   [208. Implement Trie (Prefix Tree)](https://leetcode.com/problems/implement-trie-prefix-tree/)\n\
+        \    *   [211. Design Add and Search Words Data Structure](https://leetcode.com/problems/design-add-and-search-words-data-structure/)\
+        \ (Trie variant)\n    *   [307. Range Sum Query - Mutable](https://leetcode.com/problems/range-sum-query-mutable/)\
+        \ (Segment Tree / Fenwick Tree)\n    *   [547. Number of Provinces](https://leetcode.com/problems/number-of-provinces/)\
+        \ (DSU / BFS/DFS)\n    *   [191. Number of 1 Bits](https://leetcode.com/problems/number-of-1-bits/)\
+        \ (Bit Manipulation)\n    *   [201. Bitwise AND of Numbers Range](https://leetcode.com/problems/bitwise-and-of-numbers-range/)\
+        \ (Bit Manipulation)\n\n---\n\n## **Helpful YouTube Video Tutorial Playlists\
+        \ for Learning DSA in Java**\n\nThese playlists offer clear explanations and\
+        \ often include code implementations in Java.\n\n1.  **Kunal Kushwaha - DSA\
+        \ Playlist (Java Focused):**\n    *   **Link:** [https://www.youtube.com/playlist?list=PL9gnSGHSqcnD3A9rk6PMYJHfgzN4A51Vd](https://www.youtube.com/playlist?list=PL9gnSGHSqcnD3A9rk6PMYJHfgzN4A51Vd)\n\
+        \    *   **Description:** Very popular, covers a wide range of DSA topics\
+        \ with a focus on implementation details in Java. Excellent for beginners\
+        \ and intermediate learners.\n\n2.  **FreeCodeCamp.org - Data Structures &\
+        \ Algorithms in Java (full course):**\n    *   **Link:** [https://www.youtube.com/watch?v=S0uOwhj_e_E](https://www.youtube.com/watch?v=S0uOwhj_e_E)\n\
+        \    *   **Description:** A comprehensive single video course (over 10 hours)\
+        \ that covers many essential DSA topics. Good for a structured, in-depth dive.\n\
+        \n3.  **MyCodeSchool (General DSA - apply to Java):**\n    *   **Data Structures\
+        \ Link:** [https://www.youtube.com/playlist?list=PL2_aWCzGzpIMWMjYjFzGTZ440JoS-vdQY](https://www.youtube.com/playlist?list=PL2_aWCzGzpIMWMjYjFzGTZ440JoS-vdQY)\n\
+        \    *   **Algorithms Link:** [https://www.youtube.com/playlist?list=PL2_aWCzGzpIM5dQj8Uj_WCQPRYMWZz_Wh](https://www.youtube.com/playlist?list=PL2_aWCzGzpIM5dQj8Uj_WCQPRYMWZz_Wh)\n\
+        \    *   **Description:** While not exclusively Java, the explanations of\
+        \ data structures and algorithms are incredibly clear and visual. You can\
+        \ translate the concepts easily to Java. Highly recommended for conceptual\
+        \ understanding.\n\n4.  **Abdul Bari (General Algorithms - apply to Java):**\n\
+        \    *   **Link:** Search \"Abdul Bari Algorithms\" on YouTube.\n    *   **Description:**\
+        \ Similar to MyCodeSchool, his explanations of algorithms (especially DP,\
+        \ Graphs) are top-notch and highly conceptual. You'll need to implement them\
+        \ in Java yourself.\n\n5.  **Nick White (LeetCode Solutions in Java):**\n\
+        \    *   **Link:** Search \"Nick White LeetCode Java\"\n    *   **Description:**\
+        \ Provides explanations and live coding solutions for many LeetCode problems\
+        \ specifically in Java. Useful for seeing how to apply concepts to real problems.\
+        \ He has many individual solution videos, less of a structured playlist for\
+        \ *learning* DSA, but great for *practicing*.\n\n6.  **takeUforward (Striver's\
+        \ SDE Sheet Playlist - Java/C++ focused):**\n    *   **Link:** [https://www.youtube.com/playlist?list=PLgUwDviBIf0rPG3IgmYgtntNWM8SbuLd](https://www.youtube.com/playlist?list=PLgUwDviBIf0rPG3IgmYgtntNWM8SbuLd)\
+        \ (Check for specific Java solutions)\n    *   **Description:** While often\
+        \ C++ focused, the logic and approach are language-agnostic, and many videos\
+        \ include Java implementations or it's easy to follow along. This playlist\
+        \ is geared towards an \"SDE Sheet\" to cover most interview topics.\n\n---\n\
+        \n## **Important Tips for Success:**\n\n*   **Consistency is Key:** Dedicate\
+        \ regular time each day/week. Even 30-60 minutes daily is better than a 5-hour\
+        \ marathon once a week.\n*   **Understand, Don't Memorize:** Focus on *why*\
+        \ an algorithm works, its time/space complexity, and when to apply it, rather\
+        \ than just memorizing code.\n*   **Implement from Scratch:** For core data\
+        \ structures (Linked List, Stack, Queue, Hash Map, basic Trees), try to implement\
+        \ them yourself before relying on Java's built-in Collections. This deepens\
+        \ understanding.\n*   **Use a Debugger:** Learn to step through your code\
+        \ to understand execution flow and debug issues.\n*   **Whiteboard Practice:**\
+        \ Practice solving problems on a whiteboard or notepad. This simulates interview\
+        \ conditions and helps structure your thoughts.\n*   **Explain Your Solutions:**\
+        \ Try to explain your approach to a rubber duck, a friend, or even yourself.\
+        \ Verbalizing helps solidify understanding.\n*   **Read Solutions:** After\
+        \ attempting a problem, always look at other solutions (especially optimal\
+        \ ones). You can learn different approaches, edge cases, and optimizations.\n\
+        *   **Don't Get Stuck for Too Long:** If you're genuinely stuck on a LeetCode\
+        \ problem for more than 30-60 minutes, it's okay to look at a hint or solution.\
+        \ The goal is to learn, not just to solve it independently on the first try.\n\
+        *   **Stay Motivated:** DSA can be challenging. Celebrate small victories\
+        \ and remind yourself of your long-term goals.\n\nGood luck on your journey\
+        \ to becoming a DSA expert in Java!"
+      path: dsa_mode
+    reasoning: The user asked to create a file named 'dsa_mode' and put the generated
+      content into it.
+    result: Written dsa_mode (22028 chars)
+    skill: files
+    started_at: '2026-05-06T19:08:43.896217'
+    status: done
+  summary: Generate a DSA roadmap for beginners to experts, including LeetCode questions
+    and video playlists for Java, and save it to a file named 'dsa_mode'.
