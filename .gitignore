@@ -56,9 +56,3 @@ desktop.ini
 
 # --- Misc ---
 *.log
-
-./requirements.txt
-./dashboard/frontend/nginx.conf
-./dashboard/frontend/Dockerfile
-./docker-compose.yml
-./Dockerfile

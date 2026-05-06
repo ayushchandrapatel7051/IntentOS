@@ -15,6 +15,8 @@ from dataclasses import dataclass, field, asdict
 from enum import Enum
 from datetime import datetime
 
+from utils.date_utils import normalize_dates_in_text
+
 try:
     from google import genai
     from google.genai import types as genai_types
@@ -115,7 +117,8 @@ WEB AGENT RULES - MANDATORY:
   - The web_agent automatically: navigates → extracts DOM → decides what to fill/click → executes.
   - NEVER use browser.navigate + browser.click for complex website interactions — use web_agent instead.
   - For simple "just open this URL" tasks, browser.navigate is fine.
-  - NEVER use web_agent for Google Apps (YouTube, Gmail, Calendar, Meet). ALWAYS use the dedicated extension commands (e.g. extension.createEvent) because Google DOMs are too complex for web_agent. Calculate dates yourself (e.g. tomorrow = "2026-05-03").
+  - NEVER use web_agent for Google Apps (YouTube, Gmail, Calendar, Meet). ALWAYS use the dedicated extension commands (e.g. extension.createEvent) because Google DOMs are too complex for web_agent.
+  - DATE CONTEXT: Today is {today}. Use this to calculate any relative dates the user mentions.
 
 PAGE READING RULES — MANDATORY (use getPageText, not web_agent, for read-only tasks):
   When the task is ONLY to READ / EXTRACT / SAVE content from a page (no clicking, no forms):
@@ -388,7 +391,8 @@ class Planner:
         return ("\n" + "\n".join(parts) + "\n") if parts else "\n"
 
     def _system_prompt(self) -> str:
-        return SYSTEM_PROMPT.format(dynamic=self._dynamic_section())
+        today = datetime.now().strftime("%Y-%m-%d")
+        return SYSTEM_PROMPT.format(dynamic=self._dynamic_section(), today=today)
 
     def _user_prompt(self, intent: str) -> str:
         return USER_PROMPT.format(intent=intent)
@@ -520,6 +524,9 @@ class Planner:
 
     async def create_plan(self, intent: str) -> ActionPlan:
         """Convert natural language intent → ActionPlan."""
+
+        # Normalize relative dates ("tomorrow", "next Monday") → ISO dates
+        intent = normalize_dates_in_text(intent)
 
         # Macro short-circuit
         if self.soul_reader:

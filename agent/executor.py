@@ -22,6 +22,7 @@ from typing import Optional, Callable, Awaitable
 
 from agent.planner import ActionPlan, Step, StepStatus, Planner
 from agent.recovery import RecoveryManager
+from utils.date_utils import normalize_date
 
 # Import VerificationError so we can handle it specifically in _execute_step
 try:
@@ -329,10 +330,15 @@ class Executor:
             return value
 
         resolved = {}
+        _DATE_KEYS = {"date", "start_date", "end_date"}
         for k, v in params.items():
             if isinstance(v, str):
                 v = _sanitize_python_exprs(v)
-                resolved[k] = _sub(v)
+                v = _sub(v)
+                # Normalize relative date values → ISO dates
+                if k in _DATE_KEYS:
+                    v = normalize_date(v)
+                resolved[k] = v
             else:
                 resolved[k] = v
         return resolved

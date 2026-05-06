@@ -160,13 +160,13 @@ const CSS = `
   .btn-run:hover { opacity: .85; }
   .btn-run:disabled { opacity: .4; cursor: not-allowed; }
   .btn-voice {
-    width: 28px; height: 28px; border-radius: 50%; background: var(--surface2);
+    width: 28px; height: 28px; border-radius: 50%; background: rgba(14, 185, 128, 0.75);
     border: 0.5px solid var(--border2); cursor: pointer; display: flex;
     align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0;
     transition: all .15s;
   }
-  .btn-voice:hover { border-color: rgba(0,212,170,.4); background: rgba(0,212,170,.08); }
-  .btn-voice.recording { background: rgba(239,68,68,.15); border-color: var(--danger); animation: pulse 1s ease-in-out infinite; }
+  .btn-voice:hover { border-color: rgba(0,212,170,.4); background: rgba(14, 185, 128, 0.5); }
+  .btn-voice.recording { background: rgba(14, 185, 128, 0.35); rgba(14, 185, 128, 0.95); animation: pulse 1s ease-in-out infinite; }
   .pills { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
   .pill {
     font-size: 9px; font-family: var(--mono); color: var(--muted);
@@ -588,7 +588,12 @@ export default function App() {
   };
 
   const stopVoice = () => {
-    mediaRecorderRef.current?.stop();
+    if (!mediaRecorderRef.current) return;
+
+    // delay stop by 3 seconds
+    setTimeout(() => {
+      mediaRecorderRef.current?.stop();
+    }, 3000);
   };
 
   // ── Derived ──
