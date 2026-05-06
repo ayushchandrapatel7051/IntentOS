@@ -1,0 +1,90 @@
+created_at: '2026-05-06T22:40:08.681895'
+fingerprint: day start
+id: 20260506_224008_e8756a53
+intent: start my day
+outcome: completed
+plan:
+  created_at: '2026-05-06T22:40:03.351508'
+  intent: start my day
+  status: completed
+  steps:
+  - action: navigate
+    completed_at: '2026-05-06T22:40:04.501725'
+    description: Check today's calendar
+    error: null
+    id: smd_01
+    params:
+      url: https://calendar.google.com
+    reasoning: Structured SOUL.md macro step (open_browser)
+    result: "{\n  \"tabId\": 1302602241,\n  \"url\": \"https://calendar.google.com\"\
+      \n}"
+    skill: browser
+    started_at: '2026-05-06T22:40:03.468796'
+    status: done
+  - action: get_events
+    completed_at: '2026-05-06T22:40:05.039955'
+    description: Fetch today's events
+    error: null
+    id: smd_02
+    params:
+      date: '2026-05-06'
+    reasoning: Structured SOUL.md macro step (read_calendar)
+    result: "{\n  \"verified\": true,\n  \"events\": [],\n  \"date\": \"2026-05-06\"\
+      \n}"
+    skill: extension
+    started_at: '2026-05-06T22:40:04.502658'
+    status: done
+  - action: navigate
+    completed_at: '2026-05-06T22:40:06.058333'
+    description: Open Gmail
+    error: null
+    id: smd_03
+    params:
+      url: https://mail.google.com
+    reasoning: Structured SOUL.md macro step (open_browser)
+    result: "{\n  \"tabId\": 1302602244,\n  \"url\": \"https://mail.google.com\"\n\
+      }"
+    skill: browser
+    started_at: '2026-05-06T22:40:05.040951'
+    status: done
+  - action: open_app
+    completed_at: '2026-05-06T22:40:08.097349'
+    description: Open VS Code with last project
+    error: null
+    id: smd_04
+    params:
+      name: code ~/projects
+    reasoning: Structured SOUL.md macro step (open_editor)
+    result: Opened 'code with "~/projects"' successfully
+    skill: apps
+    started_at: '2026-05-06T22:40:06.059911'
+    status: done
+  - action: execute
+    completed_at: '2026-05-06T22:40:08.531301'
+    description: Morning briefing
+    error: null
+    id: smd_05
+    params:
+      command: 'echo ''Good morning, Ayush!
+
+        📅 2026-05-06
+
+        📋 Today''''s events: ${todays_events}
+
+        💻 Last project: ~/projects
+
+        '''
+    reasoning: Structured SOUL.md macro step (notify_user)
+    result: 'Good morning, Ayush!
+
+      ?? 2026-05-06
+
+      ?? Today''s events: ${todays_events}
+
+      ?? Last project: $env:USERPROFILE\projects
+
+      '
+    skill: terminal
+    started_at: '2026-05-06T22:40:08.098377'
+    status: done
+  summary: 'Macro: start my day'

@@ -19,6 +19,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import ExecutionTimeline from "./components/ExecutionTimeline";
 
 // ─── Config ────────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
@@ -176,116 +177,7 @@ const CSS = `
   .pill:hover { color: var(--accent); border-color: rgba(0,212,170,.3); background: rgba(0,212,170,.05); }
 
   /* ── AI Execution Area ── */
-  .exec-area { flex: 1; overflow-y: auto; padding: 40px 48px; display: flex; flex-direction: column; max-width: 900px; margin: 0 auto; width: 100%; }
-  
-  .ai-progress-section {
-    display: flex; flex-direction: column; gap: 8px; margin-top: 24px;
-    transition: opacity 0.5s ease, max-height 0.5s ease;
-    max-height: 1000px; opacity: 1; overflow: hidden;
-  }
-  .ai-progress-section.collapsed {
-    max-height: 0; opacity: 0; margin-top: 0; pointer-events: none; margin-bottom: 0; padding: 0;
-  }
-  
-  .ai-step {
-    display: flex; align-items: center; gap: 14px; padding: 14px 20px;
-    border-radius: 12px; font-size: 14px; color: var(--muted);
-    background: transparent; transition: all 0.3s ease;
-  }
-  .ai-step-icon {
-    width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
-    font-size: 14px; flex-shrink: 0;
-  }
-  .ai-step.active {
-    color: var(--text); background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08); 
-    box-shadow: 0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05);
-  }
-  .ai-step.done {
-    color: var(--text);
-  }
-  
-  .shimmer-text {
-    background: linear-gradient(90deg, var(--text) 0%, #6b7280 50%, var(--text) 100%);
-    background-size: 200% auto;
-    color: transparent;
-    -webkit-background-clip: text;
-    background-clip: text;
-    animation: shimmer 2.5s linear infinite;
-    font-weight: 500; letter-spacing: 0.2px;
-  }
-  @keyframes shimmer { to { background-position: 200% center; } }
-  
-  .glow-dot {
-    width: 8px; height: 8px; border-radius: 50%; background: #fff;
-    box-shadow: 0 0 10px rgba(255,255,255,0.8);
-    animation: pulse-glow 1.5s infinite alternate;
-  }
-  @keyframes pulse-glow { 0% {opacity:0.4; transform:scale(0.8);} 100% {opacity:1; transform:scale(1.1);} }
-
-  .check-icon { color: var(--success); font-weight: bold; font-size: 16px; animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-  @keyframes pop-in { 0% {transform:scale(0);} 100% {transform:scale(1);} }
-  
-  /* ── Premium Final Card ── */
-  .premium-card {
-    background: linear-gradient(145deg, rgba(30,30,30,0.6) 0%, rgba(15,15,15,0.8) 100%);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 16px; padding: 28px 36px;
-    margin-top: 12px; animation: slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
-    position: relative; overflow: hidden;
-  }
-  .premium-card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  }
-  @keyframes slide-up { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
-  
-  .pc-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
-  .pc-icon { 
-    width: 36px; height: 36px; border-radius: 50%; background: rgba(48,209,88,0.15); 
-    color: var(--success); display: flex; align-items: center; justify-content: center; 
-    font-size: 18px; border: 1px solid rgba(48,209,88,0.3); box-shadow: 0 0 20px rgba(48,209,88,0.15); 
-  }
-  .pc-title { font-size: 20px; font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
-  
-  .pc-content { 
-    font-size: 14px; color: #e5e7eb; line-height: 1.6; background: rgba(0,0,0,0.4); 
-    padding: 16px 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.04); 
-    font-family: var(--mono); word-break: break-word; white-space: pre-wrap;
-  }
-  
-  .pc-actions { display: flex; gap: 12px; margin-top: 24px; }
-  .btn-action { 
-    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); 
-    color: var(--text); padding: 10px 18px; border-radius: 8px; font-size: 13px; 
-    font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; 
-  }
-  .btn-action:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-
-  /* ── View Details ── */
-  .details-wrap { margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 20px; }
-  .details-summary { 
-    font-size: 12px; color: var(--muted); cursor: pointer; 
-    display: inline-flex; align-items: center; gap: 6px; transition: color 0.2s; user-select: none;
-  }
-  .details-summary:hover { color: var(--text); }
-  .details-content { 
-    margin-top: 16px; padding: 16px; background: rgba(0,0,0,0.5); 
-    border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; font-family: var(--mono); 
-    font-size: 11px; max-height: 400px; overflow-y: auto; color: var(--muted);
-  }
-
-  /* ── Error card ── */
-
-  .error-card { background: rgba(239,68,68,.06); border: 0.5px solid rgba(239,68,68,.22); border-radius: 8px; padding: 10px 12px; margin-top: 8px; animation: step-in .3s ease forwards; }
-  .error-label { font-size: 9px; font-family: var(--mono); color: var(--danger); letter-spacing: 1px; margin-bottom: 4px; }
-  .error-text  { font-size: 11px; color: rgba(239,68,68,.85); font-family: var(--mono); word-break: break-word; }
-
-  /* ── Empty state ── */
-  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; gap: 10px; padding: 40px; text-align: center; }
-  .empty-icon  { font-size: 32px; opacity: .3; }
-  .empty-text  { font-size: 12px; color: var(--muted); font-family: var(--mono); line-height: 1.7; }
+  .exec-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
 
   /* ── Loading spinner ── */
   .spinner { width: 12px; height: 12px; border: 1.5px solid rgba(255,255,255,.1); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; }
@@ -1005,109 +897,20 @@ export default function App() {
             {activeTab === "execution" && (
               <>
                 <div className="exec-area">
-                  <div style={{ marginBottom: 24 }}>
-                    {planStatus === "idle" && !loading ? (
-                      <div className="empty-state" style={{ marginTop: '10vh' }}>
-                        <div className="empty-icon" style={{ opacity: 0.8, filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.2))' }}>✨</div>
-                        <div className="empty-text" style={{ fontSize: 16, color: 'var(--text)', marginTop: 16 }}>
-                          How can I help you today?
-                        </div>
-                        <div className="empty-text" style={{ marginTop: 8 }}>
-                          Type a request below to get started.
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ fontSize: 24, fontWeight: 500, color: 'var(--text)', letterSpacing: '-0.5px' }}>
-                          {planSummary || "Processing Request..."}
-                        </div>
-                        <span className={badgeClass}>{badgeLabel}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Animated Progress Section */}
-                  {steps.length > 0 && (
-                    <div className={`ai-progress-section ${planStatus === "completed" ? "collapsed" : ""}`}>
-                      {steps.map((step, i) => {
-                        const isActive = step.status === "running";
-                        const isDone = step.status === "done";
-                        const isFailed = step.status === "failed";
-                        const msg = getFriendlyStepMessage(step);
-                        
-                        return (
-                          <div className={`ai-step ${isActive ? "active" : ""} ${isDone ? "done" : ""}`} key={step.id} style={{ animationDelay: `${i * 0.1}s` }}>
-                            <div className="ai-step-icon">
-                              {isDone ? <span className="check-icon">✓</span> : isActive ? <div className="glow-dot" /> : <span style={{ opacity: 0.3 }}>○</span>}
-                            </div>
-                            <div className={isActive ? "shimmer-text" : ""} style={{ flex: 1 }}>
-                              {msg}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Polished Output Card */}
-                  {planStatus === "completed" && (
-                    <div className="premium-card">
-                      <div className="pc-header">
-                        <div className="pc-icon">✓</div>
-                        <div className="pc-title">Task Completed Successfully</div>
-                      </div>
-                      {lastResult && (
-                        <div className="pc-content">
-                          {lastResult}
-                        </div>
-                      )}
-                      <div className="pc-actions">
-                        <button className="btn-action" onClick={() => navigator.clipboard.writeText(lastResult)}>
-                          <span>📋</span> Copy Output
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Error Card */}
-                  {planFailed && (
-                    <div className="premium-card" style={{ background: 'linear-gradient(145deg, rgba(60,20,20,0.6) 0%, rgba(20,10,10,0.8) 100%)', borderColor: 'rgba(239,68,68,0.2)' }}>
-                      <div className="pc-header">
-                        <div className="pc-icon" style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--danger)', borderColor: 'rgba(239,68,68,0.3)', boxShadow: '0 0 20px rgba(239,68,68,0.15)' }}>✗</div>
-                        <div className="pc-title">Task Failed</div>
-                      </div>
-                      <div className="pc-content" style={{ color: 'rgba(239,68,68,0.9)' }}>
-                        {commandError || "An unexpected error occurred during execution."}
-                      </div>
-                      <div className="pc-actions">
-                        <button className="btn-action" onClick={() => submitCommand(commandInput)}>
-                          <span>🔄</span> Retry Task
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Advanced Logs (Expandable) */}
-                  {(steps.length > 0 || logs.length > 0) && (
-                    <div className="details-wrap">
-                      <details>
-                        <summary className="details-summary">
-                          <span>⚙️</span> View Technical Trace
-                        </summary>
-                        <div className="details-content">
-                          {logs.map((log, i) => (
-                            <div key={i} style={{ marginBottom: 4, display: 'flex', gap: 8 }}>
-                              <span style={{ color: 'var(--muted)', flexShrink: 0 }}>[{fmtTime(log.timestamp)}]</span>
-                              <span style={{ color: log.level === "ERROR" ? 'var(--danger)' : log.level === "WARN" ? 'var(--warn)' : 'var(--accent)', flexShrink: 0 }}>[{log.level}]</span>
-                              <span>{log.message}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </details>
-                    </div>
-                  )}
+                  <ExecutionTimeline
+                    planStatus={planStatus}
+                    planSummary={planSummary}
+                    steps={steps}
+                    logs={logs}
+                    commandError={commandError}
+                    loading={loading}
+                    badgeLabel={badgeLabel}
+                    badgeClass={badgeClass}
+                    lastResult={lastResult}
+                    onRetry={() => submitCommand(commandInput)}
+                    onCopy={(text) => navigator.clipboard.writeText(text)}
+                  />
                 </div>
-
                 {/* Control bar */}
                 <div className="ctrl-bar">
                   <button className="btn-ctrl" disabled={!isRunning} onClick={() => control("pause")}>⏸ Pause</button>
