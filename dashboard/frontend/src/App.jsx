@@ -20,6 +20,13 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import ExecutionTimeline from "./components/ExecutionTimeline";
+import { I, NavIcons, ControlIcons } from "./icons";
+import {
+  faCheck, faBolt, faListCheck, faPlugCircleBolt, faGear,
+  faPause, faPlay, faForwardStep, faCircleStop, faArrowsRotate,
+  faClipboard, faMicrophone, faArrowRight, faStar,
+  faFile, faEnvelope, faCalendar, faMessage, faFolder,
+} from "./icons";
 
 // ─── Config ────────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
@@ -771,7 +778,9 @@ export default function App() {
               className={`nav-item ${activeTab === "execution" ? "active" : ""}`}
               onClick={() => setActiveTab("execution")}
             >
-              <div className="nav-icon" style={{ background: "rgba(0,212,170,.1)", color: "var(--accent)" }}>⚡</div>
+              <div className="nav-icon" style={{ background: "rgba(0,212,170,.1)", color: "var(--accent)" }}>
+                <I icon={faBolt} color="var(--accent)" size="xs" />
+              </div>
               Intent Runner
             </div>
             <div
@@ -781,14 +790,18 @@ export default function App() {
                 api.get("/api/history?limit=20").then((d) => { if (d.workflows) setHistory(d.workflows); }).catch(() => {});
               }}
             >
-              <div className="nav-icon" style={{ background: "rgba(245,158,11,.1)", color: "var(--warn)" }}>📋</div>
+              <div className="nav-icon" style={{ background: "rgba(245,158,11,.1)", color: "var(--warn)" }}>
+                <I icon={faListCheck} color="var(--warn)" size="xs" />
+              </div>
               Audit Log
             </div>
             <div
               className={`nav-item ${activeTab === "skills" ? "active" : ""}`}
               onClick={() => setActiveTab("skills")}
             >
-              <div className="nav-icon" style={{ background: "rgba(124,111,255,.1)", color: "var(--accent2)" }}>🔌</div>
+              <div className="nav-icon" style={{ background: "rgba(124,111,255,.1)", color: "var(--accent2)" }}>
+                <I icon={faPlugCircleBolt} color="var(--accent2)" size="xs" />
+              </div>
               Skills
             </div>
 
@@ -869,7 +882,7 @@ export default function App() {
                   title="Voice input"
                   onClick={recording ? stopVoice : startVoice}
                 >
-                  🎙
+                  <I icon={faMicrophone} color={recording ? "#10b981" : "#e8eaf0"} size="sm" />
                 </button>
                 <button
                   className="btn-run"
@@ -911,12 +924,19 @@ export default function App() {
                     onCopy={(text) => navigator.clipboard.writeText(text)}
                   />
                 </div>
-                {/* Control bar */}
                 <div className="ctrl-bar">
-                  <button className="btn-ctrl" disabled={!isRunning} onClick={() => control("pause")}>⏸ Pause</button>
-                  <button className="btn-ctrl" disabled={!isPaused} onClick={() => control("resume")}>▶ Resume</button>
-                  <button className="btn-ctrl" disabled={!isRunning && !isPaused} onClick={() => control("skip")}>⏭ Skip</button>
-                  <button className="btn-ctrl danger" disabled={!isRunning && !isPaused} onClick={() => control("abort")}>✗ Abort</button>
+                  <button className="btn-ctrl" disabled={!isRunning} onClick={() => control("pause")}>
+                    <I icon={faPause} size="xs" /> Pause
+                  </button>
+                  <button className="btn-ctrl" disabled={!isPaused} onClick={() => control("resume")}>
+                    <I icon={faPlay} size="xs" /> Resume
+                  </button>
+                  <button className="btn-ctrl" disabled={!isRunning && !isPaused} onClick={() => control("skip")}>
+                    <I icon={faForwardStep} size="xs" /> Skip
+                  </button>
+                  <button className="btn-ctrl danger" disabled={!isRunning && !isPaused} onClick={() => control("abort")}>
+                    <I icon={faCircleStop} size="xs" /> Abort
+                  </button>
                 </div>
               </>
             )}

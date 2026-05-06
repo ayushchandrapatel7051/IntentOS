@@ -4,12 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev":     "vite --port 3000",
-    "build":   "vite build",
+    "dev": "vite --port 3000",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "react":     "^18.3.1",
+    "@fortawesome/free-regular-svg-icons": "^7.2.0",
+    "@fortawesome/free-solid-svg-icons": "^7.2.0",
+    "@fortawesome/react-fontawesome": "^3.3.1",
+    "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
