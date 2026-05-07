@@ -1,0 +1,11 @@
+created_at: '2026-05-07T19:18:16.077508'
+fingerprint: '"testing macros" members onn send team whatsapp'
+id: 20260507_191816_3c4f8481
+intent: send "Testing Macros" to my team members onn whatsapp
+outcome: completed
+plan:
+  created_at: '2026-05-07T19:18:15.933212'
+  intent: send "Testing Macros" to my team members onn whatsapp
+  status: completed
+  steps: []
+  summary: send "Testing Macros" to my team members onn whatsapp

@@ -20,6 +20,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import ExecutionTimeline from "./components/ExecutionTimeline";
+import MacrosTab from "./components/MacrosTab";
 import { I, NavIcons, ControlIcons } from "./icons";
 import {
   faCheck, faBolt, faListCheck, faPlugCircleBolt, faGear,
@@ -903,18 +904,19 @@ export default function App() {
           <div className="center">
             {/* Tab bar */}
             <div className="tab-bar">
-              {["execution", "history", "skills"].map((t) => (
+              {["execution", "history", "skills", "macros"].map((t) => (
                 <div
                   key={t}
                   className={`tab ${activeTab === t ? "active" : ""}`}
                   onClick={() => setActiveTab(t)}
                 >
-                  {t.toUpperCase()}
+                  {t === "macros" ? "⚡ MACROS" : t.toUpperCase()}
                 </div>
               ))}
             </div>
 
-            {/* Intent input — always visible */}
+            {/* Intent input — visible except on macros tab */}
+            {activeTab !== "macros" && (
             <div className="intent-area">
               <div className="field-label">INTENT INPUT</div>
               <div className="input-wrap">
@@ -956,6 +958,7 @@ export default function App() {
                 ))}
               </div>
             </div>
+            )}
 
             {/* Tab content */}
             {activeTab === "execution" && (
@@ -1019,6 +1022,12 @@ export default function App() {
                   ? <div className="empty-state"><div className="empty-icon">🔌</div><div className="empty-text">No skills loaded yet</div></div>
                   : <div>{skills.map((s) => <span key={s} className="skill-badge">{s}</span>)}</div>
                 }
+              </div>
+            )}
+
+            {activeTab === "macros" && (
+              <div className="tab-content" style={{ padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <MacrosTab />
               </div>
             )}
           </div>

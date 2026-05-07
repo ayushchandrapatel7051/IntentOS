@@ -1,0 +1,11 @@
+created_at: '2026-05-07T19:17:49.281700'
+fingerprint: '"testing macros" members send team'
+id: 20260507_191749_092ec2e8
+intent: send "Testing Macros" to my team members
+outcome: completed
+plan:
+  created_at: '2026-05-07T19:17:49.152574'
+  intent: send "Testing Macros" to my team members
+  status: completed
+  steps: []
+  summary: send "Testing Macros" to my team members

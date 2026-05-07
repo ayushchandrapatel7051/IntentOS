@@ -1,0 +1,26 @@
+created_at: '2026-05-07T19:20:35.870191'
+fingerprint: hello jaidev send
+id: 20260507_192035_987b54a7
+intent: send hello to jaidev
+outcome: completed
+plan:
+  created_at: '2026-05-07T19:20:27.745417'
+  intent: send hello to jaidev
+  status: completed
+  steps:
+  - action: send_message
+    completed_at: '2026-05-07T19:20:35.806683'
+    description: Send the message 'hello' to Jaidev using WhatsApp.
+    error: null
+    id: step_1
+    params:
+      app: whatsapp
+      contact: jaidev
+      text: hello
+    reasoning: The user wants to send a message to a personal contact, Jaidev, with
+      the content 'hello'. The preferred personal messaging app is WhatsApp.
+    result: '[Whatsapp] Message sent to ''jaidev'': hello'
+    skill: messaging
+    started_at: '2026-05-07T19:20:27.844479'
+    status: done
+  summary: Send a 'hello' message to Jaidev on WhatsApp.

@@ -1,0 +1,11 @@
+created_at: '2026-05-07T19:21:35.032615'
+fingerprint: are how members send team you
+id: 20260507_192135_e3571c6a
+intent: send how are you to my team members
+outcome: completed
+plan:
+  created_at: '2026-05-07T19:21:34.880063'
+  intent: send how are you to my team members
+  status: completed
+  steps: []
+  summary: send how are you to my team members

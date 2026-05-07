@@ -641,6 +641,7 @@ class Planner:
             system_instruction=self._system_prompt(),
             temperature=0.1,
             max_output_tokens=4096,
+            response_mime_type="application/json",
         )
 
     def _replan_config(self) -> "genai_types.GenerateContentConfig":
@@ -649,6 +650,7 @@ class Planner:
             system_instruction=self._system_prompt(),
             temperature=0.1,
             max_output_tokens=4096,
+            response_mime_type="application/json",
         )
 
     # ------------------------------------------------------------------
@@ -886,13 +888,22 @@ class Planner:
         return self._parse(raw, f"Recovery: {failed_step.description}")
 
     async def _refine(self, macro_plan: ActionPlan) -> ActionPlan:
+        """Refine legacy-text macro steps into structured JSON steps."""
         instructions = " | ".join(s.description for s in macro_plan.steps)
+        refine_prompt = (
+            f"The user said: \"{macro_plan.intent}\"\n"
+            f"A macro matched with these legacy steps: {instructions}\n"
+            "Convert this into a structured execution plan. "
+            "Return ONLY a valid JSON object — no prose, no markdown fences — "
+            "with \"summary\" (string) and \"steps\" (array). "
+            "Each step must have: id, skill, action, params (object), description, reasoning."
+        )
         try:
             response = await asyncio.wait_for(
                 asyncio.to_thread(
                     self.client.models.generate_content,
                     model   = self.model_name,
-                    contents= f"INTENT: {macro_plan.intent}\nMACRO STEPS: {instructions}",
+                    contents= refine_prompt,
                     config  = self._gen_config(),
                 ),
                 timeout=30.0,
@@ -900,6 +911,7 @@ class Planner:
         except asyncio.TimeoutError:
             raise RuntimeError("Gemini API timed out during macro refinement.")
         raw = self._safe_text(response)
+        print(f"[Planner] Refined legacy macro response: {raw[:300]}")
         return self._parse(raw, macro_plan.intent)
 
     def _fallback(self, intent: str) -> ActionPlan:

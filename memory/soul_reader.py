@@ -509,6 +509,93 @@ class SoulReader:
         if self.soul_path.exists():
             self._parse()
 
+    # ── Macro write API ─────────────────────────────────────────────────────
+
+    def save_macro(self, macro_id: str, macro_data: dict) -> bool:
+        """
+        Create or update a macro by id and persist to SOUL.md.
+
+        macro_data should contain: label, description, trigger_phrases (list),
+        tags (list), icon (str), steps (list of dicts).
+
+        Strategy: read current file, update the `macros` dict in the merged
+        config, regenerate the macros YAML block, and splice it back into the
+        markdown file.  All other sections are left untouched.
+        """
+        if not _YAML_OK:
+            return False
+
+        # Sanitise inputs
+        macro_id = macro_id.strip().replace(" ", "_").lower()
+        if not macro_id:
+            return False
+
+        # Update in-memory config
+        if "macros" not in self._config:
+            self._config["macros"] = {}
+        self._config["macros"][macro_id] = macro_data
+
+        # Persist to file
+        self._write_macros_to_file()
+        self._build_legacy_structures()
+        return True
+
+    def delete_macro(self, macro_id: str) -> bool:
+        """Remove a macro by id and persist to SOUL.md."""
+        if not _YAML_OK:
+            return False
+        macros = self._config.get("macros", {})
+        if macro_id not in macros:
+            return False
+        del self._config["macros"][macro_id]
+        self._write_macros_to_file()
+        self._build_legacy_structures()
+        return True
+
+    def _write_macros_to_file(self):
+        """
+        Replace the macros YAML block in SOUL.md with the current in-memory
+        `macros` dict. Creates a dedicated block if none exists yet.
+        """
+        macros_yaml = yaml.dump(
+            {"macros": self._config.get("macros", {})},
+            allow_unicode=True,
+            default_flow_style=False,
+            sort_keys=False,
+        )
+        new_block = f"```yaml\n{macros_yaml}```"
+
+        content = self._raw_content or ""
+
+        # Find the existing macros block — look for a yaml block that contains "macros:"
+        # We only replace the FIRST block that has a top-level `macros:` key.
+        import re as _re
+        pattern = _re.compile(r'```yaml\s*\n(.*?)```', _re.DOTALL)
+
+        replaced = False
+        def _replacer(m):
+            nonlocal replaced
+            if replaced:
+                return m.group(0)
+            try:
+                parsed = yaml.safe_load(m.group(1))
+                if isinstance(parsed, dict) and "macros" in parsed:
+                    replaced = True
+                    return new_block
+            except Exception:
+                pass
+            return m.group(0)
+
+        new_content = pattern.sub(_replacer, content)
+
+        if not replaced:
+            # No existing macros block — append a new section at the end
+            new_content = content.rstrip() + f"\n\n## Macros (User-Defined)\n\n{new_block}\n"
+
+        with open(self.soul_path, "w", encoding="utf-8") as f:
+            f.write(new_content)
+        self._raw_content = new_content
+
     def get_summary(self) -> dict:
         """Summary dict used by /api/soul endpoint and startup banner."""
         macros_cfg = self._config.get("macros", {})
@@ -537,3 +624,4 @@ class SoulReader:
             },
             "user_name": self.get_user_name(),
         }
+

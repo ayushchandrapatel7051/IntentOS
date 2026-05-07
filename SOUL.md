@@ -842,312 +842,276 @@ profiles:
 
 ```yaml
 macros:
-
-  # ────────────────────────────────────────────────
-  # start_my_day
-  # ────────────────────────────────────────────────
   start_my_day:
-    label: "Start My Day"
-    description: "Morning routine — brief, productive, focused."
-    icon: "☀️"
+    label: Start My Day
+    description: Morning routine — brief, productive, focused.
+    icon: ☀️
     trigger_phrases:
-      - "start my day"
-      - "good morning openclaw"
-      - "morning routine"
-      - "begin my day"
+    - start my day
+    - good morning openclaw
+    - morning routine
+    - begin my day
     invocation_policy: approval_required
-    confirmation_message: "Run your morning routine for ${today_date}? (yes/no)"
+    confirmation_message: Run your morning routine for ${today_date}? (yes/no)
     parameters: {}
     steps:
-      - id: "smd_01"
-        action: open_browser
-        target: "https://calendar.google.com"
-        label: "Check today's calendar"
-        parallel: false
+    - id: smd_01
+      action: open_browser
+      target: https://calendar.google.com
+      label: Check today's calendar
+      parallel: false
+    - id: smd_02
+      action: read_calendar
+      range: today
+      output_variable: todays_events
+      label: Fetch today's events
+    - id: smd_03
+      action: open_browser
+      target: https://mail.google.com
+      label: Open Gmail
+    - id: smd_04
+      action: open_editor
+      target: vscode
+      project: ${last_project}
+      label: Open VS Code with last project
+      condition: ${last_project} != null
+    - id: smd_05
+      action: notify_user
+      message: 'Good morning, Ayush!
 
-      - id: "smd_02"
-        action: read_calendar
-        range: "today"
-        output_variable: "todays_events"
-        label: "Fetch today's events"
+        📅 ${today_date}
 
-      - id: "smd_03"
-        action: open_browser
-        target: "https://mail.google.com"
-        label: "Open Gmail"
+        📋 Today''s events: ${todays_events}
 
-      - id: "smd_04"
-        action: open_editor
-        target: "vscode"
-        project: "${last_project}"
-        label: "Open VS Code with last project"
-        condition: "${last_project} != null"
+        💻 Last project: ${last_project}
 
-      - id: "smd_05"
-        action: notify_user
-        message: |
-          Good morning, Ayush!
-          📅 ${today_date}
-          📋 Today's events: ${todays_events}
-          💻 Last project: ${last_project}
-        label: "Morning briefing"
-
+        '
+      label: Morning briefing
     on_failure:
       retry: 1
-      fallback: "notify_user"
-      fallback_message: "Morning routine partially completed. Check logs."
+      fallback: notify_user
+      fallback_message: Morning routine partially completed. Check logs.
     timeout_seconds: 60
-    tags: ["daily", "morning", "routine"]
-
-
-  # ────────────────────────────────────────────────
-  # end_my_day
-  # ────────────────────────────────────────────────
+    tags:
+    - daily
+    - morning
+    - routine
   end_my_day:
-    label: "End My Day"
-    description: "Evening wrap-up — save, summarize, wind down."
-    icon: "🌙"
+    label: End My Day
+    description: Evening wrap-up — save, summarize, wind down.
+    icon: 🌙
     trigger_phrases:
-      - "end my day"
-      - "wrap up"
-      - "day done"
-      - "shut it down"
+    - end my day
+    - wrap up
+    - day done
+    - shut it down
     invocation_policy: approval_required
-    confirmation_message: "Run your end-of-day routine? (yes/no)"
+    confirmation_message: Run your end-of-day routine? (yes/no)
     steps:
-      - id: "emd_01"
-        action: run_terminal
-        command: "git status"
-        working_directory: "${last_project}"
-        label: "Check uncommitted changes"
-        risk_level: low
-
-      - id: "emd_02"
-        action: notify_user
-        message: "Uncommitted changes found in ${last_project}. Save before closing?"
-        condition: "git_status.has_changes == true"
-
-      - id: "emd_03"
-        action: read_calendar
-        range: "tomorrow"
-        output_variable: "tomorrow_events"
-        label: "Preview tomorrow's schedule"
-
-      - id: "emd_04"
-        action: send_message
-        app: "telegram"
-        contact: "${team_group}"
-        message: "Wrapping up for the day. Tomorrow: ${tomorrow_events}"
-        label: "Send day-end note to team"
-        invocation_policy: approval_required
-        confirmation_message: "Send day-end note to Telegram team group? (yes/no)"
-
-      - id: "emd_05"
-        action: notify_user
-        message: "Day complete. Great work today, Ayush! 🎉"
-        label: "End of day notification"
-
+    - id: emd_01
+      action: run_terminal
+      command: git status
+      working_directory: ${last_project}
+      label: Check uncommitted changes
+      risk_level: low
+    - id: emd_02
+      action: notify_user
+      message: Uncommitted changes found in ${last_project}. Save before closing?
+      condition: git_status.has_changes == true
+    - id: emd_03
+      action: read_calendar
+      range: tomorrow
+      output_variable: tomorrow_events
+      label: Preview tomorrow's schedule
+    - id: emd_04
+      action: send_message
+      app: telegram
+      contact: ${team_group}
+      message: 'Wrapping up for the day. Tomorrow: ${tomorrow_events}'
+      label: Send day-end note to team
+      invocation_policy: approval_required
+      confirmation_message: Send day-end note to Telegram team group? (yes/no)
+    - id: emd_05
+      action: notify_user
+      message: Day complete. Great work today, Ayush! 🎉
+      label: End of day notification
     timeout_seconds: 90
-    tags: ["daily", "evening", "routine"]
-
-
-  # ────────────────────────────────────────────────
-  # coding_mode / workspace_setup_coding
-  # ────────────────────────────────────────────────
+    tags:
+    - daily
+    - evening
+    - routine
   workspace_setup_coding:
-    label: "Coding Workspace"
-    description: "Prepare full developer environment for a coding session."
-    icon: "💻"
+    label: Coding Workspace
+    description: Prepare full developer environment for a coding session.
+    icon: 💻
     trigger_phrases:
-      - "coding mode"
-      - "start coding"
-      - "dev mode"
-      - "prepare my dev environment"
-      - "setup coding workspace"
-      - "start backend work"
-      - "start frontend work"
+    - coding mode
+    - start coding
+    - dev mode
+    - prepare my dev environment
+    - setup coding workspace
+    - start backend work
+    - start frontend work
     invocation_policy: approval_required
-    confirmation_message: "Set up your coding workspace for ${last_project}? (yes/no)"
+    confirmation_message: Set up your coding workspace for ${last_project}? (yes/no)
     parameters:
       project:
         type: string
-        default: "${last_project}"
-        description: "Project directory to open in VS Code"
+        default: ${last_project}
+        description: Project directory to open in VS Code
       music:
         type: boolean
         default: true
-        description: "Open Spotify with coding playlist"
+        description: Open Spotify with coding playlist
     steps:
-      - id: "wsc_01"
-        action: open_editor
-        target: "vscode"
-        project: "${params.project}"
-        label: "Open VS Code"
-
-      - id: "wsc_02"
-        action: open_app
-        target: "spotify"
-        condition: "${params.music} == true"
-        label: "Open Spotify"
-        note: "User will manually pick playlist"
-
-      - id: "wsc_03"
-        action: open_browser
-        target: "https://github.com/ayushchandrapatel7051"
-        label: "Open GitHub"
-
-      - id: "wsc_04"
-        action: run_terminal
-        command: "git status"
-        working_directory: "${params.project}"
-        label: "Check git status"
-        risk_level: low
-
-      - id: "wsc_05"
-        action: set_mode
-        mode: "coding_mode"
-        label: "Activate coding mode"
-
-      - id: "wsc_06"
-        action: notify_control
-        action_type: "mute"
-        label: "Mute notifications"
-
-      - id: "wsc_07"
-        action: notify_user
-        message: "Coding workspace ready. Git status checked. Happy coding! 🚀"
-
+    - id: wsc_01
+      action: open_editor
+      target: vscode
+      project: ${params.project}
+      label: Open VS Code
+    - id: wsc_02
+      action: open_app
+      target: spotify
+      condition: ${params.music} == true
+      label: Open Spotify
+      note: User will manually pick playlist
+    - id: wsc_03
+      action: open_browser
+      target: https://github.com/ayushchandrapatel7051
+      label: Open GitHub
+    - id: wsc_04
+      action: run_terminal
+      command: git status
+      working_directory: ${params.project}
+      label: Check git status
+      risk_level: low
+    - id: wsc_05
+      action: set_mode
+      mode: coding_mode
+      label: Activate coding mode
+    - id: wsc_06
+      action: notify_control
+      action_type: mute
+      label: Mute notifications
+    - id: wsc_07
+      action: notify_user
+      message: Coding workspace ready. Git status checked. Happy coding! 🚀
     timeout_seconds: 45
-    tags: ["workspace", "coding", "development"]
-
-
-  # ────────────────────────────────────────────────
-  # workspace_setup_meeting
-  # ────────────────────────────────────────────────
+    tags:
+    - workspace
+    - coding
+    - development
   workspace_setup_meeting:
-    label: "Meeting Workspace"
-    description: "Prepare focus environment before a meeting."
-    icon: "📹"
+    label: Meeting Workspace
+    description: Prepare focus environment before a meeting.
+    icon: 📹
     trigger_phrases:
-      - "meeting mode"
-      - "prepare for meeting"
-      - "joining a meeting"
-      - "before meeting"
+    - meeting mode
+    - prepare for meeting
+    - joining a meeting
+    - before meeting
     invocation_policy: approval_required
-    confirmation_message: "Prepare your meeting workspace? (yes/no)"
+    confirmation_message: Prepare your meeting workspace? (yes/no)
     parameters:
       meeting_link:
         type: string
-        default: "${meeting_link}"
-        description: "Meeting URL to open"
+        default: ${meeting_link}
+        description: Meeting URL to open
     steps:
-      - id: "wsm_01"
-        action: read_calendar
-        range: "next"
-        output_variable: "next_meeting"
-        label: "Fetch next meeting details"
-
-      - id: "wsm_02"
-        action: open_browser
-        target: "${params.meeting_link}"
-        condition: "${params.meeting_link} != null"
-        label: "Open meeting link"
-
-      - id: "wsm_03"
-        action: open_app
-        target: "notion"
-        label: "Open note-taking app"
-
-      - id: "wsm_04"
-        action: notify_control
-        action_type: "mute"
-        label: "Mute notifications"
-
-      - id: "wsm_05"
-        action: set_mode
-        mode: "meeting_mode"
-        label: "Activate meeting mode"
-
-      - id: "wsm_06"
-        action: notify_user
-        message: "Meeting workspace ready. Next meeting: ${next_meeting}. Notes app open. Notifications muted. ✅"
-
+    - id: wsm_01
+      action: read_calendar
+      range: next
+      output_variable: next_meeting
+      label: Fetch next meeting details
+    - id: wsm_02
+      action: open_browser
+      target: ${params.meeting_link}
+      condition: ${params.meeting_link} != null
+      label: Open meeting link
+    - id: wsm_03
+      action: open_app
+      target: notion
+      label: Open note-taking app
+    - id: wsm_04
+      action: notify_control
+      action_type: mute
+      label: Mute notifications
+    - id: wsm_05
+      action: set_mode
+      mode: meeting_mode
+      label: Activate meeting mode
+    - id: wsm_06
+      action: notify_user
+      message: 'Meeting workspace ready. Next meeting: ${next_meeting}. Notes app
+        open. Notifications muted. ✅'
     timeout_seconds: 30
-    tags: ["meeting", "workspace", "professional"]
-
-
-  # ────────────────────────────────────────────────
-  # workspace_setup_study
-  # ────────────────────────────────────────────────
+    tags:
+    - meeting
+    - workspace
+    - professional
   workspace_setup_study:
-    label: "Study Workspace"
-    description: "Block distractions and prepare a structured learning environment."
-    icon: "📚"
+    label: Study Workspace
+    description: Block distractions and prepare a structured learning environment.
+    icon: 📚
     trigger_phrases:
-      - "study mode"
-      - "learning session"
-      - "start studying"
-      - "research mode"
+    - study mode
+    - learning session
+    - start studying
+    - research mode
     invocation_policy: approval_required
-    confirmation_message: "Set up your study environment? (yes/no)"
+    confirmation_message: Set up your study environment? (yes/no)
     parameters:
       topic:
         type: string
         default: null
-        description: "Topic or subject to study (optional)"
+        description: Topic or subject to study (optional)
       duration_minutes:
         type: integer
         default: 90
     steps:
-      - id: "wss_01"
-        action: notify_control
-        action_type: "mute"
-        label: "Mute all notifications"
-
-      - id: "wss_02"
-        action: open_app
-        target: "notion"
-        label: "Open Notion for notes"
-
-      - id: "wss_03"
-        action: open_browser
-        target: "https://www.google.com"
-        label: "Open browser for research"
-
-      - id: "wss_04"
-        action: set_mode
-        mode: "study_mode"
-        label: "Activate study mode"
-
-      - id: "wss_05"
+    - id: wss_01
+      action: notify_control
+      action_type: mute
+      label: Mute all notifications
+    - id: wss_02
+      action: open_app
+      target: notion
+      label: Open Notion for notes
+    - id: wss_03
+      action: open_browser
+      target: https://www.google.com
+      label: Open browser for research
+    - id: wss_04
+      action: set_mode
+      mode: study_mode
+      label: Activate study mode
+    - id: wss_05
+      action: notify_user
+      message: 'Study session started${params.topic != null ? '' — Topic: '' + params.topic
+        : ''''}. Duration: ${params.duration_minutes} min. Notifications muted. 📚'
+    - id: wss_06
+      action: wait
+      duration_minutes: ${params.duration_minutes}
+      then:
         action: notify_user
-        message: "Study session started${params.topic != null ? ' — Topic: ' + params.topic : ''}. Duration: ${params.duration_minutes} min. Notifications muted. 📚"
-
-      - id: "wss_06"
-        action: wait
-        duration_minutes: "${params.duration_minutes}"
-        then:
-          action: notify_user
-          message: "⏰ Study session complete! Take a break. Great focus today."
-
+        message: ⏰ Study session complete! Take a break. Great focus today.
     timeout_seconds: 60
-    tags: ["study", "workspace", "learning"]
-
-
-  # ────────────────────────────────────────────────
-  # focus_session_start
-  # ────────────────────────────────────────────────
+    tags:
+    - study
+    - workspace
+    - learning
   focus_session_start:
-    label: "Deep Focus Session"
-    description: "Maximum concentration mode — no interruptions."
-    icon: "🎯"
+    label: Deep Focus Session
+    description: Maximum concentration mode — no interruptions.
+    icon: 🎯
     trigger_phrases:
-      - "focus session"
-      - "deep focus"
-      - "do not disturb"
-      - "pomodoro"
+    - focus session
+    - deep focus
+    - do not disturb
+    - pomodoro
     invocation_policy: approval_required
-    confirmation_message: "Start a ${params.duration_minutes}-minute deep focus session? (yes/no)"
+    confirmation_message: Start a ${params.duration_minutes}-minute deep focus session?
+      (yes/no)
     parameters:
       duration_minutes:
         type: integer
@@ -1156,382 +1120,383 @@ macros:
         type: integer
         default: 10
     steps:
-      - id: "fss_01"
-        action: notify_control
-        action_type: "mute_all"
-        label: "Mute all notifications"
-
-      - id: "fss_02"
-        action: set_mode
-        mode: "focus_session"
-        label: "Activate focus mode"
-
-      - id: "fss_03"
+    - id: fss_01
+      action: notify_control
+      action_type: mute_all
+      label: Mute all notifications
+    - id: fss_02
+      action: set_mode
+      mode: focus_session
+      label: Activate focus mode
+    - id: fss_03
+      action: notify_user
+      message: 🎯 Deep focus started. ${params.duration_minutes} min. No interruptions.
+        You've got this.
+    - id: fss_04
+      action: wait
+      duration_minutes: ${params.duration_minutes}
+      then:
         action: notify_user
-        message: "🎯 Deep focus started. ${params.duration_minutes} min. No interruptions. You've got this."
-
-      - id: "fss_04"
-        action: wait
-        duration_minutes: "${params.duration_minutes}"
-        then:
-          action: notify_user
-          message: "⏰ Focus session complete! Take a ${params.break_minutes}-minute break."
-
-      - id: "fss_05"
-        action: notify_control
-        action_type: "restore"
-        trigger: "after_break"
-        label: "Restore notifications after break"
-
+        message: ⏰ Focus session complete! Take a ${params.break_minutes}-minute break.
+    - id: fss_05
+      action: notify_control
+      action_type: restore
+      trigger: after_break
+      label: Restore notifications after break
     timeout_seconds: 3600
-    tags: ["focus", "productivity", "deep_work"]
-
-
-  # ────────────────────────────────────────────────
-  # clean_downloads
-  # ────────────────────────────────────────────────
+    tags:
+    - focus
+    - productivity
+    - deep_work
   clean_downloads:
-    label: "Clean Downloads"
-    description: "Organize, rename, and optionally archive the Downloads folder."
-    icon: "🗂"
+    label: Clean Downloads
+    description: Organize, rename, and optionally archive the Downloads folder.
+    icon: 🗂
     trigger_phrases:
-      - "clean downloads"
-      - "organize downloads"
-      - "sort my downloads"
-      - "tidy up downloads"
+    - clean downloads
+    - organize downloads
+    - sort my downloads
+    - tidy up downloads
     invocation_policy: approval_required
-    confirmation_message: "Clean and organize your Downloads folder? Dry-run will preview changes first. (yes/no)"
+    confirmation_message: Clean and organize your Downloads folder? Dry-run will preview
+      changes first. (yes/no)
     parameters:
       dry_run:
         type: boolean
         default: true
-        description: "Preview changes without executing"
+        description: Preview changes without executing
       delete_older_than_days:
         type: integer
         default: 30
     steps:
-      - id: "cd_01"
-        action: file_action
-        operation: "preview_organize"
-        directory: "${preferences.directories.downloads}"
-        group_by: "${preferences.file_organization.downloads_group_by}"
-        label: "Preview organization plan"
-        dry_run: "${params.dry_run}"
-
-      - id: "cd_02"
-        action: notify_user
-        message: "Preview complete. Proceed with organization? (yes/no)"
-        await_response: true
-        condition: "${params.dry_run} == true"
-
-      - id: "cd_03"
-        action: file_action
-        operation: "organize_by_type"
-        directory: "${preferences.directories.downloads}"
-        subdirs:
-          documents: "Documents"
-          images: "Images"
-          videos: "Videos"
-          archives: "Archives"
-          code: "Code"
-          other: "Other"
-        label: "Organize by file type"
-        condition: "user_confirmed"
-
-      - id: "cd_04"
-        action: file_action
-        operation: "rename_with_date_prefix"
-        directory: "${preferences.directories.downloads}"
-        format: "${today_date}_${filename}"
-        label: "Rename files with date prefix"
-        condition: "${preferences.file_organization.rename_downloads} == true"
-
-      - id: "cd_05"
-        action: file_action
-        operation: "delete_older_than"
-        directory: "${preferences.directories.downloads}"
-        days: "${params.delete_older_than_days}"
-        label: "Flag old files for deletion"
-        requires_confirmation: true
-        confirmation_message: "Delete files older than ${params.delete_older_than_days} days in Downloads? (yes/no)"
-
-      - id: "cd_06"
-        action: file_action
-        operation: "remove_duplicates"
-        directory: "${preferences.directories.downloads}"
-        label: "Remove duplicate files"
-        requires_confirmation: true
-        confirmation_message: "Found ${duplicate_count} duplicate files. Remove them? (yes/no)"
-
-      - id: "cd_07"
-        action: notify_user
-        message: "Downloads cleaned! Organized ${file_count} files. ${deleted_count} old files removed."
-
+    - id: cd_01
+      action: file_action
+      operation: preview_organize
+      directory: ${preferences.directories.downloads}
+      group_by: ${preferences.file_organization.downloads_group_by}
+      label: Preview organization plan
+      dry_run: ${params.dry_run}
+    - id: cd_02
+      action: notify_user
+      message: Preview complete. Proceed with organization? (yes/no)
+      await_response: true
+      condition: ${params.dry_run} == true
+    - id: cd_03
+      action: file_action
+      operation: organize_by_type
+      directory: ${preferences.directories.downloads}
+      subdirs:
+        documents: Documents
+        images: Images
+        videos: Videos
+        archives: Archives
+        code: Code
+        other: Other
+      label: Organize by file type
+      condition: user_confirmed
+    - id: cd_04
+      action: file_action
+      operation: rename_with_date_prefix
+      directory: ${preferences.directories.downloads}
+      format: ${today_date}_${filename}
+      label: Rename files with date prefix
+      condition: ${preferences.file_organization.rename_downloads} == true
+    - id: cd_05
+      action: file_action
+      operation: delete_older_than
+      directory: ${preferences.directories.downloads}
+      days: ${params.delete_older_than_days}
+      label: Flag old files for deletion
+      requires_confirmation: true
+      confirmation_message: Delete files older than ${params.delete_older_than_days}
+        days in Downloads? (yes/no)
+    - id: cd_06
+      action: file_action
+      operation: remove_duplicates
+      directory: ${preferences.directories.downloads}
+      label: Remove duplicate files
+      requires_confirmation: true
+      confirmation_message: Found ${duplicate_count} duplicate files. Remove them?
+        (yes/no)
+    - id: cd_07
+      action: notify_user
+      message: Downloads cleaned! Organized ${file_count} files. ${deleted_count}
+        old files removed.
     on_failure:
       retry: 0
-      fallback_message: "Downloads organization failed at step ${failed_step}. No changes made."
+      fallback_message: Downloads organization failed at step ${failed_step}. No changes
+        made.
     timeout_seconds: 120
-    tags: ["files", "organization", "maintenance"]
-
-
-  # ────────────────────────────────────────────────
-  # deploy_project
-  # ────────────────────────────────────────────────
+    tags:
+    - files
+    - organization
+    - maintenance
   deploy_project:
-    label: "Deploy Project"
-    description: "Git commit, push, and trigger deployment pipeline."
-    icon: "🚀"
+    label: Deploy Project
+    description: Git commit, push, and trigger deployment pipeline.
+    icon: 🚀
     trigger_phrases:
-      - "deploy my project"
-      - "deploy ${last_project}"
-      - "push and deploy"
-      - "ship it"
+    - deploy my project
+    - deploy ${last_project}
+    - push and deploy
+    - ship it
     invocation_policy: approval_required
-    confirmation_message: "Deploy ${params.project} to ${params.remote}/${params.branch}? This will git commit + push. (yes/no)"
+    confirmation_message: Deploy ${params.project} to ${params.remote}/${params.branch}?
+      This will git commit + push. (yes/no)
     parameters:
       project:
         type: string
-        default: "${last_project}"
+        default: ${last_project}
       branch:
         type: string
-        default: "main"
+        default: main
       remote:
         type: string
-        default: "origin"
+        default: origin
       commit_message:
         type: string
-        default: "chore: deploy ${today_date}"
+        default: 'chore: deploy ${today_date}'
     steps:
-      - id: "dp_01"
-        action: run_terminal
-        command: "git status"
-        working_directory: "${params.project}"
-        label: "Check git status"
-        risk_level: low
-
-      - id: "dp_02"
-        action: run_terminal
-        command: "git secrets --scan"
-        working_directory: "${params.project}"
-        label: "Scan for secrets before push"
-        risk_level: low
-        on_failure:
-          abort: true
-          message: "Secret scan failed. Fix secrets before deploying."
-
-      - id: "dp_03"
-        action: git_action
-        operation: "add_all"
-        working_directory: "${params.project}"
-        label: "Stage all changes"
-
-      - id: "dp_04"
-        action: git_action
-        operation: "commit"
-        message: "${params.commit_message}"
-        working_directory: "${params.project}"
-        label: "Commit changes"
-
-      - id: "dp_05"
-        action: git_action
-        operation: "push"
-        remote: "${params.remote}"
-        branch: "${params.branch}"
-        working_directory: "${params.project}"
-        label: "Push to remote"
-        requires_confirmation: true
-        confirmation_message: "Push to ${params.remote}/${params.branch}? (yes/no)"
-
-      - id: "dp_06"
-        action: notify_user
-        message: "✅ ${params.project} deployed to ${params.remote}/${params.branch}."
-
+    - id: dp_01
+      action: run_terminal
+      command: git status
+      working_directory: ${params.project}
+      label: Check git status
+      risk_level: low
+    - id: dp_02
+      action: run_terminal
+      command: git secrets --scan
+      working_directory: ${params.project}
+      label: Scan for secrets before push
+      risk_level: low
+      on_failure:
+        abort: true
+        message: Secret scan failed. Fix secrets before deploying.
+    - id: dp_03
+      action: git_action
+      operation: add_all
+      working_directory: ${params.project}
+      label: Stage all changes
+    - id: dp_04
+      action: git_action
+      operation: commit
+      message: ${params.commit_message}
+      working_directory: ${params.project}
+      label: Commit changes
+    - id: dp_05
+      action: git_action
+      operation: push
+      remote: ${params.remote}
+      branch: ${params.branch}
+      working_directory: ${params.project}
+      label: Push to remote
+      requires_confirmation: true
+      confirmation_message: Push to ${params.remote}/${params.branch}? (yes/no)
+    - id: dp_06
+      action: notify_user
+      message: ✅ ${params.project} deployed to ${params.remote}/${params.branch}.
     on_failure:
       retry: 0
-      rollback_hint: "Run `git reset --soft HEAD~1` to undo last commit if needed."
-      fallback_message: "Deployment failed at ${failed_step}. No push was made."
+      rollback_hint: Run `git reset --soft HEAD~1` to undo last commit if needed.
+      fallback_message: Deployment failed at ${failed_step}. No push was made.
     timeout_seconds: 180
-    tags: ["git", "deployment", "development"]
-
-
-  # ────────────────────────────────────────────────
-  # project_bootstrap
-  # ────────────────────────────────────────────────
+    tags:
+    - git
+    - deployment
+    - development
   project_bootstrap:
-    label: "Bootstrap New Project"
-    description: "Create directory structure, init git, install dependencies."
-    icon: "🏗"
+    label: Bootstrap New Project
+    description: Create directory structure, init git, install dependencies.
+    icon: 🏗
     trigger_phrases:
-      - "bootstrap a new project"
-      - "create new project"
-      - "init project"
-      - "start a new project called ${params.name}"
+    - bootstrap a new project
+    - create new project
+    - init project
+    - start a new project called ${params.name}
     invocation_policy: approval_required
-    confirmation_message: "Bootstrap new project '${params.name}' in ${preferences.directories.workspace}? (yes/no)"
+    confirmation_message: Bootstrap new project '${params.name}' in ${preferences.directories.workspace}?
+      (yes/no)
     parameters:
       name:
         type: string
         required: true
-        description: "Project name"
+        description: Project name
       type:
         type: string
-        default: "python"
-        options: ["python", "node", "react", "fullstack", "blank"]
+        default: python
+        options:
+        - python
+        - node
+        - react
+        - fullstack
+        - blank
       init_git:
         type: boolean
         default: true
     steps:
-      - id: "pb_01"
-        action: file_action
-        operation: "create_directory"
-        path: "${preferences.directories.workspace}/${params.name}"
-        label: "Create project directory"
-
-      - id: "pb_02"
-        action: git_action
-        operation: "init"
-        working_directory: "${preferences.directories.workspace}/${params.name}"
-        label: "Initialize git repo"
-        condition: "${params.init_git} == true"
-
-      - id: "pb_03"
-        action: run_terminal
-        command: "python -m venv venv"
-        working_directory: "${preferences.directories.workspace}/${params.name}"
-        label: "Create Python venv"
-        condition: "${params.type} == 'python'"
-        risk_level: low
-
-      - id: "pb_04"
-        action: run_terminal
-        command: "npm init -y"
-        working_directory: "${preferences.directories.workspace}/${params.name}"
-        label: "Init npm"
-        condition: "${params.type} in ['node', 'react', 'fullstack']"
-        risk_level: low
-
-      - id: "pb_05"
-        action: open_editor
-        target: "vscode"
-        project: "${preferences.directories.workspace}/${params.name}"
-        label: "Open new project in VS Code"
-
-      - id: "pb_06"
-        action: notify_user
-        message: "✅ Project '${params.name}' bootstrapped at ${preferences.directories.workspace}/${params.name}. VS Code opened."
-
+    - id: pb_01
+      action: file_action
+      operation: create_directory
+      path: ${preferences.directories.workspace}/${params.name}
+      label: Create project directory
+    - id: pb_02
+      action: git_action
+      operation: init
+      working_directory: ${preferences.directories.workspace}/${params.name}
+      label: Initialize git repo
+      condition: ${params.init_git} == true
+    - id: pb_03
+      action: run_terminal
+      command: python -m venv venv
+      working_directory: ${preferences.directories.workspace}/${params.name}
+      label: Create Python venv
+      condition: ${params.type} == 'python'
+      risk_level: low
+    - id: pb_04
+      action: run_terminal
+      command: npm init -y
+      working_directory: ${preferences.directories.workspace}/${params.name}
+      label: Init npm
+      condition: ${params.type} in ['node', 'react', 'fullstack']
+      risk_level: low
+    - id: pb_05
+      action: open_editor
+      target: vscode
+      project: ${preferences.directories.workspace}/${params.name}
+      label: Open new project in VS Code
+    - id: pb_06
+      action: notify_user
+      message: ✅ Project '${params.name}' bootstrapped at ${preferences.directories.workspace}/${params.name}.
+        VS Code opened.
     timeout_seconds: 90
-    tags: ["development", "setup", "project"]
-
-
-  # ────────────────────────────────────────────────
-  # nightly_shutdown
-  # ────────────────────────────────────────────────
+    tags:
+    - development
+    - setup
+    - project
   nightly_shutdown:
-    label: "Nightly Shutdown"
-    description: "End-of-night routine — summarize, prepare tomorrow, wind down."
-    icon: "🌙"
+    label: Nightly Shutdown
+    description: End-of-night routine — summarize, prepare tomorrow, wind down.
+    icon: 🌙
     trigger_phrases:
-      - "nightly shutdown"
-      - "goodnight openclaw"
-      - "prepare for tomorrow"
-      - "shut down for the night"
-      - "wind down"
+    - nightly shutdown
+    - goodnight openclaw
+    - prepare for tomorrow
+    - shut down for the night
+    - wind down
     invocation_policy: approval_required
-    confirmation_message: "Run your nightly shutdown routine? (yes/no)"
+    confirmation_message: Run your nightly shutdown routine? (yes/no)
     steps:
-      - id: "ns_01"
-        action: read_calendar
-        range: "tomorrow"
-        output_variable: "tomorrow_schedule"
-        label: "Preview tomorrow's schedule"
+    - id: ns_01
+      action: read_calendar
+      range: tomorrow
+      output_variable: tomorrow_schedule
+      label: Preview tomorrow's schedule
+    - id: ns_02
+      action: run_terminal
+      command: git status
+      working_directory: ${last_project}
+      label: Check uncommitted work
+      risk_level: low
+    - id: ns_03
+      action: notify_user
+      message: '🌙 Nightly wrap-up for ${today_date}:
 
-      - id: "ns_02"
-        action: run_terminal
-        command: "git status"
-        working_directory: "${last_project}"
-        label: "Check uncommitted work"
-        risk_level: low
+        📁 Last project: ${last_project}
 
-      - id: "ns_03"
-        action: notify_user
-        message: |
-          🌙 Nightly wrap-up for ${today_date}:
-          📁 Last project: ${last_project}
-          📅 Tomorrow: ${tomorrow_schedule}
-          💾 Uncommitted changes: ${git_status.summary}
-          Sleep well. OpenClaw will be here tomorrow. ✨
+        📅 Tomorrow: ${tomorrow_schedule}
 
-      - id: "ns_04"
-        action: notify_control
-        action_type: "schedule_dnd"
-        start: "${current_time}"
-        end: "09:00"
-        label: "Schedule overnight do-not-disturb"
+        💾 Uncommitted changes: ${git_status.summary}
 
+        Sleep well. OpenClaw will be here tomorrow. ✨
+
+        '
+    - id: ns_04
+      action: notify_control
+      action_type: schedule_dnd
+      start: ${current_time}
+      end: 09:00
+      label: Schedule overnight do-not-disturb
     timeout_seconds: 60
-    tags: ["daily", "night", "routine", "shutdown"]
-
-
-  # ────────────────────────────────────────────────
-  # workspace_setup_presentation
-  # ────────────────────────────────────────────────
+    tags:
+    - daily
+    - night
+    - routine
+    - shutdown
   workspace_setup_presentation:
-    label: "Presentation Workspace"
-    description: "Clean, professional display for screen sharing."
-    icon: "🖥"
+    label: Presentation Workspace
+    description: Clean, professional display for screen sharing.
+    icon: 🖥
     trigger_phrases:
-      - "presentation mode"
-      - "screen share mode"
-      - "presenting now"
-      - "prepare for demo"
+    - presentation mode
+    - screen share mode
+    - presenting now
+    - prepare for demo
     invocation_policy: approval_required
-    confirmation_message: "Set up your presentation workspace? (yes/no)"
+    confirmation_message: Set up your presentation workspace? (yes/no)
     steps:
-      - id: "wsp_01"
-        action: notify_control
-        action_type: "mute_all"
-        label: "Mute all notifications"
-
-      - id: "wsp_02"
-        action: set_mode
-        mode: "presentation_mode"
-        label: "Activate presentation mode"
-
-      - id: "wsp_03"
-        action: notify_user
-        message: "Presentation mode active. Notifications muted. Desktop clean. Ready to present. ✅"
-
+    - id: wsp_01
+      action: notify_control
+      action_type: mute_all
+      label: Mute all notifications
+    - id: wsp_02
+      action: set_mode
+      mode: presentation_mode
+      label: Activate presentation mode
+    - id: wsp_03
+      action: notify_user
+      message: Presentation mode active. Notifications muted. Desktop clean. Ready
+        to present. ✅
     timeout_seconds: 20
-    tags: ["presentation", "professional", "screen-share"]
-
-
-  # ────────────────────────────────────────────────
-  # low_battery_optimization
-  # ────────────────────────────────────────────────
+    tags:
+    - presentation
+    - professional
+    - screen-share
   low_battery_optimization:
-    label: "Battery Optimization"
-    description: "Reduce heavy processes when battery is critically low."
-    icon: "🔋"
+    label: Battery Optimization
+    description: Reduce heavy processes when battery is critically low.
+    icon: 🔋
     trigger_phrases:
-      - "battery saver"
-      - "low power mode"
-      - "save battery"
-    trigger_condition: "${battery_level} < ${preferences.system.battery_saver_threshold}"
+    - battery saver
+    - low power mode
+    - save battery
+    trigger_condition: ${battery_level} < ${preferences.system.battery_saver_threshold}
     invocation_policy: suggestion_only
-    suggestion_message: "Battery at ${battery_level}%. Would you like me to activate battery saver? (yes/no)"
+    suggestion_message: Battery at ${battery_level}%. Would you like me to activate
+      battery saver? (yes/no)
     steps:
-      - id: "lbo_01"
-        action: notify_user
-        message: "⚡ Battery at ${battery_level}%. Reducing background tasks."
-
-      - id: "lbo_02"
-        action: set_mode
-        mode: "low_battery_mode"
-        label: "Activate low battery mode"
-
+    - id: lbo_01
+      action: notify_user
+      message: ⚡ Battery at ${battery_level}%. Reducing background tasks.
+    - id: lbo_02
+      action: set_mode
+      mode: low_battery_mode
+      label: Activate low battery mode
     timeout_seconds: 15
-    tags: ["system", "battery", "optimization"]
+    tags:
+    - system
+    - battery
+    - optimization
+  team_members:
+    label: Team Members
+    description: ''
+    trigger_phrases:
+    - my team members
+    tags:
+    - whatsapp messaging
+    icon: 💻
+    steps:
+    - skill: messaging
+      action: send_message
+      label: Send message to Jaidev on WhatsApp
+      params: {}
+    - skill: messaging
+      action: send_message
+      label: Send message to Kovid on WhatsApp
+      params: {}
+    - skill: messaging
+      action: send_message
+      label: Send message to Chida Akash on WhatsApp
+      params: {}
 ```
 
 

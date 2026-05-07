@@ -1,0 +1,27 @@
+created_at: '2026-05-07T19:12:39.055522'
+fingerprint: hello send team_contacts whatsapp
+id: 20260507_191239_8c3d86de
+intent: send hello to my team_contacts on whatsapp
+outcome: completed
+plan:
+  created_at: '2026-05-07T19:12:30.976198'
+  intent: send hello to my team_contacts on whatsapp
+  status: completed
+  steps:
+  - action: send_message
+    completed_at: '2026-05-07T19:12:39.007168'
+    description: Send the message 'hello' to the 'team_contacts' group on WhatsApp.
+    error: null
+    id: step_1
+    params:
+      app: whatsapp
+      contact: team_contacts
+      is_group: true
+      text: hello
+    reasoning: The user wants to send a message to a group on WhatsApp, so the messaging.send_message
+      skill is used with the specified app, contact, and message.
+    result: '[Whatsapp] Message sent to ''team_contacts'': hello'
+    skill: messaging
+    started_at: '2026-05-07T19:12:31.074423'
+    status: done
+  summary: Send 'hello' to 'team_contacts' on WhatsApp.

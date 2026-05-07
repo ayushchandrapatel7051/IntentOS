@@ -286,6 +286,71 @@ def create_router() -> APIRouter:
             return {"pending": []}
         return {"pending": executor.get_pending_confirmations()}
 
+    # ── Macro CRUD endpoints ──────────────────────────────────────────────────
+
+    @router.get("/macros")
+    async def list_macros(request: Request):
+        """Return all macros with full detail (id, label, description, trigger_phrases, steps)."""
+        planner = request.app.state.planner
+        if not planner or not planner.soul_reader:
+            return {"macros": []}
+        sr = planner.soul_reader
+        macros_cfg = sr._config.get("macros", {})
+        result = []
+        for macro_id, data in (macros_cfg.items() if isinstance(macros_cfg, dict) else []):
+            if isinstance(data, dict):
+                result.append({
+                    "id": macro_id,
+                    "label": data.get("label", macro_id),
+                    "description": data.get("description", ""),
+                    "trigger_phrases": data.get("trigger_phrases", []),
+                    "tags": data.get("tags", []),
+                    "icon": data.get("icon", ""),
+                    "steps": data.get("steps", []),
+                })
+        return {"macros": result}
+
+    class MacroSaveRequest(BaseModel):
+        id: str
+        label: str
+        description: Optional[str] = ""
+        trigger_phrases: list = []
+        tags: list = []
+        icon: Optional[str] = ""
+        steps: list = []
+
+    @router.post("/macros")
+    async def save_macro(req: MacroSaveRequest, request: Request):
+        """Create or update a macro and persist to SOUL.md."""
+        planner = request.app.state.planner
+        if not planner or not planner.soul_reader:
+            raise HTTPException(status_code=503, detail="SOUL.md not loaded")
+        sr = planner.soul_reader
+        macro_data = {
+            "label": req.label,
+            "description": req.description,
+            "trigger_phrases": req.trigger_phrases,
+            "tags": req.tags,
+            "icon": req.icon,
+            "steps": req.steps,
+        }
+        ok = sr.save_macro(req.id, macro_data)
+        if not ok:
+            raise HTTPException(status_code=500, detail="Failed to save macro — PyYAML may not be available")
+        return {"success": True, "id": req.id.strip().replace(" ", "_").lower(), "message": f"Macro '{req.label}' saved."}
+
+    @router.delete("/macros/{macro_id}")
+    async def delete_macro(macro_id: str, request: Request):
+        """Delete a macro by id and persist to SOUL.md."""
+        planner = request.app.state.planner
+        if not planner or not planner.soul_reader:
+            raise HTTPException(status_code=503, detail="SOUL.md not loaded")
+        sr = planner.soul_reader
+        ok = sr.delete_macro(macro_id)
+        if not ok:
+            raise HTTPException(status_code=404, detail=f"Macro '{macro_id}' not found")
+        return {"success": True, "message": f"Macro '{macro_id}' deleted."}
+
     @router.get("/health")
     async def health_check():
         """Health check endpoint."""
