@@ -1,0 +1,28 @@
+created_at: '2026-05-07T20:30:58.183135'
+fingerprint: '"email.com.json" invoke-item'
+id: 20260507_203058_4ff52729
+intent: Invoke-Item "email.com.json"
+outcome: failed
+plan:
+  created_at: '2026-05-07T20:30:56.944432'
+  intent: Invoke-Item "email.com.json"
+  status: failed
+  steps:
+  - action: execute
+    completed_at: '2026-05-07T20:30:57.888070'
+    description: Execute the PowerShell command to invoke the specified item.
+    error: "Command failed (exit 1): Invoke-Item : Cannot find path 'D:\\Code\\Openclaw\\\
+      IntentOS\\email.com.json' because it does not exist.\nAt line:1 char:1\n+ Invoke-Item\
+      \ \"email.com.json\"\n+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n    + CategoryInfo   \
+      \       : ObjectNotFound: (D:\\Code\\Openclaw\\IntentOS\\email.com.json:String)\
+      \ [Invoke-Item], ItemNo\n   tFoundException\n    + FullyQualifiedErrorId : PathNotFound,Microsoft.PowerShell.Commands.InvokeItemCommand\n"
+    id: step_1
+    params:
+      command: Invoke-Item "email.com.json"
+    reasoning: The user explicitly requested to run a PowerShell command, so 'terminal.execute'
+      is the correct skill. The command is passed directly.
+    result: null
+    skill: terminal
+    started_at: '2026-05-07T20:30:57.117532'
+    status: failed
+  summary: Execute the PowerShell command 'Invoke-Item "email.com.json"' in the terminal.

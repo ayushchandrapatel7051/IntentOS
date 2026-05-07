@@ -1493,10 +1493,6 @@ macros:
       action: send_message
       label: Send message to Kovid on WhatsApp
       params: {}
-    - skill: messaging
-      action: send_message
-      label: Send message to Chida Akash on WhatsApp
-      params: {}
 ```
 
 

@@ -14,7 +14,22 @@
 
 ---
 
-## What is IntentOS?
+## 1. Problem
+
+Modern workflows are deeply fragmented. To accomplish even a simple task — say, summarising a report, creating a calendar event, and notifying a colleague — a user must switch between a PDF viewer, Google Calendar, and WhatsApp, executing each step manually.
+
+This creates compounding friction:
+
+- **App-switching overhead** — every workflow requires navigating multiple tools, tabs, and interfaces.
+- **Repetitive manual execution** — clicking through forms, menus, and dialogs for actions that follow predictable patterns.
+- **No persistent workflow memory** — the system never learns from past runs or adapts to failure.
+- **No unified AI execution layer** — existing AI assistants can suggest steps but cannot execute them end-to-end across browser, files, messaging, and desktop apps simultaneously.
+
+There is no single layer that understands intent and executes it across an entire computing environment.
+
+---
+
+## 2. Solution
 
 IntentOS is an AI agent that lets you control your entire computer — browser, files, messaging, apps, terminal — using plain English. Instead of clicking through menus, you just say what you want.
 
@@ -29,34 +44,7 @@ IntentOS is an AI agent that lets you control your entire computer — browser, 
 
 IntentOS decomposes your intent into a sequence of atomic steps using **Gemini 2.5 Flash**, executes them using a rich skill library, and learns from past runs using **ChromaDB neural memory**.
 
----
-
-## Features
-
-| Capability | Description |
-|---|---|
-| 🧠 **Neural Memory (RAG)** | ChromaDB + Sentence Transformers semantic recall of past workflows and failure patterns |
-| 🌐 **Browser Control** | Web navigation and DOM extraction via Chrome Extension WebSocket bridge (MV3) + Playwright |
-| 🤖 **Agentic Web Agent** | LLM-guided DOM interaction — fills forms, clicks buttons, submits data on any site automatically |
-| 📄 **Direct Page Extraction** | Zero-LLM-cost `getPageText` for reading Wikipedia, articles, blogs — instant and free |
-| 📁 **Universal File Extractor** | Read and extract text from PDF, DOCX, DOC, XLSX, PPTX, EPUB, images (OCR), and any plain-text file — fully local |
-| 🎬 **YouTube Automation** | Search, play, pause, skip, set volume, capture video URLs — via Chrome extension |
-| 📧 **Gmail Integration** | Send, compose, search, and reply to emails directly via extension bridge with verified delivery |
-| 📅 **Google Calendar & Meet** | Create events, schedule Google Meet sessions, get calendar events — no manual clicks needed |
-| 💾 **Google Drive** | Search and open Drive files via extension commands |
-| 🚀 **App Launcher** | Longest-prefix fuzzy-matched native app launching via `apps.json` |
-| 💬 **Messaging** | Send WhatsApp and Telegram messages via desktop automation |
-| 💻 **Terminal** | Execute PowerShell commands with live output streaming |
-| 👁️ **Screen Vision** | Zero-API-cost local screen analysis via MSS + PyAutoGUI |
-| 🔄 **Auto-Recovery** | Detects failures, retries with exponential backoff, and replans using RAG failure memory |
-| 📅 **Date Normalization** | Converts relative dates ("tomorrow", "next Monday") to ISO dates automatically before planning |
-| 🎯 **SOUL.md Macros** | Structured YAML macros bypass the LLM entirely — instant, zero-token-cost named workflows |
-| 🛡️ **Safety Guard** | Blocks dangerous commands (rm -rf, format C:) and requires confirmation for destructive ops |
-| 📊 **Live Dashboard** | FastAPI + React command center at `localhost:8000` with real-time logs, step chain-of-thought, and memory explorer |
-
----
-
-## Architecture
+### How It Works
 
 ```
 User (text / voice)
@@ -90,13 +78,32 @@ User (text / voice)
    Dashboard (FastAPI + React + WebSocket)
 ```
 
-### Smart Extension Routing
+The **Planner** converts natural language into a step-by-step execution plan. The **Executor** dispatches each step to the appropriate skill, automatically routing Google-domain actions through the Chrome extension. The **Recovery** layer detects failures, retries with exponential backoff, and replans using memory of past failures.
 
-The Executor automatically routes browser skill calls to the Chrome Extension when it is connected — no planner change needed. Google domains (YouTube, Gmail, Calendar, Meet, Drive) are always handled by the extension, not raw Playwright, for maximum reliability.
+### Feature Overview
 
----
+| Capability | Description |
+|---|---|
+| 🧠 **Neural Memory (RAG)** | ChromaDB + Sentence Transformers semantic recall of past workflows and failure patterns |
+| 🌐 **Browser Control** | Web navigation and DOM extraction via Chrome Extension WebSocket bridge (MV3) + Playwright |
+| 🤖 **Agentic Web Agent** | LLM-guided DOM interaction — fills forms, clicks buttons, submits data on any site automatically |
+| 📄 **Direct Page Extraction** | Zero-LLM-cost `getPageText` for reading Wikipedia, articles, blogs — instant and free |
+| 📁 **Universal File Extractor** | Read and extract text from PDF, DOCX, DOC, XLSX, PPTX, EPUB, images (OCR), and any plain-text file — fully local |
+| 🎬 **YouTube Automation** | Search, play, pause, skip, set volume, capture video URLs — via Chrome extension |
+| 📧 **Gmail Integration** | Send, compose, search, and reply to emails directly via extension bridge with verified delivery |
+| 📅 **Google Calendar & Meet** | Create events, schedule Google Meet sessions, get calendar events — no manual clicks needed |
+| 💾 **Google Drive** | Search and open Drive files via extension commands |
+| 🚀 **App Launcher** | Longest-prefix fuzzy-matched native app launching via `apps.json` |
+| 💬 **Messaging** | Send WhatsApp and Telegram messages via desktop automation |
+| 💻 **Terminal** | Execute PowerShell commands with live output streaming |
+| 👁️ **Screen Vision** | Zero-API-cost local screen analysis via MSS + PyAutoGUI |
+| 🔄 **Auto-Recovery** | Detects failures, retries with exponential backoff, and replans using RAG failure memory |
+| 📅 **Date Normalization** | Converts relative dates ("tomorrow", "next Monday") to ISO dates automatically before planning |
+| 🎯 **SOUL.md Macros** | Structured YAML macros bypass the LLM entirely — instant, zero-token-cost named workflows |
+| 🛡️ **Safety Guard** | Blocks dangerous commands (rm -rf, format C:) and requires confirmation for destructive ops |
+| 📊 **Live Dashboard** | FastAPI + React command center at `localhost:8000` with real-time logs, step chain-of-thought, and memory explorer |
 
-## Project Structure
+### Project Structure
 
 ```
 IntentOS/
@@ -157,12 +164,12 @@ IntentOS/
 
 ---
 
-## Quick Start
+## 3. Setup
 
 ### Prerequisites
 
 | Requirement | Version | Notes |
-|---|---|---| 
+|---|---|---|
 | Python | 3.10+ | `python --version` |
 | Node.js | 18+ | Only needed for WhatsApp messaging |
 | Google Gemini API | — | API key from [Google AI Studio](https://aistudio.google.com) OR Vertex AI project |
@@ -200,32 +207,7 @@ cd dashboard/frontend && npm install && cd ../..
 python main.py
 ```
 
-### Access Points
-
-| Service | URL | Description |
-|---|---|---|
-| REST API | http://127.0.0.1:8000 | FastAPI backend + docs at `/docs` |
-| Dashboard | http://127.0.0.1:3000 | React command center (after `npm run frontend`) |
-| WebSocket Bridge | ws://127.0.0.1:8765 | Chrome extension bridge |
-
-> **Port auto-fallback**: If port 8000 is busy, IntentOS automatically picks the next available port and prints it in the startup banner.
-
----
-
-## Chrome Extension Setup
-
-The Chrome extension is required for YouTube, Gmail, Google Calendar, Google Meet, Google Drive, and any web page interaction.
-
-1. Open Chrome → `chrome://extensions`
-2. Enable **Developer Mode** (top-right toggle)
-3. Click **Load unpacked** → select the `chrome-extension/` folder
-4. The extension icon appears in the toolbar — it auto-connects to IntentOS on startup
-
-> The extension uses **Manifest V3** with a persistent WebSocket bridge. It handles MV3 service worker idle-suspend by automatically reconnecting and retrying commands up to 3× with no command loss.
-
----
-
-## Environment Variables
+### Environment Variables
 
 | Variable | Default | Description |
 |---|---|---|
@@ -240,29 +222,38 @@ The Chrome extension is required for YouTube, Gmail, Google Calendar, Google Mee
 | `SARVAM_API_KEY` | — | Optional: Sarvam AI STT for voice input |
 | `CONFIRM_DELETIONS` | `true` | Require confirmation before deleting files |
 
----
+### Chrome Extension Setup
 
-## 🐳 Docker
+The Chrome extension is required for YouTube, Gmail, Google Calendar, Google Meet, Google Drive, and any web page interaction.
 
-### Prerequisites
+1. Open Chrome → `chrome://extensions`
+2. Enable **Developer Mode** (top-right toggle)
+3. Click **Load unpacked** → select the `chrome-extension/` folder
+4. The extension icon appears in the toolbar — it auto-connects to IntentOS on startup
+
+> The extension uses **Manifest V3** with a persistent WebSocket bridge. It handles MV3 service worker idle-suspend by automatically reconnecting and retrying commands up to 3× with no command loss.
+
+### Docker
+
+#### Prerequisites
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
 - `credentials.json` (Google Cloud service account key) placed at the repo root
 - `.env` file configured (copy from `.env.example`)
 
-### Setup
+#### One-time GCP Setup
 
 ```bash
-# Enable Vertex AI API on your GCP project (one-time)
+# Enable Vertex AI API on your GCP project
 gcloud services enable aiplatform.googleapis.com --project=YOUR_PROJECT_ID
 
-# Grant Vertex AI access to your service account (one-time)
+# Grant Vertex AI access to your service account
 gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
   --member="serviceAccount:YOUR_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
   --role="roles/aiplatform.user"
 ```
 
-### Running with Docker
+#### Running with Docker
 
 ```bash
 # Start all services (backend + frontend)
@@ -278,7 +269,7 @@ docker compose up -d intentos-frontend
 docker compose --profile whatsapp up -d
 ```
 
-### Building & Rebuilding
+#### Building & Rebuilding
 
 ```bash
 # Build all images
@@ -291,7 +282,7 @@ docker compose build --no-cache
 docker compose up -d --build
 ```
 
-### Logs
+#### Logs
 
 ```bash
 # Live logs for all services
@@ -304,7 +295,7 @@ docker compose logs -f intentos-backend
 docker compose logs --tail=100 intentos-backend
 ```
 
-### Stopping & Cleanup
+#### Stopping & Cleanup
 
 ```bash
 # Stop all containers (keeps volumes)
@@ -314,7 +305,7 @@ docker compose down
 docker compose down -v
 ```
 
-### Volumes
+#### Docker Volumes
 
 IntentOS uses named Docker volumes to persist data across container restarts:
 
@@ -327,9 +318,57 @@ IntentOS uses named Docker volumes to persist data across container restarts:
 
 ---
 
-## SOUL.md — Personalisation
+## 4. Instructions
 
-`SOUL.md` lets you define custom macros, shortcuts, behaviour rules, and your personal AI persona. It is a structured YAML document parsed at startup and injected dynamically into every Gemini planning prompt.
+### Starting the Backend and Frontend
+
+```bash
+# Start the full agent (backend + WebSocket bridge + dashboard API)
+python main.py
+
+# Start the React dashboard frontend (separate terminal)
+cd dashboard/frontend && npm run dev
+```
+
+Once running, the following access points are available:
+
+| Service | URL | Description |
+|---|---|---|
+| REST API | http://127.0.0.1:8000 | FastAPI backend + docs at `/docs` |
+| Dashboard | http://127.0.0.1:3000 | React command center |
+| WebSocket Bridge | ws://127.0.0.1:8765 | Chrome extension bridge |
+
+> **Port auto-fallback**: If port 8000 is busy, IntentOS automatically picks the next available port (8000–8019) and prints it in the startup banner. The extension bridge (port 8765) kills any stale process holding the port on restart.
+
+### Connecting the Chrome Extension
+
+After loading the extension in Chrome (see Setup → Chrome Extension Setup), the extension will auto-connect to the WebSocket bridge when IntentOS is running. The extension popup shows connection status. Google-domain actions (YouTube, Gmail, Calendar, Meet, Drive) are always routed through the extension automatically — no extra configuration needed.
+
+### Configuring Authentication
+
+**Option A — Gemini API Key** (recommended for local use):
+
+```env
+GEMINI_API_KEY=your-api-key-here
+```
+
+**Option B — Vertex AI** (for enterprise / GCP environments):
+
+```env
+USE_VERTEX_AI=true
+GCP_PROJECT=your-gcp-project-id
+GCP_LOCATION=us-central1
+```
+
+Then authenticate via:
+```bash
+gcloud auth application-default login
+# OR place credentials.json at the repo root
+```
+
+### Configuring SOUL.md
+
+`SOUL.md` is a structured YAML document that lets you define custom macros, shortcuts, behaviour rules, and your personal AI persona. It is parsed at startup and injected dynamically into every Gemini planning prompt.
 
 ```markdown
 ## Macros
@@ -347,97 +386,21 @@ browser: chrome
 
 **Macro short-circuit**: If you invoke a named SOUL macro, the Planner bypasses Gemini entirely and runs the macro steps directly — zero token cost, instant execution.
 
----
+Macros are full YAML action objects. Supported action types: `open_browser`, `open_editor`, `read_calendar`, `notify_user`.
 
-## Skill Reference
+### Scanning Installed Apps
 
-### Browser Skill
-```
-browser.navigate(url, browser="chrome"|"edge")
-browser.search(query, engine="google")
-browser.fill_form(selector, value)
-browser.click(selector)
-browser.extract_text(selector)
-browser.screenshot()
-```
+IntentOS uses `apps.json` to launch native applications by name. Run this once after installation, and again whenever you install new apps:
 
-### Extension Skill (Chrome Extension required)
-```
-# YouTube
-extension.searchYouTube(query, video_index=1)
-extension.playYouTube() | pauseYouTube() | nextVideo()
-extension.setVolume(level=50) | seekTo(seconds) | getVideoInfo()
-
-# Gmail
-extension.sendMail(to, subject, body)
-extension.composeMail(to, subject, body, send=false)
-extension.searchMail(query) | getUnread()
-extension.replyMail(tab_id, body)
-
-# Google Calendar & Meet
-extension.createEvent(title, date="YYYY-MM-DD", time="HH:MM", duration=60, meet=false)
-extension.getEvents(date) | openCalendar()
-extension.joinMeet(url) | muteMic() | muteCamera() | leaveMeet()
-
-# Google Drive
-extension.searchDrive(query) | openDriveFile(file_id)
-
-# Page interaction
-extension.web_agent(url, task="describe what to do")   # LLM-guided DOM
-extension.getPageText(tab_id, selector="body")          # Zero-LLM-cost extraction
-```
-
-### Files Skill
-```
-files.read_file(path)
-files.write_file(path, content)
-files.move(source, destination) | copy() | rename() | delete()
-files.list_dir(path) | organize_by_type(directory) | create_dir(path)
-files.watch(directory)
-```
-
-### Apps Skill
-```
-apps.open_app(name)           # e.g. "visual studio code", "notepad C:\file.txt"
-apps.list_apps(filter)
-apps.scan_apps()
-```
-
-### Terminal Skill (PowerShell)
-```
-terminal.execute(command)
-terminal.execute_background(command)
-```
-
-### Messaging Skill
-```
-messaging.send_message(app="whatsapp"|"telegram", contact, text)
-messaging.open_chat(app, contact)
-```
-
-### AI Skill
-```
-ai.ask(prompt, context)
-ai.summarize(context)
+```bash
+python scan_apps.py
 ```
 
 ---
 
-## Supported File Types (Universal Extractor)
+## 5. Usage
 
-| Category | Extensions |
-|---|---|
-| Documents | `.pdf` `.docx` `.doc` `.pptx` `.rtf` `.epub` |
-| Spreadsheets | `.xlsx` `.xls` `.ods` `.csv` `.tsv` |
-| Data / Code | `.json` `.jsonl` `.ipynb` `.py` `.js` `.ts` `.md` `.yaml` and all plain-text |
-| Images (OCR) | `.jpg` `.png` `.gif` `.bmp` `.tiff` `.webp` |
-| Archives | `.zip` `.tar` `.gz` (lists contents) |
-
-All extraction is **local** — no file contents are sent to any external API.
-
----
-
-## Example Commands
+### Example Commands
 
 ```
 # Documents
@@ -474,9 +437,93 @@ open Calculator
 scan my installed apps
 ```
 
+### Skill Reference
+
+#### Browser Skill
+```
+browser.navigate(url, browser="chrome"|"edge")
+browser.search(query, engine="google")
+browser.fill_form(selector, value)
+browser.click(selector)
+browser.extract_text(selector)
+browser.screenshot()
+```
+
+#### Extension Skill (Chrome Extension required)
+```
+# YouTube
+extension.searchYouTube(query, video_index=1)
+extension.playYouTube() | pauseYouTube() | nextVideo()
+extension.setVolume(level=50) | seekTo(seconds) | getVideoInfo()
+
+# Gmail
+extension.sendMail(to, subject, body)
+extension.composeMail(to, subject, body, send=false)
+extension.searchMail(query) | getUnread()
+extension.replyMail(tab_id, body)
+
+# Google Calendar & Meet
+extension.createEvent(title, date="YYYY-MM-DD", time="HH:MM", duration=60, meet=false)
+extension.getEvents(date) | openCalendar()
+extension.joinMeet(url) | muteMic() | muteCamera() | leaveMeet()
+
+# Google Drive
+extension.searchDrive(query) | openDriveFile(file_id)
+
+# Page interaction
+extension.web_agent(url, task="describe what to do")   # LLM-guided DOM
+extension.getPageText(tab_id, selector="body")          # Zero-LLM-cost extraction
+```
+
+#### Files Skill
+```
+files.read_file(path)
+files.write_file(path, content)
+files.move(source, destination) | copy() | rename() | delete()
+files.list_dir(path) | organize_by_type(directory) | create_dir(path)
+files.watch(directory)
+```
+
+#### Apps Skill
+```
+apps.open_app(name)           # e.g. "visual studio code", "notepad C:\file.txt"
+apps.list_apps(filter)
+apps.scan_apps()
+```
+
+#### Terminal Skill (PowerShell)
+```
+terminal.execute(command)
+terminal.execute_background(command)
+```
+
+#### Messaging Skill
+```
+messaging.send_message(app="whatsapp"|"telegram", contact, text)
+messaging.open_chat(app, contact)
+```
+
+#### AI Skill
+```
+ai.ask(prompt, context)
+ai.summarize(context)
+```
+
+### Supported File Types (Universal Extractor)
+
+All extraction is **local** — no file contents are sent to any external API.
+
+| Category | Extensions |
+|---|---|
+| Documents | `.pdf` `.docx` `.doc` `.pptx` `.rtf` `.epub` |
+| Spreadsheets | `.xlsx` `.xls` `.ods` `.csv` `.tsv` |
+| Data / Code | `.json` `.jsonl` `.ipynb` `.py` `.js` `.ts` `.md` `.yaml` and all plain-text |
+| Images (OCR) | `.jpg` `.png` `.gif` `.bmp` `.tiff` `.webp` |
+| Archives | `.zip` `.tar` `.gz` (lists contents) |
+
 ---
 
-## New Features Since v0.x
+## Recent Changes (v1.0.0-alpha)
 
 ### Extension Bridge v3.1
 - **3× retry on disconnect**: Commands are never silently dropped when the MV3 service worker restarts
@@ -493,23 +540,15 @@ scan my installed apps
 ### Direct Page Extraction (`getPageText`)
 - Zero-LLM-cost text extraction from any CSS selector
 - Used for Wikipedia (`#mw-content-text`), articles (`article`), full pages (`body`)
-- Returns raw text that downstream steps (write_file, messaging) can use directly
 - Server-side HTML fetching via `requests` + `BeautifulSoup` as fast path for static pages
 
-### Date Normalization Utility
+### Date Normalization
 - `utils/date_utils.py` converts "tomorrow", "next Monday", "day after tomorrow" → ISO `YYYY-MM-DD`
-- Applied automatically to every intent before planning
-- Applied to `date` parameters at execution time in the executor
-
-### SOUL.md Structured Macros
-- Macros are now full YAML action objects, not just text strings
-- Macro short-circuit bypasses Gemini entirely for named workflows
-- Supported action types: `open_browser`, `open_editor`, `read_calendar`, `notify_user`
+- Applied automatically to every intent before planning and to `date` parameters at execution time
 
 ### Auto Port Conflict Resolution
 - Dashboard auto-scans ports 8000–8019 and picks the first free one
 - Extension bridge (port 8765) kills any stale process holding the port on restart
-- Both behaviors are logged in the startup banner
 
 ### Safety Layer
 - `_validate_action_safety()` blocks dangerous patterns before execution
