@@ -281,6 +281,36 @@ const CSS = `
   .toast-close:hover { color: var(--text); background: rgba(255,255,255,0.1); }
   .toast-progress { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--success); animation: toast-timer linear forwards; border-top-right-radius: 3px; border-bottom-right-radius: 3px; }
   @keyframes toast-timer { from { width: 100%; } to { width: 0%; } }
+
+  /* ── Confirmation Modal ── */
+  .confirm-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.72); backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center; z-index: 10000;
+    animation: fade-in 0.2s ease;
+  }
+  @keyframes fade-in { from { opacity:0; } to { opacity:1; } }
+  .confirm-modal {
+    background: #14171d; border: 1px solid rgba(255,255,255,0.13); border-radius: 14px;
+    padding: 28px 28px 22px; width: 420px; max-width: 95vw;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06);
+    animation: modal-in 0.3s cubic-bezier(0.16,1,0.3,1);
+  }
+  @keyframes modal-in { from { opacity:0; transform:scale(0.93) translateY(12px); } to { opacity:1; transform:scale(1) translateY(0); } }
+  .confirm-icon { font-size: 32px; margin-bottom: 12px; }
+  .confirm-title { font-size: 15px; font-weight: 700; color: var(--warn); margin-bottom: 6px; }
+  .confirm-action { font-size: 10px; font-family: var(--mono); color: var(--muted); letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase; }
+  .confirm-message { font-size: 13px; color: var(--text); line-height: 1.6; margin-bottom: 20px; background: rgba(255,255,255,0.03); border: 0.5px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 12px 14px; }
+  .confirm-step-id { font-size: 9px; font-family: var(--mono); color: var(--muted); margin-bottom: 18px; }
+  .confirm-actions { display: flex; gap: 10px; }
+  .confirm-btn {
+    flex: 1; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.18s; font-family: var(--ui);
+  }
+  .confirm-btn-yes { background: var(--warn); color: #0a0c0f; }
+  .confirm-btn-yes:hover { background: #f6b12a; transform: translateY(-1px); }
+  .confirm-btn-no  { background: rgba(255,255,255,0.07); color: var(--muted); border: 0.5px solid rgba(255,255,255,0.1); }
+  .confirm-btn-no:hover  { background: rgba(239,68,68,0.12); color: var(--danger); border-color: rgba(239,68,68,0.3); }
+  .confirm-counter { font-size: 9px; font-family: var(--mono); color: var(--muted); text-align: center; margin-top: 12px; }
 `;
 
 function getFriendlyStepMessage(step) {
@@ -298,7 +328,70 @@ function getFriendlyStepMessage(step) {
   return "Processing step...";
 }
 
+// ─── Confirmation Modal ────────────────────────────────────────────────────
+function ConfirmModal({ item, onRespond, queueLength }) {
+  const [loading, setLoading] = useState(false);
+
+  const respond = async (confirmed) => {
+    setLoading(true);
+    try {
+      await fetch(`${API_BASE}/api/confirm/${item.stepId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmed }),
+      });
+    } catch (e) {
+      console.error("Confirm request failed:", e);
+    }
+    onRespond(item.stepId);
+  };
+
+  // Allow keyboard: Enter = confirm, Escape = decline
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === "Enter")   respond(true);
+      if (e.key === "Escape")  respond(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [item.stepId]);
+
+  return (
+    <div className="confirm-overlay">
+      <div className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+        <div className="confirm-icon">⚠️</div>
+        <div className="confirm-title" id="confirm-title">Confirmation Required</div>
+        <div className="confirm-action">{item.action}</div>
+        <div className="confirm-message">{item.message}</div>
+        <div className="confirm-step-id">Step ID: {item.stepId}</div>
+        <div className="confirm-actions">
+          <button
+            id={`confirm-yes-${item.stepId}`}
+            className="confirm-btn confirm-btn-yes"
+            onClick={() => respond(true)}
+            disabled={loading}
+          >
+            ✓ Confirm
+          </button>
+          <button
+            id={`confirm-no-${item.stepId}`}
+            className="confirm-btn confirm-btn-no"
+            onClick={() => respond(false)}
+            disabled={loading}
+          >
+            ✗ Decline
+          </button>
+        </div>
+        {queueLength > 1 && (
+          <div className="confirm-counter">{queueLength - 1} more confirmation{queueLength - 1 > 1 ? "s" : ""} queued</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Toast({ toast, onRemove, onDirectCommand }) {
+
   const [isHovered, setIsHovered] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
@@ -363,6 +456,13 @@ export default function App() {
   const [loading, setLoading]           = useState(false);
   const [activeTab, setActiveTab]       = useState("execution");
   const [wsConnected, setWsConnected]   = useState(false);
+
+  // Confirmation queue — populated when executor emits confirm_required events
+  const [confirmQueue, setConfirmQueue] = useState([]);  // [{stepId, action, message, params}]
+
+  const removeConfirm = useCallback((stepId) => {
+    setConfirmQueue(prev => prev.filter(c => c.stepId !== stepId));
+  }, []);
 
   // Execution state — populated from WS events + /api/status polling
   const [planSummary,   setPlanSummary]   = useState(null);   // string | null
@@ -526,6 +626,20 @@ export default function App() {
     if (type === "plan_replanned") {
       // Recovery inserted new steps — re-fetch status to sync
       api.get("/api/status").then(syncFromStatus).catch(() => {});
+    }
+
+    if (type === "confirm_required") {
+      // Execution is paused — show modal to user
+      setConfirmQueue(prev => {
+        // Avoid duplicates if WS fires twice
+        if (prev.find(c => c.stepId === event.stepId)) return prev;
+        return [...prev, {
+          stepId:  event.stepId,
+          action:  event.action,
+          message: event.message,
+          params:  event.params || {},
+        }];
+      });
     }
   }, []);
 
@@ -980,6 +1094,15 @@ export default function App() {
             />
           ))}
         </div>
+        {/* ── Confirmation Modal — shown when executor is awaiting user input ── */}
+        {confirmQueue.length > 0 && (
+          <ConfirmModal
+            key={confirmQueue[0].stepId}
+            item={confirmQueue[0]}
+            onRespond={removeConfirm}
+            queueLength={confirmQueue.length}
+          />
+        )}
       </div>
     </>
   );

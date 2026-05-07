@@ -244,6 +244,48 @@ def create_router() -> APIRouter:
             return {"skills": executor.skills.available_skills()}
         return {"skills": []}
 
+    @router.post("/confirm/{step_id}")
+    async def confirm_step(step_id: str, request: Request):
+        """
+        Resolve a pending confirmation gate.
+
+        Body: { "confirmed": true | false }
+
+        Returns:
+          { "success": true }  — gate resolved
+          { "success": false, "error": "No pending confirmation for step_id" }
+        """
+        executor = request.app.state.executor
+        if not executor:
+            return {"success": False, "error": "Executor not initialized"}
+
+        body = await request.json()
+        confirmed = bool(body.get("confirmed", False))
+        resolved = executor.resolve_confirmation(step_id, confirmed)
+
+        if resolved:
+            return {
+                "success": True,
+                "step_id": step_id,
+                "confirmed": confirmed,
+                "message": "Confirmed — proceeding." if confirmed else "Declined — step will be skipped.",
+            }
+        return {
+            "success": False,
+            "error": f"No pending confirmation for step '{step_id}'. It may have already been resolved or timed out.",
+        }
+
+    @router.get("/confirmations/pending")
+    async def get_pending_confirmations(request: Request):
+        """
+        List all steps currently awaiting user confirmation.
+        Useful for the frontend to recover the confirmation modal after a page reload.
+        """
+        executor = request.app.state.executor
+        if not executor:
+            return {"pending": []}
+        return {"pending": executor.get_pending_confirmations()}
+
     @router.get("/health")
     async def health_check():
         """Health check endpoint."""

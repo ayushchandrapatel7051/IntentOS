@@ -23,6 +23,18 @@ class ShellExecutionError(Exception):
         super().__init__(f"Command failed (exit {exit_code}): {stderr[:500]}")
 
 
+class ConfirmationRequiredException(Exception):
+    """
+    Raised when a terminal command requires user confirmation before execution.
+    The executor catches this and routes it to the SOUL.md confirmation gate
+    so the frontend modal / CLI prompt can ask the user.
+    """
+    def __init__(self, command: str, reason: str):
+        self.command = command
+        self.reason = reason
+        super().__init__(f"CONFIRMATION_REQUIRED: {reason} | Command: {command}")
+
+
 class ShellExecutor:
     """
     Executes shell commands with safety controls and real-time streaming.
@@ -51,6 +63,31 @@ class ShellExecutor:
         self.is_windows = platform.system() == "Windows"
         self.running_processes = {}
 
+
+    def _check_safety(self, command: str) -> tuple[bool, bool, str]:
+
+        """
+        Analyse the command for safety.
+
+        Returns:
+            (is_blocked, needs_confirm, reason)
+              is_blocked   — True = hard-block, raise ShellExecutionError
+              needs_confirm — True = ask user first, raise ConfirmationRequiredException
+              reason        — human-readable explanation
+        """
+        cmd_lower = command.lower().strip()
+
+        # Hard-blocked patterns — never execute
+        for pattern in self.BLOCKED_PATTERNS:
+            if pattern in cmd_lower:
+                return True, False, f"command matches a dangerous pattern: '{pattern}'. Review SOUL.md safety rules."
+
+        # Patterns that require user confirmation (soft gate)
+        if "git push" in cmd_lower:
+            return False, True, f"Push to remote git repository? Confirm? (yes/no)"
+
+        return False, False, ""
+
     async def execute(self, action: str, params: dict) -> str:
         """Dispatch a terminal action."""
         actions = {
@@ -62,54 +99,47 @@ class ShellExecutor:
             raise ValueError(f"Unknown terminal action: {action}")
         return await handler(**params)
 
-    def _is_safe(self, command: str) -> bool:
-        """Check if a command is safe to execute."""
-        cmd_lower = command.lower().strip()
-        for pattern in self.BLOCKED_PATTERNS:
-            if pattern in cmd_lower:
-                return False
-
-        # Check SOUL.md rules (confirm git push, etc.)
-        confirm_git_push = os.getenv("CONFIRM_GIT_PUSH", "true").lower() == "true"
-        if confirm_git_push and "git push" in cmd_lower:
-            return False  # Would need user confirmation
-
-        return True
-
     async def run_command(
         self,
         command: str,
         cwd: str = "",
         timeout: int = 300,
         env: dict = None,
+        _confirmed: bool = False,
         **kwargs,
     ) -> str:
         """
         Execute a shell command and return its output.
-        
+
         Args:
             command: Shell command to execute
             cwd: Working directory (default: current directory)
             timeout: Maximum execution time in seconds
             env: Additional environment variables
-            
+            _confirmed: If True, skip the confirmation gate (set by executor after user approval)
+
         Returns:
             Combined stdout output
-            
+
         Raises:
             ShellExecutionError: If command fails with non-zero exit code
+            ConfirmationRequiredException: If the command needs user approval first
         """
-        if not self._is_safe(command):
-            raise ShellExecutionError(
-                command, -1,
-                f"Blocked: command matches a dangerous pattern. "
-                f"Review SOUL.md safety rules."
-            )
+        is_blocked, needs_confirm, reason = self._check_safety(command)
+
+        if is_blocked:
+            raise ShellExecutionError(command, -1, f"Blocked: {reason}")
+
+        if needs_confirm and not _confirmed:
+            # The executor catches this, creates a confirmation gate, and re-runs
+            # the step only if the user says yes.
+            raise ConfirmationRequiredException(command, reason)
 
         if self.docker_enabled:
             return await self._run_in_docker(command, cwd, timeout)
         else:
             return await self._run_direct(command, cwd, timeout, env)
+
 
     async def _run_direct(
         self,
@@ -210,13 +240,12 @@ class ShellExecutor:
     ) -> str:
         """
         Start a command in the background (e.g., dev servers).
-        
+
         Returns a process ID that can be used to check status or stop it.
         """
-        if not self._is_safe(command):
-            raise ShellExecutionError(
-                command, -1, "Blocked: command matches a dangerous pattern."
-            )
+        is_blocked, _, reason = self._check_safety(command)
+        if is_blocked:
+            raise ShellExecutionError(command, -1, f"Blocked: {reason}")
 
         work_dir = cwd or os.getcwd()
 
@@ -231,6 +260,7 @@ class ShellExecutor:
         self.running_processes[proc_name] = process
 
         return f"Background process started: {proc_name} (PID: {process.pid})"
+
 
     async def stop_background(self, name: str) -> str:
         """Stop a background process."""

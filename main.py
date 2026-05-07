@@ -218,10 +218,41 @@ async def main():
     )
 
     # Create executor with broadcast function
+    # Wrap broadcast to intercept confirm_required events in the CLI
+    _base_broadcast = ws_manager.broadcast
+
+    async def _cli_aware_broadcast(event: dict):
+        """Forward WS events to dashboard clients AND handle confirm_required in CLI."""
+        await _base_broadcast(event)
+
+        if event.get("type") == "confirm_required":
+            step_id = event.get("stepId", "")
+            action  = event.get("action", "")
+            message = event.get("message", f"Confirm action: {action}?")
+
+            async def _ask_cli():
+                """Prompt the user in the terminal for this specific step."""
+                # Small delay so the executor's print statement appears first
+                await asyncio.sleep(0.1)
+                try:
+                    answer = await asyncio.to_thread(
+                        input,
+                        f"\n  ⚠  Confirm [{action}]: {message}\n  [y/N] > ",
+                    )
+                    confirmed = answer.strip().lower() in ("y", "yes")
+                    resolved = executor.resolve_confirmation(step_id, confirmed)
+                    if not resolved:
+                        console.print(f"  [dim]No pending confirmation for {step_id} — may have timed out.[/]")
+                except Exception:
+                    # If input fails (e.g. non-interactive), default to declined
+                    executor.resolve_confirmation(step_id, False)
+
+            asyncio.create_task(_ask_cli())
+
     executor = Executor(
         planner=planner,
         skill_registry=skill_registry,
-        broadcast=ws_manager.broadcast,
+        broadcast=_cli_aware_broadcast,
     )
 
     # Wire executor into the dashboard
@@ -275,7 +306,8 @@ async def main():
                 context = await executor.execute_plan(plan)
 
                 # Show each step result with actual command and output
-                needs_confirm = []   # steps that need user confirmation
+                needs_confirm = []   # steps that need user confirmation (delete gates)
+
 
                 for step in context.plan.steps:
                     icon = "[green]\u2713[/]" if step.status.value == "done" else "[red]\u2717[/]"

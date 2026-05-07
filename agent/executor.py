@@ -40,6 +40,16 @@ except ImportError:
     class VerificationError(RuntimeError):
         pass
 
+# Import ConfirmationRequiredException so the executor can intercept terminal
+# git push / other soft-blocked commands and route them to the SOUL.md confirmation gate
+try:
+    from skills.terminal.shell_executor import ConfirmationRequiredException
+except ImportError:
+    class ConfirmationRequiredException(Exception):  # type: ignore
+        command: str = ""
+        reason: str = ""
+
+
 
 # ---------------------------------------------------------------------------
 # Extension routing table
@@ -210,6 +220,12 @@ class Executor:
         # SoulReader reference — used for safety validation and var resolution
         # We grab it from planner.soul_reader if not explicitly provided
         self.soul_reader = soul_reader or getattr(planner, "soul_reader", None)
+
+        # ── Confirmation gate ──────────────────────────────────────────────────
+        # Maps step_id → (asyncio.Event, confirmed: bool)
+        # When a step needs confirmation, an event is created and awaited.
+        # The /api/confirm/{step_id} route calls resolve_confirmation() to unblock it.
+        self._pending_confirmations: dict[str, dict] = {}
 
     async def _noop_broadcast(self, event: dict):
         pass
@@ -404,12 +420,21 @@ class Executor:
             print(f"  [Safety] ✗ {step.id} BLOCKED: {block_reason}")
             return False
 
-        # ── Confirmation check ─────────────────────────────────────────────────
+        # ── Confirmation check — BLOCKING until user responds ─────────────────
         confirm_msg = self.soul_reader.requires_confirmation(step.action)
         if confirm_msg:
-            # Emit a WS event so the frontend can surface a confirmation modal.
-            # Phase 2 stub: we emit and continue (non-blocking).
-            # Phase 3 (future): hold an asyncio.Event here until user responds.
+            # Create an asyncio Event that will be resolved by the /api/confirm endpoint
+            # (frontend modal) or by the CLI's input handler.
+            evt = asyncio.Event()
+            self._pending_confirmations[step.id] = {
+                "event": evt,
+                "confirmed": False,
+                "action": step.action,
+                "message": confirm_msg,
+                "params": step.params,
+            }
+
+            # Notify frontend/CLI that confirmation is required — execution is paused
             await self._emit("confirm_required", {
                 "stepId": step.id,
                 "action": step.action,
@@ -419,11 +444,83 @@ class Executor:
             if self.context:
                 self.context.add_log(
                     "WARN",
-                    f"[SOUL SAFETY] Confirmation required for {step.action}: {confirm_msg}",
+                    f"[SOUL SAFETY] Waiting for user confirmation: {step.action} — {confirm_msg}",
                     step.id,
                 )
 
+            print(f"\n  ⚠  [Confirmation Required] {confirm_msg}")
+            print(f"     Action: {step.action} | Step: {step.id}")
+            print(f"     Reply via dashboard or type y/n in terminal...")
+
+            # Wait up to 120 seconds for the user to respond
+            try:
+                await asyncio.wait_for(evt.wait(), timeout=120.0)
+            except asyncio.TimeoutError:
+                self._pending_confirmations.pop(step.id, None)
+                step.status = StepStatus.SKIPPED
+                step.error = "Confirmation timed out after 120s — step skipped."
+                step.completed_at = datetime.now().isoformat()
+                await self._emit("step_failed", {
+                    "stepId": step.id,
+                    "status": "skipped",
+                    "error": step.error,
+                })
+                if self.context:
+                    self.context.add_log("WARN", f"[SOUL SAFETY] Confirmation timed out for {step.action}", step.id)
+                print(f"  ✗ Confirmation timed out — step skipped.")
+                return False
+
+            entry = self._pending_confirmations.pop(step.id, {})
+            confirmed = entry.get("confirmed", False)
+
+            if not confirmed:
+                step.status = StepStatus.SKIPPED
+                step.error = "User declined confirmation — step skipped."
+                step.completed_at = datetime.now().isoformat()
+                await self._emit("step_failed", {
+                    "stepId": step.id,
+                    "status": "skipped",
+                    "error": step.error,
+                })
+                if self.context:
+                    self.context.add_log("WARN", f"[SOUL SAFETY] User declined {step.action}", step.id)
+                print(f"  ✗ User declined — step skipped.")
+                return False
+
+            if self.context:
+                self.context.add_log("INFO", f"[SOUL SAFETY] User confirmed {step.action} — proceeding.", step.id)
+            print(f"  ✓ Confirmed — proceeding with {step.action}.")
+
         return True
+
+    def resolve_confirmation(self, step_id: str, confirmed: bool) -> bool:
+        """
+        Called by the /api/confirm route (frontend modal) or CLI input handler
+        to unblock a pending confirmation gate.
+
+        Parameters:
+          step_id   — the step that is waiting
+          confirmed — True = proceed, False = skip
+        """
+        entry = self._pending_confirmations.get(step_id)
+        if entry:
+            entry["confirmed"] = confirmed
+            entry["event"].set()
+            print(f"  [Confirm] {step_id} → {'✓ confirmed' if confirmed else '✗ declined'}")
+            return True
+        return False
+
+    def get_pending_confirmations(self) -> list:
+        """Returns a list of step IDs currently awaiting confirmation."""
+        return [
+            {
+                "stepId": sid,
+                "action": v["action"],
+                "message": v["message"],
+                "params": v["params"],
+            }
+            for sid, v in self._pending_confirmations.items()
+        ]
 
     # ── Template variable resolution ({{steps.step_N.result}} system) ─────────
 
@@ -870,6 +967,87 @@ class Executor:
                 step.id,
             )
             return False
+
+        except ConfirmationRequiredException as e:
+            # ── Terminal command needs user confirmation (e.g. git push) ──
+            # Create a confirmation gate exactly like _validate_action_safety does.
+            confirm_msg = e.reason
+            command = getattr(e, "command", step.params.get("command", step.action))
+
+            evt = asyncio.Event()
+            self._pending_confirmations[step.id] = {
+                "event": evt,
+                "confirmed": False,
+                "action": step.action,
+                "message": confirm_msg,
+                "params": step.params,
+            }
+
+            await self._emit("confirm_required", {
+                "stepId": step.id,
+                "action": step.action,
+                "message": confirm_msg,
+                "params": step.params,
+            })
+            if self.context:
+                self.context.add_log(
+                    "WARN",
+                    f"[Terminal] Waiting for user confirmation: {confirm_msg}",
+                    step.id,
+                )
+
+            print(f"\n  ⚠  [Confirmation Required] {confirm_msg}")
+            print(f"     Command: {command}")
+            print(f"     Reply via dashboard or type y/n in terminal...")
+
+            try:
+                await asyncio.wait_for(evt.wait(), timeout=120.0)
+            except asyncio.TimeoutError:
+                self._pending_confirmations.pop(step.id, None)
+                step.status = StepStatus.SKIPPED
+                step.error = "Confirmation timed out after 120s — step skipped."
+                step.completed_at = datetime.now().isoformat()
+                await self._emit("step_failed", {"stepId": step.id, "status": "skipped", "error": step.error})
+                if self.context:
+                    self.context.add_log("WARN", f"[Terminal] Confirmation timed out for {step.action}", step.id)
+                print(f"  ✗ Confirmation timed out — step skipped.")
+                return False
+
+            entry = self._pending_confirmations.pop(step.id, {})
+            if not entry.get("confirmed", False):
+                step.status = StepStatus.SKIPPED
+                step.error = "User declined confirmation — step skipped."
+                step.completed_at = datetime.now().isoformat()
+                await self._emit("step_failed", {"stepId": step.id, "status": "skipped", "error": step.error})
+                if self.context:
+                    self.context.add_log("WARN", f"[Terminal] User declined {step.action}", step.id)
+                print(f"  ✗ User declined — step skipped.")
+                return False
+
+            # User confirmed — re-run the command directly (bypassing the confirmation check)
+            print(f"  ✓ Confirmed — running: {command}")
+            if self.context:
+                self.context.add_log("INFO", f"[Terminal] User confirmed — executing: {command}", step.id)
+            try:
+                skill_handler = self.skills.get(step.skill)
+                # Pass confirmed=True so shell_executor skips the confirmation gate
+                result = await skill_handler.execute(step.action, {**step.params, "_confirmed": True})
+                step.status = StepStatus.DONE
+                step.result = str(result) if result else "Success"
+                step.completed_at = datetime.now().isoformat()
+                await self._emit("step_completed", {"stepId": step.id, "status": "done", "result": step.result})
+                if self.context:
+                    self.context.add_log("INFO", f"Completed (after confirmation): {step.result}", step.id)
+                return True
+            except Exception as re_err:
+                step.status = StepStatus.FAILED
+                step.error = str(re_err)
+                step.completed_at = datetime.now().isoformat()
+                await self._emit("step_failed", {"stepId": step.id, "status": "failed", "error": step.error})
+                if self.context:
+                    self.context.add_log("ERROR", f"Failed after confirmation: {step.error}", step.id)
+                return False
+
 
         except Exception as e:
             step.status = StepStatus.FAILED
