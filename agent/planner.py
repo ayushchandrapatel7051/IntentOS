@@ -302,6 +302,25 @@ YOUTUBE + MESSAGING RULE — MANDATORY:
       step_2: extension.web_agent(url="", task="Search for 'python' and play the first video result")
       step_3: messaging.send_message(app="whatsapp", contact="X", text="Here is the YouTube video: {{steps.step_2.result.video_url}}")
   - DO NOT add a separate step to get the URL — it is captured automatically.
+
+GIT OPERATIONS RULES — MANDATORY:
+  - Each terminal command runs in its own subprocess. `Set-Location` does NOT persist to the next step.
+  - NEVER use a standalone `Set-Location <path>` step followed by `git push` or similar.
+  - ALWAYS pass the `cwd` parameter to terminal.execute for git commands, OR chain navigation inline:
+      CORRECT: terminal.execute(command="git push", cwd="C:\\Users\\codin\\projects\\MyRepo")
+      CORRECT: terminal.execute(command="cd C:\\Users\\codin\\projects\\MyRepo; git push")
+      WRONG:   terminal.execute(command="Set-Location C:\\path")   <- next step won't be in that dir
+  - When cloning a repo and then running git add/commit/push, ALL git steps must use:
+      cwd="<clone_target_path>" (the same path used in the git clone command)
+  - Never run `git push` or `git commit` without specifying the repo's cwd — it will push IntentOS itself.
+  - Example for "clone repo, update README, commit and push":
+      step_1: terminal.execute(command="git clone https://github.com/user/repo C:\\Users\\codin\\projects\\repo")
+      step_2: files.read_file(path="C:\\Users\\codin\\projects\\repo\\README.md")
+      step_3: files.write_file(path="C:\\Users\\codin\\projects\\repo\\README.md", content="...")
+      step_4: terminal.execute(command="git add README.md", cwd="C:\\Users\\codin\\projects\\repo")
+      step_5: terminal.execute(command="git commit -m 'Updated readme file'", cwd="C:\\Users\\codin\\projects\\repo")
+      step_6: terminal.execute(command="git push", cwd="C:\\Users\\codin\\projects\\repo")
+  - For git user config errors, chain: terminal.execute(command="git config user.email 'x@x.com'; git config user.name 'x'; git commit -m 'msg'", cwd="<path>")
 {dynamic}"""
 
 

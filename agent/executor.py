@@ -423,8 +423,17 @@ class Executor:
         # ── Confirmation check — BLOCKING until user responds ─────────────────
         confirm_msg = self.soul_reader.requires_confirmation(step.action)
         if confirm_msg:
+            # Substitute step params into the message so templates like ${contact} resolve
+            # e.g. "Send message to ${contact}?" → "Send message to Jaidev?"
+            import re as _re_confirm
+            def _sub_param(m):
+                key = m.group(1)
+                return str(step.params.get(key, m.group(0)))
+            confirm_msg = _re_confirm.sub(r'\$\{(\w+)\}', _sub_param, confirm_msg)
+            confirm_msg = _re_confirm.sub(r'\{(\w+)\}', _sub_param, confirm_msg)
+
             # Create an asyncio Event that will be resolved by the /api/confirm endpoint
-            # (frontend modal) or by the CLI's input handler.
+            # (frontend modal) or by the CLI's input handler in main.py.
             evt = asyncio.Event()
             self._pending_confirmations[step.id] = {
                 "event": evt,
@@ -434,7 +443,8 @@ class Executor:
                 "params": step.params,
             }
 
-            # Notify frontend/CLI that confirmation is required — execution is paused
+            # Notify frontend/CLI — the broadcast interceptor in main.py handles the
+            # CLI y/N prompt; the frontend shows the ConfirmModal.
             await self._emit("confirm_required", {
                 "stepId": step.id,
                 "action": step.action,
@@ -447,10 +457,6 @@ class Executor:
                     f"[SOUL SAFETY] Waiting for user confirmation: {step.action} — {confirm_msg}",
                     step.id,
                 )
-
-            print(f"\n  ⚠  [Confirmation Required] {confirm_msg}")
-            print(f"     Action: {step.action} | Step: {step.id}")
-            print(f"     Reply via dashboard or type y/n in terminal...")
 
             # Wait up to 120 seconds for the user to respond
             try:
@@ -492,6 +498,7 @@ class Executor:
             print(f"  ✓ Confirmed — proceeding with {step.action}.")
 
         return True
+
 
     def resolve_confirmation(self, step_id: str, confirmed: bool) -> bool:
         """
@@ -996,9 +1003,7 @@ class Executor:
                     step.id,
                 )
 
-            print(f"\n  ⚠  [Confirmation Required] {confirm_msg}")
-            print(f"     Command: {command}")
-            print(f"     Reply via dashboard or type y/n in terminal...")
+
 
             try:
                 await asyncio.wait_for(evt.wait(), timeout=120.0)

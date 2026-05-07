@@ -282,113 +282,50 @@ const CSS = `
   .toast-progress { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--success); animation: toast-timer linear forwards; border-top-right-radius: 3px; border-bottom-right-radius: 3px; }
   @keyframes toast-timer { from { width: 100%; } to { width: 0%; } }
 
-  /* ── Confirmation Modal ── */
-  .confirm-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.72); backdrop-filter: blur(6px);
-    display: flex; align-items: center; justify-content: center; z-index: 10000;
-    animation: fade-in 0.2s ease;
+  /* ── Inline Confirmation Card ── */
+  .confirm-inline {
+    margin: 6px 0 10px 48px;
+    background: linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(14,17,21,0.95) 100%);
+    border: 1px solid rgba(245,158,11,0.28);
+    border-radius: 10px;
+    padding: 14px 16px;
+    animation: confirm-slide-in 0.28s cubic-bezier(0.16,1,0.3,1);
   }
-  @keyframes fade-in { from { opacity:0; } to { opacity:1; } }
-  .confirm-modal {
-    background: #14171d; border: 1px solid rgba(255,255,255,0.13); border-radius: 14px;
-    padding: 28px 28px 22px; width: 420px; max-width: 95vw;
-    box-shadow: 0 24px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06);
-    animation: modal-in 0.3s cubic-bezier(0.16,1,0.3,1);
+  @keyframes confirm-slide-in {
+    from { opacity:0; transform:translateY(-6px); }
+    to   { opacity:1; transform:translateY(0); }
   }
-  @keyframes modal-in { from { opacity:0; transform:scale(0.93) translateY(12px); } to { opacity:1; transform:scale(1) translateY(0); } }
-  .confirm-icon { font-size: 32px; margin-bottom: 12px; }
-  .confirm-title { font-size: 15px; font-weight: 700; color: var(--warn); margin-bottom: 6px; }
-  .confirm-action { font-size: 10px; font-family: var(--mono); color: var(--muted); letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase; }
-  .confirm-message { font-size: 13px; color: var(--text); line-height: 1.6; margin-bottom: 20px; background: rgba(255,255,255,0.03); border: 0.5px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 12px 14px; }
-  .confirm-step-id { font-size: 9px; font-family: var(--mono); color: var(--muted); margin-bottom: 18px; }
-  .confirm-actions { display: flex; gap: 10px; }
-  .confirm-btn {
-    flex: 1; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  .confirm-inline-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  }
+  .confirm-inline-icon { font-size: 15px; flex-shrink: 0; }
+  .confirm-inline-label {
+    font-size: 9px; font-family: var(--mono); color: var(--warn);
+    letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700;
+  }
+  .confirm-inline-msg {
+    font-size: 12px; color: var(--text); line-height: 1.55;
+    background: rgba(255,255,255,0.03); border: 0.5px solid rgba(255,255,255,0.06);
+    border-radius: 6px; padding: 9px 12px; margin-bottom: 12px;
+    font-family: var(--ui);
+  }
+  .confirm-inline-action {
+    font-size: 9px; font-family: var(--mono); color: rgba(245,158,11,0.55);
+    letter-spacing: 1px; margin-bottom: 10px;
+  }
+  .confirm-inline-btns { display: flex; gap: 8px; }
+  .confirm-inline-btn {
+    flex: 1; padding: 8px 0; border-radius: 7px; font-size: 12px; font-weight: 600;
     cursor: pointer; border: none; transition: all 0.18s; font-family: var(--ui);
+    letter-spacing: 0.2px;
   }
-  .confirm-btn-yes { background: var(--warn); color: #0a0c0f; }
-  .confirm-btn-yes:hover { background: #f6b12a; transform: translateY(-1px); }
-  .confirm-btn-no  { background: rgba(255,255,255,0.07); color: var(--muted); border: 0.5px solid rgba(255,255,255,0.1); }
-  .confirm-btn-no:hover  { background: rgba(239,68,68,0.12); color: var(--danger); border-color: rgba(239,68,68,0.3); }
-  .confirm-counter { font-size: 9px; font-family: var(--mono); color: var(--muted); text-align: center; margin-top: 12px; }
+  .confirm-inline-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .confirm-inline-yes { background: rgba(245,158,11,0.18); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+  .confirm-inline-yes:hover:not(:disabled) { background: rgba(245,158,11,0.28); border-color: rgba(245,158,11,0.5); transform: translateY(-1px); }
+  .confirm-inline-no  { background: rgba(255,255,255,0.04); color: var(--muted); border: 0.5px solid rgba(255,255,255,0.1); }
+  .confirm-inline-no:hover:not(:disabled)  { background: rgba(239,68,68,0.08); color: var(--danger); border-color: rgba(239,68,68,0.25); }
 `;
 
-function getFriendlyStepMessage(step) {
-  if (step.description && !step.description.match(/^[a-z_]+\.[a-z_]+$/i)) {
-    return step.description; // use natural description if available
-  }
-  const s = step.skill, a = step.action;
-  if (s === "ai" && a === "ask") return "Thinking and reasoning...";
-  if (s === "files" && a === "write_file") return "Saving file...";
-  if (s === "files" && a === "read_file") return "Reading file contents...";
-  if (s === "apps" && a === "open_app") return "Opening application...";
-  if (s === "browser") return "Browsing the web...";
-  if (s === "os" && a === "run_command") return "Executing command...";
-  if (s === "python") return "Running Python code...";
-  return "Processing step...";
-}
-
-// ─── Confirmation Modal ────────────────────────────────────────────────────
-function ConfirmModal({ item, onRespond, queueLength }) {
-  const [loading, setLoading] = useState(false);
-
-  const respond = async (confirmed) => {
-    setLoading(true);
-    try {
-      await fetch(`${API_BASE}/api/confirm/${item.stepId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirmed }),
-      });
-    } catch (e) {
-      console.error("Confirm request failed:", e);
-    }
-    onRespond(item.stepId);
-  };
-
-  // Allow keyboard: Enter = confirm, Escape = decline
-  useEffect(() => {
-    const handler = (e) => {
-      if (e.key === "Enter")   respond(true);
-      if (e.key === "Escape")  respond(false);
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [item.stepId]);
-
-  return (
-    <div className="confirm-overlay">
-      <div className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
-        <div className="confirm-icon">⚠️</div>
-        <div className="confirm-title" id="confirm-title">Confirmation Required</div>
-        <div className="confirm-action">{item.action}</div>
-        <div className="confirm-message">{item.message}</div>
-        <div className="confirm-step-id">Step ID: {item.stepId}</div>
-        <div className="confirm-actions">
-          <button
-            id={`confirm-yes-${item.stepId}`}
-            className="confirm-btn confirm-btn-yes"
-            onClick={() => respond(true)}
-            disabled={loading}
-          >
-            ✓ Confirm
-          </button>
-          <button
-            id={`confirm-no-${item.stepId}`}
-            className="confirm-btn confirm-btn-no"
-            onClick={() => respond(false)}
-            disabled={loading}
-          >
-            ✗ Decline
-          </button>
-        </div>
-        {queueLength > 1 && (
-          <div className="confirm-counter">{queueLength - 1} more confirmation{queueLength - 1 > 1 ? "s" : ""} queued</div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function Toast({ toast, onRemove, onDirectCommand }) {
 
@@ -1036,6 +973,8 @@ export default function App() {
                     lastResult={lastResult}
                     onRetry={() => submitCommand(commandInput)}
                     onCopy={(text) => navigator.clipboard.writeText(text)}
+                    confirmQueue={confirmQueue}
+                    onConfirmRespond={removeConfirm}
                   />
                 </div>
                 <div className="ctrl-bar">
@@ -1094,15 +1033,6 @@ export default function App() {
             />
           ))}
         </div>
-        {/* ── Confirmation Modal — shown when executor is awaiting user input ── */}
-        {confirmQueue.length > 0 && (
-          <ConfirmModal
-            key={confirmQueue[0].stepId}
-            item={confirmQueue[0]}
-            onRespond={removeConfirm}
-            queueLength={confirmQueue.length}
-          />
-        )}
       </div>
     </>
   );

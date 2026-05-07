@@ -10,6 +10,10 @@ import {
   faAngleRight, faArrowsRotate, faClipboard, faBolt, faGear,
 } from '../icons'
 
+const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL)
+  ? import.meta.env.VITE_API_URL.replace('/api', '')
+  : 'http://localhost:8000'
+
 // ── Sanitize raw result text ────────────────────────────────────────────────
 function sanitize(text) {
   if (!text || typeof text !== 'string') return null
@@ -62,8 +66,113 @@ function StepCircle({ status, index }) {
   )
 }
 
+// ── Inline Confirmation Card ────────────────────────────────────────────────
+function ConfirmInline({ item, onRespond }) {
+  const [busy, setBusy] = useState(false)
+
+  const respond = async (confirmed) => {
+    setBusy(true)
+    try {
+      await fetch(`${API_BASE}/api/confirm/${item.stepId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmed }),
+      })
+    } catch (e) {
+      console.error('Confirm request failed:', e)
+    }
+    onRespond(item.stepId)
+  }
+
+  return (
+    <div style={{
+      margin: '6px 0 8px 0',
+      background: '#0d1117',
+      borderRadius: 10,
+      border: '1px solid rgba(245,158,11,0.35)',
+      borderLeft: '3px solid #f59e0b',
+      overflow: 'hidden',
+      animation: 'fa-slide-in 0.3s cubic-bezier(0.16,1,0.3,1)',
+      boxShadow: '0 6px 24px rgba(0,0,0,0.45), 0 0 0 1px rgba(245,158,11,0.08)',
+    }}>
+      {/* Top accent bar */}
+      <div style={{
+        background: 'linear-gradient(90deg, rgba(245,158,11,0.18) 0%, transparent 100%)',
+        padding: '9px 14px 8px',
+        borderBottom: '0.5px solid rgba(245,158,11,0.12)',
+        display: 'flex', alignItems: 'center', gap: 8,
+      }}>
+        <span style={{ fontSize: 13, lineHeight: 1 }}>⚠️</span>
+        <span style={{
+          fontSize: 10, fontFamily: 'Space Mono, monospace',
+          color: '#f59e0b', letterSpacing: '1.8px', fontWeight: 700,
+        }}>AWAITING CONFIRMATION</span>
+        <span style={{
+          marginLeft: 'auto', fontSize: 9, fontFamily: 'Space Mono, monospace',
+          color: 'rgba(245,158,11,0.45)', letterSpacing: '0.8px',
+        }}>{item.action}</span>
+      </div>
+
+      {/* Body */}
+      <div style={{ padding: '12px 14px 14px' }}>
+        {/* Message */}
+        <p style={{
+          margin: '0 0 14px 0',
+          fontSize: 13, color: '#c9d1d9', lineHeight: 1.6,
+          fontFamily: 'Inter, sans-serif',
+        }}>{item.message}</p>
+
+        {/* Buttons */}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={() => respond(true)}
+            disabled={busy}
+            style={{
+              flex: 1, padding: '9px 0', borderRadius: 8,
+              fontSize: 13, fontWeight: 600, letterSpacing: '0.2px',
+              cursor: busy ? 'not-allowed' : 'pointer',
+              opacity: busy ? 0.6 : 1,
+              background: busy ? 'rgba(245,158,11,0.25)' : '#f59e0b',
+              color: '#0a0c0f',
+              border: 'none',
+              transition: 'all 0.15s',
+              fontFamily: 'Inter, sans-serif',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            }}
+            onMouseEnter={e => { if (!busy) e.currentTarget.style.background = '#fbbf24' }}
+            onMouseLeave={e => { if (!busy) e.currentTarget.style.background = '#f59e0b' }}
+          >
+            {busy ? '⟳ Processing...' : '✓  Confirm'}
+          </button>
+          <button
+            onClick={() => respond(false)}
+            disabled={busy}
+            style={{
+              flex: 1, padding: '9px 0', borderRadius: 8,
+              fontSize: 13, fontWeight: 600, letterSpacing: '0.2px',
+              cursor: busy ? 'not-allowed' : 'pointer',
+              opacity: busy ? 0.6 : 1,
+              background: 'rgba(239,68,68,0.1)',
+              color: '#ef4444',
+              border: '1px solid rgba(239,68,68,0.25)',
+              transition: 'all 0.15s',
+              fontFamily: 'Inter, sans-serif',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            }}
+            onMouseEnter={e => { if (!busy) { e.currentTarget.style.background = 'rgba(239,68,68,0.18)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.45)' } }}
+            onMouseLeave={e => { if (!busy) { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.25)' } }}
+          >
+            ✕  Decline
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
 // ── Single step card ────────────────────────────────────────────────────────
-function StepCard({ step, index, totalSteps }) {
+function StepCard({ step, index, totalSteps, confirmItem, onConfirmRespond }) {
   const { icon, label } = skillIcon(step.skill, step.action, step.description)
   const b       = badge(step.status)
   const isDone  = step.status === 'done'
@@ -71,105 +180,123 @@ function StepCard({ step, index, totalSteps }) {
   const isFail  = step.status === 'failed'
   const isPend  = !step.status || step.status === 'pending'
   const cleanResult = isDone ? sanitize(step.result) : null
+  const isConfirming = !!confirmItem
 
   return (
-    <div style={{ display: 'flex', gap: 0, opacity: isPend ? 0.45 : 1, transition: 'opacity 0.35s ease' }}>
-      {/* Spine */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 36, flexShrink: 0 }}>
-        <StepCircle status={step.status} index={index} />
-        {index < totalSteps - 1 && (
-          <div style={{
-            width: 1, flex: 1, minHeight: 14,
-            background: isDone
-              ? 'linear-gradient(180deg,rgba(16,185,129,0.5) 0%,rgba(16,185,129,0.08) 100%)'
-              : 'rgba(255,255,255,0.06)',
-            margin: '4px 0', transition: 'background 0.4s ease',
-          }} />
-        )}
-      </div>
-
-      {/* Card */}
-      <div style={{
-        flex: 1, marginLeft: 12,
-        marginBottom: index < totalSteps - 1 ? 6 : 0,
-        background: isRun
-          ? 'linear-gradient(135deg,rgba(245,158,11,0.06) 0%,rgba(16,17,20,0.85) 100%)'
-          : isDone ? 'rgba(16,185,129,0.03)' : 'rgba(255,255,255,0.015)',
-        border: `0.5px solid ${isRun ? 'rgba(245,158,11,0.22)' : isDone ? 'rgba(16,185,129,0.12)' : isFail ? 'rgba(239,68,68,0.18)' : 'rgba(255,255,255,0.05)'}`,
-        borderRadius: 9, padding: '11px 14px',
-        transition: 'all 0.35s ease',
-        boxShadow: isRun ? '0 4px 18px rgba(245,158,11,0.07)' : 'none',
-      }}>
-        {/* Header row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Skill icon */}
-          <span style={{
-            width: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          }}>
-            <I icon={icon} color={isDone ? '#10b981' : isRun ? '#f59e0b' : isFail ? '#ef4444' : 'rgba(255,255,255,0.3)'} size="sm" />
-          </span>
-
-          {/* Label */}
-          <span style={{
-            flex: 1, fontSize: 13, fontWeight: 500,
-            color: isPend ? 'rgba(255,255,255,0.3)' : '#e8eaf0',
-            letterSpacing: '0.1px',
-          }}>{label}</span>
-
-          {/* Status badge */}
-          <span style={{
-            fontSize: 9, fontFamily: 'Space Mono, monospace', fontWeight: 700,
-            color: b.color, background: b.bg,
-            padding: '2px 8px', borderRadius: 4, letterSpacing: '0.8px', flexShrink: 0,
-            display: 'flex', alignItems: 'center', gap: 5,
-            animation: isRun ? 'fa-badge-blink 1.4s ease-in-out infinite' : 'none',
-          }}>
-            {isRun && <I icon={faBolt} color="#f59e0b" size="xs" />}
-            {isDone && <I icon={faCheck} color="#10b981" size="xs" />}
-            {isFail && <I icon={faXmark} color="#ef4444" size="xs" />}
-            {b.label}
-          </span>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      <div style={{ display: 'flex', gap: 0, opacity: isPend && !isConfirming ? 0.45 : 1, transition: 'opacity 0.35s ease' }}>
+        {/* Spine */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 36, flexShrink: 0 }}>
+          <StepCircle status={isConfirming ? 'running' : step.status} index={index} />
+          {index < totalSteps - 1 && (
+            <div style={{
+              width: 1, flex: 1, minHeight: 14,
+              background: isDone
+                ? 'linear-gradient(180deg,rgba(16,185,129,0.5) 0%,rgba(16,185,129,0.08) 100%)'
+                : isConfirming ? 'rgba(245,158,11,0.25)'
+                : 'rgba(255,255,255,0.06)',
+              margin: '4px 0', transition: 'background 0.4s ease',
+            }} />
+          )}
         </div>
 
-        {/* Tool tag */}
-        <div style={{ marginTop: 7, display: 'flex', gap: 5, alignItems: 'center' }}>
-          <I icon={faGear} color="rgba(0,212,170,0.4)" size="xs" />
-          <span style={{
-            fontSize: 9, fontFamily: 'Space Mono, monospace', color: 'rgba(0,212,170,0.55)',
-            background: 'rgba(0,212,170,0.05)', border: '0.5px solid rgba(0,212,170,0.12)',
-            padding: '1px 7px', borderRadius: 3,
-          }}>{step.skill}.{step.action}</span>
+        {/* Card */}
+        <div style={{
+          flex: 1, marginLeft: 12,
+          marginBottom: index < totalSteps - 1 && !isConfirming ? 6 : 0,
+          background: isConfirming
+            ? 'linear-gradient(135deg,rgba(245,158,11,0.07) 0%,rgba(16,17,20,0.88) 100%)'
+            : isRun
+            ? 'linear-gradient(135deg,rgba(245,158,11,0.06) 0%,rgba(16,17,20,0.85) 100%)'
+            : isDone ? 'rgba(16,185,129,0.03)' : 'rgba(255,255,255,0.015)',
+          border: `0.5px solid ${isConfirming ? 'rgba(245,158,11,0.35)' : isRun ? 'rgba(245,158,11,0.22)' : isDone ? 'rgba(16,185,129,0.12)' : isFail ? 'rgba(239,68,68,0.18)' : 'rgba(255,255,255,0.05)'}`,
+          borderRadius: 9, padding: '11px 14px',
+          transition: 'all 0.35s ease',
+          boxShadow: isConfirming ? '0 4px 18px rgba(245,158,11,0.10)' : isRun ? '0 4px 18px rgba(245,158,11,0.07)' : 'none',
+        }}>
+          {/* Header row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* Skill icon */}
+            <span style={{
+              width: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <I icon={icon} color={isDone ? '#10b981' : (isRun || isConfirming) ? '#f59e0b' : isFail ? '#ef4444' : 'rgba(255,255,255,0.3)'} size="sm" />
+            </span>
+
+            {/* Label */}
+            <span style={{
+              flex: 1, fontSize: 13, fontWeight: 500,
+              color: isPend && !isConfirming ? 'rgba(255,255,255,0.3)' : '#e8eaf0',
+              letterSpacing: '0.1px',
+            }}>{label}</span>
+
+            {/* Status badge */}
+            <span style={{
+              fontSize: 9, fontFamily: 'Space Mono, monospace', fontWeight: 700,
+              color: isConfirming ? '#f59e0b' : b.color,
+              background: isConfirming ? 'rgba(245,158,11,0.12)' : b.bg,
+              padding: '2px 8px', borderRadius: 4, letterSpacing: '0.8px', flexShrink: 0,
+              display: 'flex', alignItems: 'center', gap: 5,
+              animation: (isRun || isConfirming) ? 'fa-badge-blink 1.4s ease-in-out infinite' : 'none',
+            }}>
+              {isConfirming && <I icon={faSpinner} color="#f59e0b" size="xs" spin />}
+              {!isConfirming && isRun && <I icon={faBolt} color="#f59e0b" size="xs" />}
+              {!isConfirming && isDone && <I icon={faCheck} color="#10b981" size="xs" />}
+              {!isConfirming && isFail && <I icon={faXmark} color="#ef4444" size="xs" />}
+              {isConfirming ? 'AWAITING' : b.label}
+            </span>
+          </div>
+
+          {/* Tool tag */}
+          <div style={{ marginTop: 7, display: 'flex', gap: 5, alignItems: 'center' }}>
+            <I icon={faGear} color="rgba(0,212,170,0.4)" size="xs" />
+            <span style={{
+              fontSize: 9, fontFamily: 'Space Mono, monospace', color: 'rgba(0,212,170,0.55)',
+              background: 'rgba(0,212,170,0.05)', border: '0.5px solid rgba(0,212,170,0.12)',
+              padding: '1px 7px', borderRadius: 3,
+            }}>{step.skill}.{step.action}</span>
+          </div>
+
+          {/* Sanitized result */}
+          {cleanResult && (
+            <div style={{
+              fontSize: 11, color: 'rgba(255,255,255,0.4)',
+              fontFamily: 'Space Mono, monospace',
+              marginTop: 8, borderTop: '0.5px solid rgba(255,255,255,0.05)',
+              paddingTop: 7, lineHeight: 1.55, wordBreak: 'break-word',
+            }}>{cleanResult}</div>
+          )}
+
+          {/* Error */}
+          {isFail && step.error && (
+            <div style={{
+              fontSize: 11, color: 'rgba(239,68,68,0.75)',
+              fontFamily: 'Space Mono, monospace',
+              marginTop: 6, borderTop: '0.5px solid rgba(239,68,68,0.08)',
+              paddingTop: 6,
+            }}>{sanitize(step.error) || 'Step failed.'}</div>
+          )}
         </div>
-
-        {/* Sanitized result */}
-        {cleanResult && (
-          <div style={{
-            fontSize: 11, color: 'rgba(255,255,255,0.4)',
-            fontFamily: 'Space Mono, monospace',
-            marginTop: 8, borderTop: '0.5px solid rgba(255,255,255,0.05)',
-            paddingTop: 7, lineHeight: 1.55, wordBreak: 'break-word',
-          }}>{cleanResult}</div>
-        )}
-
-        {/* Error */}
-        {isFail && step.error && (
-          <div style={{
-            fontSize: 11, color: 'rgba(239,68,68,0.75)',
-            fontFamily: 'Space Mono, monospace',
-            marginTop: 6, borderTop: '0.5px solid rgba(239,68,68,0.08)',
-            paddingTop: 6,
-          }}>{sanitize(step.error) || 'Step failed.'}</div>
-        )}
       </div>
+
+      {/* ── Inline Confirmation Card — appears below this step when AWAITING ── */}
+      {isConfirming && (
+        <div style={{ marginLeft: 48, marginBottom: index < totalSteps - 1 ? 8 : 0 }}>
+          <ConfirmInline item={confirmItem} onRespond={onConfirmRespond} />
+        </div>
+      )}
     </div>
   )
 }
+
+
 
 // ── Main ExecutionTimeline ──────────────────────────────────────────────────
 export default function ExecutionTimeline({
   planStatus, planSummary, steps, logs,
   commandError, loading, badgeLabel, badgeClass,
   onRetry, onCopy, lastResult,
+  confirmQueue = [], onConfirmRespond,
 }) {
   const [showTrace, setShowTrace] = useState(false)
 
@@ -181,6 +308,12 @@ export default function ExecutionTimeline({
   const doneCount  = steps.filter(s => s.status === 'done').length
   const totalCount = steps.length
   const toolSet    = [...new Set(steps.map(s => s.skill).filter(Boolean))]
+
+  // Build a lookup: stepId → confirmItem
+  const confirmByStep = {}
+  for (const item of confirmQueue) {
+    confirmByStep[item.stepId] = item
+  }
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px 28px', display: 'flex', flexDirection: 'column' }}>
@@ -231,7 +364,14 @@ export default function ExecutionTimeline({
           {steps.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 14 }}>
               {steps.map((step, i) => (
-                <StepCard key={step.id} step={step} index={i} totalSteps={steps.length} />
+                <StepCard
+                  key={step.id}
+                  step={step}
+                  index={i}
+                  totalSteps={steps.length}
+                  confirmItem={confirmByStep[step.id] || null}
+                  onConfirmRespond={onConfirmRespond}
+                />
               ))}
             </div>
           )}
